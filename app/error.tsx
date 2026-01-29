@@ -3,6 +3,7 @@
 import { useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { IconAlertCircle, IconRefresh } from "@tabler/icons-react"
+import Link from "next/link"
 
 export default function Error({
     error,
@@ -38,7 +39,7 @@ export default function Error({
                     Try Again
                 </Button>
                 <Button variant="outline" size="lg" className="rounded-full px-8" asChild>
-                    <a href="/">Go to Dashboard</a>
+                    <Link href="/">Go to Dashboard</Link>
                 </Button>
             </div>
         </div>

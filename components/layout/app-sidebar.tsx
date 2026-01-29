@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { IconSearch, IconSelector } from "@tabler/icons-react"
-
+import { usePathname, useRouter } from "next/navigation"
 import { NavGroup } from "./nav-group"
 import { NavMain } from "./nav-main"
 import { NavSecondary } from "./nav-secondary"
@@ -26,9 +26,51 @@ import {
 import { sidebarData } from "./data/sidebar-data"
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const [activeModule, setActiveModule] = React.useState(sidebarData.modules[0])
+  const pathname = usePathname()
+  const router = useRouter()
+
+  // Find the initial active module based on the current URL
+  const initialModule = React.useMemo(() => {
+    const foundModule = sidebarData.modules.find(module => {
+      // Check navMain
+      const inNavMain = module.navMain.some(item => pathname === item.url || (item.url !== "/" && pathname.startsWith(item.url)))
+      if (inNavMain) return true
+
+      // Check navGroup
+      const inNavGroup = module.navGroup.some(group =>
+        group.items?.some(item => pathname === item.url || pathname.startsWith(item.url))
+      )
+      return inNavGroup
+    })
+    return foundModule || sidebarData.modules[0]
+  }, [pathname])
+
+  const [activeModule, setActiveModule] = React.useState(initialModule)
   const [searchQuery, setSearchQuery] = React.useState("")
   const { isMobile } = useSidebar()
+
+  // Update active module ONLY when pathname changes
+  React.useEffect(() => {
+    const currentPathModule = sidebarData.modules.find(module => {
+      // Check navMain
+      const inNavMain = module.navMain.some(item =>
+        pathname === item.url || (item.url !== "/" && pathname.startsWith(item.url + "/"))
+      )
+      if (inNavMain) return true
+
+      // Check navGroup
+      const inNavGroup = module.navGroup.some(group =>
+        group.items?.some(item =>
+          pathname === item.url || pathname.startsWith(item.url + "/")
+        )
+      )
+      return inNavGroup
+    })
+
+    if (currentPathModule) {
+      setActiveModule(currentPathModule)
+    }
+  }, [pathname])
 
   const filterNavGroup = (items: any[]) => {
     if (!searchQuery) return items
@@ -100,7 +142,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 {sidebarData.modules.map((module) => (
                   <DropdownMenuItem
                     key={module.name}
-                    onClick={() => setActiveModule(module)}
+                    onClick={() => {
+                      setActiveModule(module)
+                      if (module.navMain?.[0]?.url) {
+                        router.push(module.navMain[0].url)
+                      }
+                    }}
                     className="gap-2 p-2"
                   >
                     <div className="flex size-6 items-center justify-center rounded-sm border">

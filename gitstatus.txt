@@ -1,0 +1,82 @@
+On branch master
+Your branch is up to date with 'origin/master'.
+
+Changes not staged for commit:
+  (use "git add/rm <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	deleted:    app/administrator/backup-database/page.tsx
+	deleted:    app/administrator/page.tsx
+	deleted:    app/administrator/permissions/page.tsx
+	deleted:    app/administrator/users/page.tsx
+	deleted:    app/analytics/page.tsx
+	deleted:    app/attendance/absent-status/page.tsx
+	deleted:    app/attendance/continuous-status/page.tsx
+	deleted:    app/attendance/counceling-report/page.tsx
+	deleted:    app/attendance/daily-input/page.tsx
+	deleted:    app/attendance/daily-ot-sheet/page.tsx
+	deleted:    app/attendance/daily-ot-summary/page.tsx
+	deleted:    app/attendance/daily-summary/page.tsx
+	deleted:    app/attendance/job-card/page.tsx
+	deleted:    app/attendance/manual-entry/page.tsx
+	deleted:    app/attendance/missing-entry/page.tsx
+	deleted:    app/attendance/movement/page.tsx
+	deleted:    app/attendance/ot-deduction/page.tsx
+	deleted:    app/attendance/page.tsx
+	deleted:    app/data-process/collect-data/page.tsx
+	deleted:    app/data-process/daily-process/page.tsx
+	deleted:    app/data-process/monthly-process/page.tsx
+	deleted:    app/data-process/page.tsx
+	modified:   app/globals.css
+	deleted:    app/human-resource/employee-info/create/page.tsx
+	deleted:    app/human-resource/employee-info/employee-data.json
+	deleted:    app/human-resource/employee-info/others-information/page.tsx
+	deleted:    app/human-resource/employee-info/page.tsx
+	deleted:    app/human-resource/manpower-list/page.tsx
+	deleted:    app/human-resource/manpower-requirement/page.tsx
+	deleted:    app/human-resource/manpower-summary/page.tsx
+	deleted:    app/human-resource/migration/page.tsx
+	deleted:    app/human-resource/roster/page.tsx
+	deleted:    app/information/address/address-data.json
+	deleted:    app/information/address/filtered-data.json
+	deleted:    app/information/address/page.tsx
+	deleted:    app/information/company-information/company-data.json
+	deleted:    app/information/company-information/create/page.tsx
+	deleted:    app/information/company-information/edit/[id]/page.tsx
+	deleted:    app/information/company-information/page.tsx
+	deleted:    app/information/shift/page.tsx
+	modified:   app/layout.tsx
+	deleted:    app/leave/details/page.tsx
+	deleted:    app/leave/monthly-report/page.tsx
+	deleted:    app/leave/page.tsx
+	deleted:    app/lifecycle/page.tsx
+	deleted:    app/monthly-reports/page.tsx
+	modified:   app/page.tsx
+	deleted:    app/payroll/advance-salary-sheet/page.tsx
+	deleted:    app/payroll/daily-salary-sheet/page.tsx
+	deleted:    app/payroll/eid-bonus/page.tsx
+	deleted:    app/payroll/increment-sheet/page.tsx
+	deleted:    app/payroll/page.tsx
+	deleted:    app/payroll/pay-slip/page.tsx
+	deleted:    app/payroll/salary-process/page.tsx
+	deleted:    app/payroll/salary-sheet/page.tsx
+	deleted:    app/payroll/salary-summary/page.tsx
+	deleted:    app/reports/night-bill/page.tsx
+	deleted:    app/reports/page.tsx
+	deleted:    app/reports/tiffin-bill/page.tsx
+	deleted:    app/transactions/separation/page.tsx
+	modified:   components/layout/app-sidebar.tsx
+	modified:   components/layout/data/sidebar-data.ts
+	modified:   components/layout/site-header.tsx
+	modified:   components/section-cards.tsx
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	app/hr-management/
+	components/mode-toggle.tsx
+	components/summary-card.tsx
+	components/theme-provider.tsx
+	files.txt
+	gitstatus.txt
+	hrmanagement_files.txt
+
+no changes added to commit (use "git add" and/or "git commit -a")

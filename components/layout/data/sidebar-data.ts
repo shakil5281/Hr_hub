@@ -21,6 +21,9 @@ import {
     IconBuildingFactory2,
     IconCalculator,
     IconUsersGroup,
+    IconScissors,
+    IconPackages,
+    IconBoxSeam,
 } from "@tabler/icons-react"
 
 export const sidebarData = {
@@ -31,13 +34,13 @@ export const sidebarData = {
     },
     modules: [
         {
-            name: "HR Management",
+            name: "Management",
             logo: IconUsersGroup,
             plan: "Module",
             navMain: [
                 { title: "Dashboard", url: "/", icon: IconDashboard },
-                { title: "Lifecycle", url: "/lifecycle", icon: IconListDetails },
-                { title: "Analytics", url: "/analytics", icon: IconChartBar },
+                { title: "Lifecycle", url: "/management/lifecycle", icon: IconListDetails },
+                { title: "Analytics", url: "/management/analytics", icon: IconChartBar },
             ],
             navGroup: [
                 {
@@ -45,9 +48,9 @@ export const sidebarData = {
                     url: "#",
                     icon: IconInfoCircle,
                     items: [
-                        { title: "Company information", url: "/information/company-information" },
-                        { title: "Address", url: "/information/address" },
-                        { title: "Shift", url: "/information/shift" },
+                        { title: "Company information", url: "/management/information/company-information" },
+                        { title: "Address", url: "/management/information/address" },
+                        { title: "Shift", url: "/management/information/shift" },
                     ],
                 },
                 {
@@ -55,12 +58,12 @@ export const sidebarData = {
                     url: "#",
                     icon: IconUsers,
                     items: [
-                        { title: "Employee info", url: "/human-resource/employee-info" },
-                        { title: "Manpower List", url: "/human-resource/manpower-list" },
-                        { title: "Manpower Summary", url: "/human-resource/manpower-summary" },
-                        { title: "Migration", url: "/human-resource/migration" },
-                        { title: "Roster", url: "/human-resource/roster" },
-                        { title: "Manpower Requirement", url: "/human-resource/manpower-requirement" },
+                        { title: "Employee info", url: "/management/human-resource/employee-info" },
+                        { title: "Manpower List", url: "/management/human-resource/manpower-list" },
+                        { title: "Manpower Summary", url: "/management/human-resource/manpower-summary" },
+                        { title: "Migration", url: "/management/human-resource/migration" },
+                        { title: "Roster", url: "/management/human-resource/roster" },
+                        { title: "Manpower Requirement", url: "/management/human-resource/manpower-requirement" },
                     ],
                 },
                 {
@@ -68,121 +71,114 @@ export const sidebarData = {
                     url: "#",
                     icon: IconUserMinus,
                     items: [
-                        { title: "Separation", url: "/transactions/separation" },
+                        { title: "Separation", url: "/management/transactions/separation" },
                     ],
                 },
                 {
                     title: "Attendance",
-                    url: "/attendance",
+                    url: "/management/attendance",
                     icon: IconFingerprint,
                     items: [
-                        { title: "Daily Input", url: "/attendance/daily-input" },
-                        { title: "Daily Summary", url: "/attendance/daily-summary" },
-                        { title: "Job Card", url: "/attendance/job-card" },
-                        { title: "Missing Entry", url: "/attendance/missing-entry" },
-                        { title: "Manual Entry", url: "/attendance/manual-entry" },
-                        { title: "Continuous Status", url: "/attendance/continuous-status" },
-                        { title: "Absent Status", url: "/attendance/absent-status" },
-                        { title: "Counseling Report", url: "/attendance/counceling-report" },
-                        { title: "Movement", url: "/attendance/movement" },
-                        { title: "Daily OT Sheet", url: "/attendance/daily-ot-sheet" },
-                        { title: "Daily OT Summary", url: "/attendance/daily-ot-summary" },
-                        { title: "OT Deduction", url: "/attendance/ot-deduction" },
+                        { title: "Daily Input", url: "/management/attendance/daily-input" },
+                        { title: "Daily Summary", url: "/management/attendance/daily-summary" },
+                        { title: "Job Card", url: "/management/attendance/job-card" },
+                        { title: "Missing Entry", url: "/management/attendance/missing-entry" },
+                        { title: "Manual Entry", url: "/management/attendance/manual-entry" },
+                        { title: "Continuous Status", url: "/management/attendance/continuous-status" },
+                        { title: "Absent Status", url: "/management/attendance/absent-status" },
+                        { title: "Counseling Report", url: "/management/attendance/counceling-report" },
+                        { title: "Movement", url: "/management/attendance/movement" },
+                        { title: "Daily OT Sheet", url: "/management/attendance/daily-ot-sheet" },
+                        { title: "Daily OT Summary", url: "/management/attendance/daily-ot-summary" },
+                        { title: "OT Deduction", url: "/management/attendance/ot-deduction" },
                     ],
                 },
                 {
                     title: "Payroll",
-                    url: "/payroll",
+                    url: "/management/payroll",
                     icon: IconCash,
                     items: [
-                        { title: "Salary Process", url: "/payroll/salary-process" },
-                        { title: "Salary Sheet", url: "/payroll/salary-sheet" },
-                        { title: "Daily Salary Sheet", url: "/payroll/daily-salary-sheet" },
-                        { title: "Salary Summary", url: "/payroll/salary-summary" },
-                        { title: "Pay Slip", url: "/payroll/pay-slip" },
-                        { title: "Advance Salary Sheet", url: "/payroll/advance-salary-sheet" },
-                        { title: "Increment Sheet", url: "/payroll/increment-sheet" },
-                        { title: "Eid Bonus", url: "/payroll/eid-bonus" },
+                        { title: "Salary Process", url: "/management/payroll/salary-process" },
+                        { title: "Salary Sheet", url: "/management/payroll/salary-sheet" },
+                        { title: "Daily Salary Sheet", url: "/management/payroll/daily-salary-sheet" },
+                        { title: "Salary Summary", url: "/management/payroll/salary-summary" },
+                        { title: "Pay Slip", url: "/management/payroll/pay-slip" },
+                        { title: "Advance Salary Sheet", url: "/management/payroll/advance-salary-sheet" },
+                        { title: "Increment Sheet", url: "/management/payroll/increment-sheet" },
+                        { title: "Eid Bonus", url: "/management/payroll/eid-bonus" },
                     ],
                 },
                 {
                     title: "Leave",
-                    url: "/leave",
+                    url: "/management/leave",
                     icon: IconCalendarEvent,
                     items: [
-                        { title: "Leave Management", url: "/leave" },
-                        { title: "Leave Details", url: "/leave/details" },
-                        { title: "Monthly Leave Report", url: "/leave/monthly-report" },
+                        { title: "Leave Management", url: "/management/leave" },
+                        { title: "Leave Details", url: "/management/leave/details" },
+                        { title: "Monthly Leave Report", url: "/management/leave/monthly-report" },
                     ],
                 },
                 {
                     title: "Reports",
-                    url: "/reports",
+                    url: "/management/reports",
                     icon: IconReport,
                     items: [
-                        { title: "Employee Reports", url: "/reports" },
-                        { title: "Attendance Reports", url: "/reports" },
-                        { title: "Night Bill", url: "/reports/night-bill" },
-                        { title: "Tiffin Bill", url: "/reports/tiffin-bill" },
+                        { title: "Employee Reports", url: "/management/reports" },
+                        { title: "Attendance Reports", url: "/management/reports" },
+                        { title: "Night Bill", url: "/management/reports/night-bill" },
+                        { title: "Tiffin Bill", url: "/management/reports/tiffin-bill" },
                     ],
                 },
                 {
                     title: "Monthly Reports",
-                    url: "/monthly-reports",
+                    url: "/management/monthly-reports",
                     icon: IconReportAnalytics,
                     items: [
-                        { title: "Monthly Salary", url: "/monthly-reports" },
-                        { title: "Monthly Attendance", url: "/monthly-reports" },
+                        { title: "Monthly Salary", url: "/management/monthly-reports" },
+                        { title: "Monthly Attendance", url: "/management/monthly-reports" },
                     ],
                 },
                 {
                     title: "Data Process",
-                    url: "/data-process",
+                    url: "/management/data-process",
                     icon: IconRefresh,
                     items: [
-                        { title: "Collect Data", url: "/data-process/collect-data" },
-                        { title: "Daily Process", url: "/data-process/daily-process" },
-                        { title: "Monthly Process", url: "/data-process/monthly-process" },
+                        { title: "Collect Data", url: "/management/data-process/collect-data" },
+                        { title: "Daily Process", url: "/management/data-process/daily-process" },
+                        { title: "Monthly Process", url: "/management/data-process/monthly-process" },
                     ],
                 },
                 {
                     title: "Administrator",
-                    url: "/administrator",
+                    url: "/management/administrator",
                     icon: IconShield,
                     items: [
-                        { title: "Users", url: "/administrator/users" },
-                        { title: "Permissions", url: "/administrator/permissions" },
-                        { title: "Backup Database", url: "/administrator/backup-database" },
+                        { title: "Users", url: "/management/administrator/users" },
+                        { title: "Permissions", url: "/management/administrator/permissions" },
+                        { title: "Backup Database", url: "/management/administrator/backup-database" },
                     ],
                 },
             ]
         },
         {
-            name: "New Production",
+            name: "Production",
             logo: IconBuildingFactory2,
             plan: "Module",
             navMain: [
-                { title: "Prod Dashboard", url: "/production", icon: IconDashboard },
-                { title: "Planning", url: "/production/planning", icon: IconCalendarEvent },
+                { title: "Dashboard", url: "/production/dashboard", icon: IconDashboard },
             ],
             navGroup: [
                 {
-                    title: "Operations",
+                    title: "Production",
                     url: "#",
                     icon: IconRefresh,
                     items: [
-                        { title: "Daily Output", url: "/production/daily-output" },
-                        { title: "Machine Tracking", url: "/production/machines" },
-                        { title: "Quality Check", url: "/production/quality" },
-                    ],
-                },
-                {
-                    title: "Inventory",
-                    url: "#",
-                    icon: IconDatabase,
-                    items: [
-                        { title: "Raw Material", url: "/production/inventory/raw" },
-                        { title: "Finished Goods", url: "/production/inventory/finished" },
+                        { title: "Production list", url: "/production/production-list" },
+                        { title: "Line assign", url: "/production/line-assign" },
+                        { title: "Target", url: "/production/target" },
+                        { title: "Daily Production report", url: "/production/daily-report" },
+                        { title: "Monthly Production Report", url: "/production/monthly-report" },
+                        { title: "Profit & loss", url: "/production/profit-loss" },
                     ],
                 },
             ]
@@ -192,26 +188,58 @@ export const sidebarData = {
             logo: IconCalculator,
             plan: "Module",
             navMain: [
-                { title: "Finance Overview", url: "/accounts", icon: IconDashboard },
+                { title: "Dashboard", url: "/accounts/dashboard", icon: IconDashboard },
             ],
             navGroup: [
                 {
-                    title: "General Ledger",
+                    title: "Accounts",
                     url: "#",
                     icon: IconCash,
                     items: [
-                        { title: "Transcations", url: "/accounts/transactions" },
-                        { title: "Journal Entry", url: "/accounts/journal" },
-                        { title: "Balance Sheet", url: "/accounts/balance-sheet" },
+                        { title: "Finance Overview", url: "/accounts/finance-overview" },
+                        { title: "Daily Cash received", url: "/accounts/daily-cash-received" },
+                        { title: "Daily expense", url: "/accounts/daily-expense" },
+                        { title: "Monthly Report", url: "/accounts/monthly-report" },
                     ],
                 },
+            ]
+        },
+        {
+            name: "Cutting",
+            logo: IconScissors,
+            plan: "Module",
+            navMain: [
+                { title: "Dashboard", url: "/cutting/dashboard", icon: IconDashboard },
+            ],
+            navGroup: [
                 {
-                    title: "Banking",
+                    title: "Operations",
                     url: "#",
-                    icon: IconBuildingFactory2,
+                    icon: IconScissors,
                     items: [
-                        { title: "Bank Accounts", url: "/accounts/banking/list" },
-                        { title: "Reconciliation", url: "/accounts/banking/reconcile" },
+                        { title: "Cutting List", url: "/cutting/cutting-list" },
+                        { title: "Fabric Rolls", url: "/cutting/fabric-rolls" },
+                        { title: "Bundle List", url: "/cutting/bundle-list" },
+                    ],
+                },
+            ]
+        },
+        {
+            name: "Store",
+            logo: IconPackages,
+            plan: "Module",
+            navMain: [
+                { title: "Dashboard", url: "/store/dashboard", icon: IconDashboard },
+            ],
+            navGroup: [
+                {
+                    title: "Inventory",
+                    url: "#",
+                    icon: IconBoxSeam,
+                    items: [
+                        { title: "Stock List", url: "/store/inventory" },
+                        { title: "Material Receive", url: "/store/material-receive" },
+                        { title: "Material Issue", url: "/store/material-issue" },
                     ],
                 },
             ]
@@ -219,7 +247,7 @@ export const sidebarData = {
     ],
     navSecondary: [
         { title: "Settings", url: "/settings", icon: IconSettings },
-        { title: "Get Help", url: "#", icon: IconHelp },
-        { title: "Search", url: "#", icon: IconSearch },
+        { title: "Get Help", url: "/help", icon: IconHelp },
+        { title: "Search", url: "/search", icon: IconSearch },
     ],
 }

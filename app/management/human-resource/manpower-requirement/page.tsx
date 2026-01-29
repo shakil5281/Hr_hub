@@ -1,11 +1,12 @@
 "use client"
 
 import * as React from "react"
-import { IconClipboardList, IconPlus } from "@tabler/icons-react"
+import { IconClipboardList, IconPlus, IconUsers, IconUserCheck, IconUserOff } from "@tabler/icons-react"
 import { DataTable } from "@/components/data-table"
 import { ColumnDef } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { SummaryCard } from "@/components/summary-card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -49,6 +50,11 @@ const initialData: ManpowerReq[] = [
     // Quality
     { id: "7", position: "Quality Inspector", department: "Quality", required: 20, filled: 18, vacant: 2, priority: "High", status: "Open" },
     { id: "8", position: "QA Manager", department: "Quality", required: 1, filled: 0, vacant: 1, priority: "High", status: "Open" },
+]
+
+const chartData = [
+    { value: 10 }, { value: 25 }, { value: 15 }, { value: 35 },
+    { value: 25 }, { value: 45 }, { value: 30 }, { value: 55 }
 ]
 
 export default function ManpowerRequirementPage() {
@@ -238,30 +244,45 @@ export default function ManpowerRequirementPage() {
     return (
         <div className="p-6 space-y-6 w-full">
             <FormSheet />
-            <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-2">
+            <div className="flex items-center gap-4 px-4 py-4 lg:px-6 mb-6 border-b border-muted/40 bg-muted/5">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 border border-primary/20">
                     <IconClipboardList className="size-6 text-primary" />
-                    <h1 className="text-2xl font-bold tracking-tight">Manpower Requirement</h1>
                 </div>
-                <div className="flex items-center justify-between">
-                    <p className="text-muted-foreground">Manage and track manpower requisitions across departments.</p>
-                    <Button onClick={() => openCreateSheet()} className="gap-2">
-                        <IconPlus className="size-4" /> New Requisition
-                    </Button>
+                <div className="flex flex-col flex-1">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h1 className="text-2xl font-bold tracking-tight">Manpower Requirement</h1>
+                            <p className="text-sm text-muted-foreground">Manage and track manpower requisitions across departments.</p>
+                        </div>
+                        <Button onClick={() => openCreateSheet()} className="gap-2">
+                            <IconPlus className="size-4" /> New Requisition
+                        </Button>
+                    </div>
                 </div>
             </div>
 
             <div className="grid gap-4 md:grid-cols-3">
-                {summaryStats.map((stat, i) => (
-                    <Card key={i}>
-                        <CardHeader className="pb-2">
-                            <CardTitle className="text-sm font-medium text-muted-foreground">{stat.title}</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className={`text-2xl font-bold ${stat.className || ""}`}>{stat.value}</div>
-                        </CardContent>
-                    </Card>
-                ))}
+                <SummaryCard
+                    title="Total Required"
+                    value={data.reduce((acc, curr) => acc + curr.required, 0)}
+                    icon={IconUsers}
+                    status="primary"
+                    chartData={chartData}
+                />
+                <SummaryCard
+                    title="Total Filled"
+                    value={data.reduce((acc, curr) => acc + curr.filled, 0)}
+                    icon={IconUserCheck}
+                    status="success"
+                    chartData={chartData.map(d => ({ value: d.value * 0.9 }))}
+                />
+                <SummaryCard
+                    title="Total Vacant"
+                    value={data.reduce((acc, curr) => acc + curr.vacant, 0)}
+                    icon={IconUserOff}
+                    status="error"
+                    chartData={chartData.map(d => ({ value: (d.value * 0.1) + Math.random() * 5 }))}
+                />
             </div>
 
             <Tabs defaultValue="summary" className="space-y-4">

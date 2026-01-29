@@ -7,10 +7,13 @@ import {
     IconUserCheck,
     IconUserOff,
     IconChartPie,
+    IconTrendingUp,
+    IconCurrencyDollar,
 } from "@tabler/icons-react"
 import { ColumnDef } from "@tanstack/react-table"
 import { DataTable } from "@/components/data-table"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { SummaryCard } from "@/components/summary-card"
 import { toast } from "sonner"
 
 // --- Data & Types ---
@@ -76,15 +79,20 @@ const columns: ColumnDef<DepartmentSummary>[] = [
     },
 ]
 
+const chartData = [
+    { value: 10 }, { value: 25 }, { value: 15 }, { value: 35 },
+    { value: 25 }, { value: 45 }, { value: 30 }, { value: 55 }
+]
+
 export default function ManpowerSummaryPage() {
     return (
         <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-            <div className="flex items-center gap-2 px-4 lg:px-6">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+            <div className="flex items-center gap-4 px-4 py-4 lg:px-6 mb-4 border-b border-muted/40 bg-muted/5">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 border border-primary/20">
                     <IconReport className="size-6 text-primary" />
                 </div>
                 <div>
-                    <h1 className="text-xl font-bold tracking-tight">Manpower Summary</h1>
+                    <h1 className="text-2xl font-bold tracking-tight">Manpower Summary</h1>
                     <p className="text-sm text-muted-foreground">
                         Overview of employee distribution and daily checking stats.
                     </p>
@@ -93,46 +101,38 @@ export default function ManpowerSummaryPage() {
 
             {/* Stats Cards */}
             <div className="grid gap-4 px-4 md:grid-cols-2 lg:grid-cols-4 lg:px-6">
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total Employees</CardTitle>
-                        <IconUsers className="size-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">147</div>
-                        <p className="text-xs text-muted-foreground">+4 from last month</p>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Present Today</CardTitle>
-                        <IconUserCheck className="size-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">133</div>
-                        <p className="text-xs text-muted-foreground">90.5% Attendance</p>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">On Leave</CardTitle>
-                        <IconUserOff className="size-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">9</div>
-                        <p className="text-xs text-muted-foreground">6 Planned, 3 Sick</p>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Avg. Efficiency</CardTitle>
-                        <IconChartPie className="size-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">94%</div>
-                        <p className="text-xs text-muted-foreground">+2% from last week</p>
-                    </CardContent>
-                </Card>
+                <SummaryCard
+                    title="Total Employees"
+                    value="147"
+                    icon={IconUsers}
+                    trend={{ value: "4", label: "since last month", isUp: true }}
+                    status="primary"
+                    chartData={chartData}
+                />
+                <SummaryCard
+                    title="Present Today"
+                    value="133"
+                    icon={IconUserCheck}
+                    trend={{ value: "90.5%", label: "attendance rate", isUp: true }}
+                    status="success"
+                    chartData={chartData.map(d => ({ value: d.value + Math.random() * 20 }))}
+                />
+                <SummaryCard
+                    title="On Leave"
+                    value="9"
+                    icon={IconUserOff}
+                    trend={{ value: "3", label: "sick leaves", isUp: false }}
+                    status="warning"
+                    chartData={chartData.map(d => ({ value: d.value * 0.5 + Math.random() * 10 }))}
+                />
+                <SummaryCard
+                    title="Avg. Efficiency"
+                    value="94%"
+                    icon={IconChartPie}
+                    trend={{ value: "2%", label: "since last week", isUp: true }}
+                    status="info"
+                    chartData={chartData.map(d => ({ value: d.value > 30 ? d.value : 30 + Math.random() * 10 }))}
+                />
             </div>
 
             <div className="flex flex-col gap-4">

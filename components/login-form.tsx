@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { IconBrandGoogle, IconLock, IconMail, IconLoader2 } from "@tabler/icons-react"
 import { toast } from "sonner"
+import Link from "next/link"
 
 export function LoginForm({
   className,
@@ -94,12 +95,12 @@ export function LoginForm({
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Password</Label>
-                <a
+                <Link
                   href="#"
                   className="text-sm font-medium text-primary hover:underline underline-offset-4"
                 >
                   Forgot password?
-                </a>
+                </Link>
               </div>
               <div className="relative">
                 <IconLock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -129,21 +130,21 @@ export function LoginForm({
           </form>
           <div className="text-center text-sm text-muted-foreground">
             Don&apos;t have an account?{" "}
-            <a href="#" className="font-semibold text-primary hover:underline underline-offset-4">
+            <Link href="#" className="font-semibold text-primary hover:underline underline-offset-4">
               Contact HR
-            </a>
+            </Link>
           </div>
         </CardContent>
       </Card>
       <p className="px-8 text-center text-sm text-muted-foreground">
         By clicking continue, you agree to our{" "}
-        <a href="#" className="underline underline-offset-4 hover:text-primary">
+        <Link href="#" className="underline underline-offset-4 hover:text-primary">
           Terms of Service
-        </a>{" "}
+        </Link>{" "}
         and{" "}
-        <a href="#" className="underline underline-offset-4 hover:text-primary">
+        <Link href="#" className="underline underline-offset-4 hover:text-primary">
           Privacy Policy
-        </a>.
+        </Link>.
       </p>
     </div>
   )

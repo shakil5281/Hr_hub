@@ -25,6 +25,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
+import { ModeToggle } from "@/components/mode-toggle"
 import Link from "next/link"
 
 export function SiteHeader() {
@@ -114,6 +115,9 @@ export function SiteHeader() {
               </PopoverContent>
             </Popover>
 
+            {/* Theme Toggle */}
+            <ModeToggle />
+
             {/* Settings Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -151,39 +155,51 @@ export function SiteHeader() {
           {/* User Profile Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-8 w-8 rounded-full p-0">
-                <Avatar className="h-8 w-8">
-                  <AvatarImage src="/avatars/shadcn.jpg" alt="User" />
-                  <AvatarFallback className="rounded-lg">CN</AvatarFallback>
-                </Avatar>
+              <Button variant="ghost" className="relative h-10 w-10 text-left rounded-full p-0 flex items-center gap-2 lg:w-auto lg:px-2 lg:h-12 hover:bg-transparent">
+                <div className="relative">
+                  <Avatar className="h-9 w-9 border cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all">
+                    <AvatarImage src="/avatars/shadcn.jpg" alt="User" />
+                    <AvatarFallback className="rounded-lg bg-primary/10 text-primary">SA</AvatarFallback>
+                  </Avatar>
+                  <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-green-500 border-2 border-background"></span>
+                </div>
+                <div className="hidden flex-col items-start lg:flex">
+                  <span className="text-sm font-semibold">Shakil Ahmed</span>
+                  <span className="text-[10px] text-muted-foreground font-medium">System Admin</span>
+                </div>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56" align="end" forceMount>
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">shadcn</p>
+                  <p className="text-sm font-medium leading-none">Shakil Ahmed</p>
                   <p className="text-xs leading-none text-muted-foreground">
-                    m@example.com
+                    admin@hrhub.com
                   </p>
+                  <div className="mt-1">
+                    <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-green-500/15 text-green-700 dark:text-green-400">
+                      Active
+                    </span>
+                  </div>
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuGroup>
                 <DropdownMenuItem asChild>
-                  <Link href="/team">Profile</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  Billing
+                  <Link href="/profile" className="cursor-pointer">Profile</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link href="/data-process">Settings</Link>
+                  <Link href="/billing" className="cursor-pointer">Billing</Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/settings" className="cursor-pointer">Settings</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem className="cursor-pointer">
                   New Team
                 </DropdownMenuItem>
               </DropdownMenuGroup>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
+              <DropdownMenuItem className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-950/20">
                 Log out
               </DropdownMenuItem>
             </DropdownMenuContent>
