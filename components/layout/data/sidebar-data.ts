@@ -14,16 +14,23 @@ import {
     IconSettings,
     IconHelp,
     IconSearch,
-    IconDatabase,
-    IconFileWord,
-    IconShield,
-    IconUserMinus,
+    IconShirt,
+    IconTag,
+    IconClipboardList,
+    IconTruckDelivery,
+    IconCalendarStats,
+    IconScissors,
     IconBuildingFactory2,
     IconCalculator,
+    IconBook,
+    IconUserCircle,
+    IconStack,
     IconUsersGroup,
-    IconScissors,
+    IconUserMinus,
+    IconShield,
     IconPackages,
     IconBoxSeam,
+    IconPackageExport,
 } from "@tabler/icons-react"
 
 export const sidebarData = {
@@ -181,6 +188,17 @@ export const sidebarData = {
                         { title: "Profit & loss", url: "/production/profit-loss" },
                     ],
                 },
+                {
+                    title: "Expense",
+                    url: "#",
+                    icon: IconCash,
+                    items: [
+                        { title: "Summary", url: "/production/expense/summary" },
+                        { title: "Daily expense", url: "/production/expense/daily-expense" },
+                        { title: "Monthly expense", url: "/production/expense/monthly-expense" },
+                        { title: "Others expense", url: "/production/expense/others-expense" },
+                    ],
+                },
             ]
         },
         {
@@ -200,6 +218,7 @@ export const sidebarData = {
                         { title: "Daily Cash received", url: "/accounts/daily-cash-received" },
                         { title: "Daily expense", url: "/accounts/daily-expense" },
                         { title: "Monthly Report", url: "/accounts/monthly-report" },
+                        { title: "Fund Transfer", url: "/accounts/fund-transfer" },
                     ],
                 },
             ]
@@ -213,13 +232,39 @@ export const sidebarData = {
             ],
             navGroup: [
                 {
-                    title: "Operations",
+                    title: "Pre-Cutting",
+                    url: "#",
+                    icon: IconClipboardList,
+                    items: [
+                        { title: "Cutting Plans", url: "/cutting/plan" },
+                        { title: "Marker Management", url: "/cutting/markers" },
+                    ],
+                },
+                {
+                    title: "Fabric Floor",
+                    url: "#",
+                    icon: IconBoxSeam,
+                    items: [
+                        { title: "Fabric Rolls Input", url: "/cutting/fabric-rolls" },
+                        { title: "Spreading / Lay", url: "/cutting/spreading" },
+                    ],
+                },
+                {
+                    title: "Execution",
                     url: "#",
                     icon: IconScissors,
                     items: [
-                        { title: "Cutting List", url: "/cutting/cutting-list" },
-                        { title: "Fabric Rolls", url: "/cutting/fabric-rolls" },
-                        { title: "Bundle List", url: "/cutting/bundle-list" },
+                        { title: "Production Entry", url: "/cutting/production" },
+                        { title: "Bundle Management", url: "/cutting/bundling" },
+                        { title: "Issue to Sewing", url: "/cutting/issue" },
+                    ],
+                },
+                {
+                    title: "Analysis",
+                    url: "#",
+                    icon: IconChartBar,
+                    items: [
+                        { title: "Cutting Reports", url: "/cutting/reports" },
                     ],
                 },
             ]
@@ -237,9 +282,84 @@ export const sidebarData = {
                     url: "#",
                     icon: IconBoxSeam,
                     items: [
-                        { title: "Stock List", url: "/store/inventory" },
+                        { title: "Items Master", url: "/store/items" },
+                        { title: "GRN (Goods Receive)", url: "/store/grn" },
+                        { title: "Material Issue", url: "/store/issue" },
+                        { title: "Stock Ledger", url: "/store/ledger" },
+                    ],
+                },
+                {
+                    title: "Transactions",
+                    url: "#",
+                    icon: IconTruckDelivery,
+                    items: [
                         { title: "Material Receive", url: "/store/material-receive" },
-                        { title: "Material Issue", url: "/store/material-issue" },
+                        { title: "Material Issue Log", url: "/store/material-issue" },
+                    ],
+                },
+            ]
+        },
+        {
+            name: "Merchandising",
+            logo: IconShirt,
+            plan: "Module",
+            navMain: [
+                { title: "Dashboard", url: "/merchandising/dashboard", icon: IconDashboard },
+            ],
+            navGroup: [
+                {
+                    title: "Setup & CRM",
+                    url: "#",
+                    icon: IconUserCircle,
+                    items: [
+                        { title: "Buyers", url: "/merchandising/buyers" },
+                        { title: "Seasons & Brands", url: "/merchandising/setup/seasons" },
+                    ],
+                },
+                {
+                    title: "Development",
+                    url: "#",
+                    icon: IconScissors,
+                    items: [
+                        { title: "Style & Techpack", url: "/merchandising/styles" },
+                        { title: "Costing (FOB)", url: "/merchandising/costing" },
+                        { title: "Sample Tracking", url: "/merchandising/samples" },
+                    ],
+                },
+                {
+                    title: "Order Management",
+                    url: "#",
+                    icon: IconClipboardList,
+                    items: [
+                        { title: "Purchase Orders", url: "/merchandising/orders" },
+                        { title: "T&A Calendar", url: "/merchandising/ta-calendar" },
+                    ],
+                },
+                {
+                    title: "Supply Chain",
+                    url: "#",
+                    icon: IconStack,
+                    items: [
+                        { title: "Bookings (Fabric/Trims)", url: "/merchandising/bookings" },
+                        { title: "In-house Tracking", url: "/merchandising/inventory" },
+                    ],
+                },
+                {
+                    title: "Operations",
+                    url: "#",
+                    icon: IconBuildingFactory2,
+                    items: [
+                        { title: "Production Follow-up", url: "/merchandising/production" },
+                        { title: "Shipment Tracking", url: "/merchandising/shipment" },
+                    ],
+                },
+                {
+                    title: "Reports",
+                    url: "/merchandising/reports",
+                    icon: IconChartBar,
+                    items: [
+                        { title: "Order Analytics", url: "/merchandising/reports" },
+                        { title: "Export Docs", url: "/merchandising/shipment/docs" },
                     ],
                 },
             ]

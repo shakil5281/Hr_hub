@@ -95,12 +95,12 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs"
 import { toast } from "sonner"
+import { DataTableFacetedFilter } from "./data-table-faceted-filter"
 
 // --- Context ---
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const DataTableContext = React.createContext<{
-  onEditClick?: (row: any) => void;
-  onDelete?: (row: any) => void;
+  onEditClick?: (row: unknown) => void;
+  onDelete?: (row: unknown) => void;
 }>({})
 
 // --- Components ---
@@ -116,7 +116,7 @@ export function DragHandle({ id }: { id: string | number }) {
       {...listeners}
       variant="ghost"
       size="icon"
-      className="text-muted-foreground size-7 hover:bg-transparent"
+      className="text-muted-foreground size-7 hover:bg-transparent cursor-grab active:cursor-grabbing"
     >
       <IconGripVertical className="text-muted-foreground size-3" />
       <span className="sr-only">Drag to reorder</span>
@@ -155,26 +155,45 @@ export function DataTable<TData extends { id: string | number }>({
   showTabs = true,
   showActions = true,
   showColumnCustomizer = true,
+  enableSelection = false,
+  enableDrag = false,
   onAddClick,
   onEditClick,
   onDelete,
   onDeleteSelected,
   addLabel = "Add New",
   searchKey,
+  filterKey,
+  tabs,
+  filters,
 }: {
   data: TData[]
   columns: ColumnDef<TData>[]
   showTabs?: boolean
   showActions?: boolean
   showColumnCustomizer?: boolean
+  enableSelection?: boolean
+  enableDrag?: boolean
   onAddClick?: () => void
   onEditClick?: (row: TData) => void
   onDelete?: (row: TData) => void
   onDeleteSelected?: (selectedRows: TData[]) => void
   addLabel?: string
   searchKey?: string
+  filterKey?: string
+  tabs?: { value: string; label: string; count?: number }[]
+  filters?: {
+    columnId: string
+    title: string
+    options: { label: string; value: string; icon?: React.ComponentType<{ className?: string }> }[]
+  }[]
 }) {
   const [data, setData] = React.useState(() => initialData)
+  const [activeTab, setActiveTab] = React.useState("all")
+
+  React.useEffect(() => {
+    setData(initialData)
+  }, [initialData])
 
   const tableColumns = React.useMemo(() => {
     const hasSelection = columns.some(c => c.id === 'select');
@@ -183,20 +202,20 @@ export function DataTable<TData extends { id: string | number }>({
 
     const result = [...columns];
 
-    if (!hasActions) {
+    if (!hasActions && showActions) {
       result.push(getActionsColumn<TData>());
     }
 
     const base = getBaseColumns<TData>();
-    if (!hasSelection) {
+    if (!hasSelection && enableSelection) {
       result.unshift(base[1]);
     }
-    if (!hasDrag) {
+    if (!hasDrag && enableDrag) {
       result.unshift(base[0]);
     }
 
     return result;
-  }, [columns]);
+  }, [columns, showActions, enableSelection, enableDrag]);
 
   const [rowSelection, setRowSelection] = React.useState({})
   const [showBulkDeleteDialog, setShowBulkDeleteDialog] = React.useState(false)
@@ -244,6 +263,23 @@ export function DataTable<TData extends { id: string | number }>({
     getFacetedRowModel: getFacetedRowModel(),
     getFacetedUniqueValues: getFacetedUniqueValues(),
   })
+
+  const isFiltered = table.getState().columnFilters.length > 0
+
+
+  // Handle Tab Filtering
+  React.useEffect(() => {
+    if (!filterKey) return
+
+    const column = table.getColumn(filterKey)
+    if (!column) return
+
+    if (activeTab === "all") {
+      column.setFilterValue(undefined)
+    } else {
+      column.setFilterValue(activeTab)
+    }
+  }, [activeTab, filterKey, table])
 
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event
@@ -375,24 +411,52 @@ export function DataTable<TData extends { id: string | number }>({
   )
 
   return (
-    <DataTableContext.Provider value={{ onEditClick, onDelete }}>
-      <Tabs defaultValue="all" className="w-full flex flex-col gap-4">
+    <DataTableContext.Provider value={{
+      onEditClick: onEditClick as (row: unknown) => void,
+      onDelete: onDelete as (row: unknown) => void
+    }}>
+      <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab} className="w-full flex flex-col gap-4">
         <div className="flex items-center justify-between px-4 lg:px-6 gap-4">
           <div className="flex flex-1 items-center gap-2">
             {searchKey && (
               <Input
-                placeholder="Filter..."
+                placeholder="Search..."
                 value={(table.getColumn(searchKey)?.getFilterValue() as string) ?? ""}
                 onChange={(event) =>
                   table.getColumn(searchKey)?.setFilterValue(event.target.value)
                 }
-                className="max-w-sm h-8"
+                className="max-w-[240px] h-10 rounded-xl"
               />
             )}
+            {filters?.map((filter) => (
+              table.getColumn(filter.columnId) && (
+                <DataTableFacetedFilter
+                  key={filter.columnId}
+                  column={table.getColumn(filter.columnId)}
+                  title={filter.title}
+                  options={filter.options}
+                />
+              )
+            ))}
             {showTabs && (
-              <TabsList>
-                <TabsTrigger value="all">All Records</TabsTrigger>
+              <TabsList className="bg-muted/50 p-1 rounded-xl h-10">
+                <TabsTrigger value="all" className="rounded-lg px-4 h-8 text-xs font-semibold uppercase tracking-wider">All Matrix</TabsTrigger>
+                {tabs?.map((tab) => (
+                  <TabsTrigger key={tab.value} value={tab.value} className="rounded-lg px-4 h-8 text-xs font-semibold uppercase tracking-wider">
+                    {tab.label}
+                  </TabsTrigger>
+                ))}
               </TabsList>
+            )}
+            {isFiltered && (
+              <Button
+                variant="ghost"
+                onClick={() => table.resetColumnFilters()}
+                className="h-8 px-2 lg:px-3 text-rose-500 hover:text-rose-600 hover:bg-rose-50"
+              >
+                Reset
+                <IconTrash className="ml-2 h-4 w-4" />
+              </Button>
             )}
           </div>
           {showActions && (
@@ -429,7 +493,6 @@ export function DataTable<TData extends { id: string | number }>({
                   </AlertDialogContent>
                 </AlertDialog>
               )}
-              {/* Column visibility toggle removed as per request */}
               <Button size="sm" className="gap-2" onClick={onAddClick}>
                 <IconPlus className="size-4" />
                 <span>{addLabel}</span>
@@ -437,9 +500,11 @@ export function DataTable<TData extends { id: string | number }>({
             </div>
           )}
         </div>
-        <TabsContent value="all" className="m-0 border-0 p-0 shadow-none">
+
+        {/* Render the table only once */}
+        <div className="m-0 border-0 p-0 shadow-none">
           {tableContent}
-        </TabsContent>
+        </div>
       </Tabs>
     </DataTableContext.Provider>
   )
@@ -453,6 +518,8 @@ export function getBaseColumns<TData extends { id: string | number }>(): ColumnD
       id: "drag",
       header: () => null,
       cell: ({ row }) => <DragHandle id={row.original.id} />,
+      size: 40,
+      enableSorting: false,
     },
     {
       id: "select",
@@ -460,14 +527,18 @@ export function getBaseColumns<TData extends { id: string | number }>(): ColumnD
         <Checkbox
           checked={table.getIsAllPageRowsSelected()}
           onCheckedChange={v => table.toggleAllPageRowsSelected(!!v)}
+          className="translate-y-[2px]"
         />
       ),
       cell: ({ row }) => (
         <Checkbox
           checked={row.getIsSelected()}
           onCheckedChange={v => row.toggleSelected(!!v)}
+          className="translate-y-[2px]"
         />
       ),
+      size: 40,
+      enableSorting: false,
     },
   ]
 }
@@ -479,7 +550,7 @@ function RowActions({ row }: { row: Row<any> }) {
   const isMobile = useIsMobile()
   const { onEditClick, onDelete } = React.useContext(DataTableContext)
 
-  const details = Object.entries(row.original).filter(([k]) => k !== 'id')
+  const details = Object.entries(row.original as Record<string, unknown>).filter(([k]) => k !== 'id')
 
   return (
     <>
@@ -567,7 +638,7 @@ function RowActions({ row }: { row: Row<any> }) {
 export function getActionsColumn<TData extends { id: string | number }>(): ColumnDef<TData> {
   return {
     id: "actions",
-    header: () => <div className="text-right">Actions</div>,
+    header: () => <div className="text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground mr-2">Actions</div>,
     cell: ({ row }) => <RowActions row={row} />,
     size: 50,
   }

@@ -1,6 +1,6 @@
 "use client"
 
-import { IconBell, IconSearch, IconSettings } from "@tabler/icons-react"
+import { IconBell, IconSearch, IconSettings, IconAlertTriangle, IconCircleCheck, IconInfoCircle, IconUser, IconShield, IconKey, IconLifebuoy, IconMessage, IconCreditCard, IconUsers, IconKeyboard } from "@tabler/icons-react"
 
 import {
   Avatar,
@@ -15,6 +15,7 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
+  DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
@@ -27,8 +28,10 @@ import {
 } from "@/components/ui/popover"
 import { ModeToggle } from "@/components/mode-toggle"
 import Link from "next/link"
+import { useSearch } from "@/components/search-context"
 
 export function SiteHeader() {
+  const { setOpen } = useSearch()
   const notifications = [
     {
       id: 1,
@@ -36,6 +39,7 @@ export function SiteHeader() {
       description: "John Doe has requested 2 days of sick leave.",
       time: "5m ago",
       unread: true,
+      type: "alert"
     },
     {
       id: 2,
@@ -43,6 +47,7 @@ export function SiteHeader() {
       description: "January 2026 payroll has been successfully processed.",
       time: "2h ago",
       unread: false,
+      type: "success"
     },
     {
       id: 3,
@@ -50,6 +55,7 @@ export function SiteHeader() {
       description: "New features have been added to the dashboard.",
       time: "1d ago",
       unread: false,
+      type: "info"
     },
   ]
 
@@ -64,11 +70,18 @@ export function SiteHeader() {
 
         {/* Search Bar */}
         <div className="ml-4 flex flex-1 items-center max-w-md relative">
-          <IconSearch className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-          <Input
-            placeholder="Search documents..."
-            className="pl-9 bg-muted/50 focus-visible:bg-background transition-colors"
-          />
+          <Button
+            variant="outline"
+            className="relative h-9 w-full justify-start rounded-md bg-muted/50 text-sm font-normal text-muted-foreground shadow-none sm:pr-12 md:w-64 lg:w-80 hover:bg-muted/80 transition-colors"
+            onClick={() => setOpen(true)}
+          >
+            <IconSearch className="mr-2 h-4 w-4" />
+            <span className="hidden lg:inline-flex">Search documents...</span>
+            <span className="inline-flex lg:hidden">Search...</span>
+            <kbd className="pointer-events-none absolute right-[0.3rem] top-[0.3rem] hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
+              <span className="text-xs">⌘</span>K
+            </kbd>
+          </Button>
         </div>
 
         <div className="ml-auto flex items-center gap-2 lg:gap-4">
@@ -92,26 +105,36 @@ export function SiteHeader() {
                     Mark all as read
                   </Button>
                 </div>
-                <div className="max-h-[300px] overflow-y-auto">
+                <div className="max-h-[350px] overflow-y-auto">
                   {notifications.map((notif) => (
                     <div
                       key={notif.id}
-                      className={`flex flex-col gap-1 p-4 border-b last:border-0 hover:bg-muted/50 transition-colors cursor-pointer ${notif.unread ? "bg-primary/5" : ""
+                      className={`flex gap-3 p-4 border-b last:border-0 hover:bg-muted/50 transition-colors cursor-pointer ${notif.unread ? "bg-primary/5" : ""
                         }`}
                     >
-                      <div className="flex justify-between items-start gap-2">
-                        <span className="font-medium text-sm">{notif.title}</span>
-                        <span className="text-[10px] text-muted-foreground whitespace-nowrap">{notif.time}</span>
+                      <div className={`mt-0.5 h-8 w-8 shrink-0 rounded-full flex items-center justify-center border ${notif.type === 'alert' ? 'bg-amber-100 text-amber-600 border-amber-200' :
+                        notif.type === 'success' ? 'bg-emerald-100 text-emerald-600 border-emerald-200' :
+                          'bg-blue-100 text-blue-600 border-blue-200'
+                        }`}>
+                        {notif.type === 'alert' ? <IconAlertTriangle className="size-4" /> :
+                          notif.type === 'success' ? <IconCircleCheck className="size-4" /> :
+                            <IconInfoCircle className="size-4" />}
                       </div>
-                      <p className="text-xs text-muted-foreground line-clamp-2">{notif.description}</p>
+                      <div className="flex flex-col gap-1 overflow-hidden">
+                        <div className="flex justify-between items-start gap-2">
+                          <span className="font-semibold text-sm truncate">{notif.title}</span>
+                          <span className="text-[10px] text-muted-foreground whitespace-nowrap">{notif.time}</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground line-clamp-2">{notif.description}</p>
+                      </div>
                     </div>
                   ))}
                 </div>
-                <div className="p-2 border-t">
+                <Link href="/notifications" className="block p-2 border-t">
                   <Button variant="ghost" className="w-full text-xs h-8">
                     View all notifications
                   </Button>
-                </div>
+                </Link>
               </PopoverContent>
             </Popover>
 
@@ -121,28 +144,74 @@ export function SiteHeader() {
             {/* Settings Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="size-9">
-                  <IconSettings className="size-5" />
+                <Button variant="ghost" size="icon" className="size-9 data-[state=open]:bg-accent data-[state=open]:text-accent-foreground">
+                  <IconSettings className="size-5 transition-all duration-300 ease-in-out data-[state=open]:rotate-90" />
                   <span className="sr-only">Settings</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56" align="end">
-                <DropdownMenuLabel>System Settings</DropdownMenuLabel>
+                <DropdownMenuLabel>My Account</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuGroup>
-                  <DropdownMenuItem>
-                    Appearance
-                    <span className="ml-auto text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Alt+A</span>
+                  <DropdownMenuItem asChild>
+                    <Link href="/profile">
+                      <IconUser className="mr-2 h-4 w-4" />
+                      <span>Profile</span>
+                      <DropdownMenuShortcut>⇧⌘P</DropdownMenuShortcut>
+                    </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    Language
-                    <span className="ml-auto text-[10px] text-muted-foreground">English</span>
+                  <DropdownMenuItem asChild>
+                    <Link href="/billing">
+                      <IconCreditCard className="mr-2 h-4 w-4" />
+                      <span>Billing</span>
+                      <DropdownMenuShortcut>⌘B</DropdownMenuShortcut>
+                    </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem>Permissions</DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/settings/team">
+                      <IconUsers className="mr-2 h-4 w-4" />
+                      <span>Team</span>
+                    </Link>
+                  </DropdownMenuItem>
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>API Keys</DropdownMenuItem>
-                <DropdownMenuItem>Audit Logs</DropdownMenuItem>
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">System</DropdownMenuLabel>
+                  <DropdownMenuItem asChild>
+                    <Link href="/settings/permissions">
+                      <IconShield className="mr-2 h-4 w-4" />
+                      <span>Permissions</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/settings/api">
+                      <IconKey className="mr-2 h-4 w-4" />
+                      <span>API Keys</span>
+                    </Link>
+                  </DropdownMenuItem>
+                </DropdownMenuGroup>
+                <DropdownMenuSeparator />
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Support</DropdownMenuLabel>
+                  <DropdownMenuItem asChild>
+                    <Link href="/help">
+                      <IconLifebuoy className="mr-2 h-4 w-4" />
+                      <span>Help Center</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/contact">
+                      <IconMessage className="mr-2 h-4 w-4" />
+                      <span>Contact Support</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/keyboard-shortcuts">
+                      <IconKeyboard className="mr-2 h-4 w-4" />
+                      <span>Keyboard Shortcuts</span>
+                    </Link>
+                  </DropdownMenuItem>
+                </DropdownMenuGroup>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
