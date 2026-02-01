@@ -58,7 +58,7 @@ const itemsList = [
 ]
 
 interface IssueFormProps {
-    onSubmit: (values: any) => void
+    onSubmit: (values: z.infer<typeof formSchema>) => void
     onCancel: () => void
 }
 

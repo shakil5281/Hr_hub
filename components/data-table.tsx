@@ -166,6 +166,7 @@ export function DataTable<TData extends { id: string | number }>({
   filterKey,
   tabs,
   filters,
+  isLoading = false,
 }: {
   data: TData[]
   columns: ColumnDef<TData>[]
@@ -187,6 +188,7 @@ export function DataTable<TData extends { id: string | number }>({
     title: string
     options: { label: string; value: string; icon?: React.ComponentType<{ className?: string }> }[]
   }[]
+  isLoading?: boolean
 }) {
   const [data, setData] = React.useState(() => initialData)
   const [activeTab, setActiveTab] = React.useState("all")
@@ -322,7 +324,17 @@ export function DataTable<TData extends { id: string | number }>({
               ))}
             </TableHeader>
             <TableBody className="**:data-[slot=table-cell]:first:w-8">
-              {table.getRowModel().rows?.length ? (
+              {isLoading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={i} className="hover:bg-transparent border-none">
+                    {tableColumns.map((col, j) => (
+                      <TableCell key={j} className="py-4">
+                        <div className="h-4 w-full bg-muted animate-pulse rounded-md" />
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : table.getRowModel().rows?.length ? (
                 <SortableContext
                   items={dataIds}
                   strategy={verticalListSortingStrategy}
@@ -584,7 +596,7 @@ function RowActions({ row }: { row: Row<any> }) {
                   <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                     {key.replace(/([A-Z])/g, ' $1').trim()}
                   </p>
-                  <div className="text-sm font-medium p-3 bg-muted/40 rounded-lg border border-border/50 break-words">
+                  <div className="text-sm font-medium p-3 bg-muted/40 rounded-lg border border-border/50 wrap-break-word">
                     {typeof value === 'object' ? JSON.stringify(value) : String(value)}
                   </div>
                 </div>

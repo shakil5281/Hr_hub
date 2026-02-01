@@ -44,6 +44,7 @@ export const sidebarData = {
             name: "Management",
             logo: IconUsersGroup,
             plan: "Module",
+            roles: ["SuperAdmin", "Admin", "HR", "Management", "IT Officer", "HR Officer"],
             navMain: [
                 { title: "Dashboard", url: "/", icon: IconDashboard },
                 { title: "Lifecycle", url: "/management/lifecycle", icon: IconListDetails },
@@ -64,6 +65,7 @@ export const sidebarData = {
                     title: "Human Resource",
                     url: "#",
                     icon: IconUsers,
+                    roles: ["SuperAdmin", "Admin", "HR", "Management", "HR Officer"],
                     items: [
                         { title: "Employee info", url: "/management/human-resource/employee-info" },
                         { title: "Manpower List", url: "/management/human-resource/manpower-list" },
@@ -77,6 +79,7 @@ export const sidebarData = {
                     title: "Transactions",
                     url: "#",
                     icon: IconUserMinus,
+                    roles: ["SuperAdmin", "Admin", "HR", "Management", "HR Officer"],
                     items: [
                         { title: "Separation", url: "/management/transactions/separation" },
                     ],
@@ -85,6 +88,7 @@ export const sidebarData = {
                     title: "Attendance",
                     url: "/management/attendance",
                     icon: IconFingerprint,
+                    roles: ["SuperAdmin", "Admin", "HR", "Management", "HR Officer"],
                     items: [
                         { title: "Daily Input", url: "/management/attendance/daily-input" },
                         { title: "Daily Summary", url: "/management/attendance/daily-summary" },
@@ -104,6 +108,7 @@ export const sidebarData = {
                     title: "Payroll",
                     url: "/management/payroll",
                     icon: IconCash,
+                    roles: ["SuperAdmin", "Admin", "HR", "Management"], // HR Officer excluded from Payroll
                     items: [
                         { title: "Salary Process", url: "/management/payroll/salary-process" },
                         { title: "Salary Sheet", url: "/management/payroll/salary-sheet" },
@@ -119,6 +124,7 @@ export const sidebarData = {
                     title: "Leave",
                     url: "/management/leave",
                     icon: IconCalendarEvent,
+                    roles: ["SuperAdmin", "Admin", "HR", "Management", "HR Officer"],
                     items: [
                         { title: "Leave Management", url: "/management/leave" },
                         { title: "Leave Details", url: "/management/leave/details" },
@@ -159,6 +165,7 @@ export const sidebarData = {
                     title: "Administrator",
                     url: "/management/administrator",
                     icon: IconShield,
+                    roles: ["SuperAdmin", "Admin"],
                     items: [
                         { title: "Users", url: "/management/administrator/users" },
                         { title: "Permissions", url: "/management/administrator/permissions" },
@@ -171,6 +178,7 @@ export const sidebarData = {
             name: "Production",
             logo: IconBuildingFactory2,
             plan: "Module",
+            roles: ["SuperAdmin", "Admin", "Production", "ProductionManager"],
             navMain: [
                 { title: "Dashboard", url: "/production/dashboard", icon: IconDashboard },
             ],
@@ -205,6 +213,7 @@ export const sidebarData = {
             name: "Accounts",
             logo: IconCalculator,
             plan: "Module",
+            roles: ["SuperAdmin", "Admin", "Accounts", "Accountant", "Account Officer"],
             navMain: [
                 { title: "Dashboard", url: "/accounts/dashboard", icon: IconDashboard },
             ],
@@ -227,6 +236,7 @@ export const sidebarData = {
             name: "Cutting",
             logo: IconScissors,
             plan: "Module",
+            roles: ["SuperAdmin", "Admin", "Cutting"],
             navMain: [
                 { title: "Dashboard", url: "/cutting/dashboard", icon: IconDashboard },
             ],
@@ -273,6 +283,7 @@ export const sidebarData = {
             name: "Store",
             logo: IconPackages,
             plan: "Module",
+            roles: ["SuperAdmin", "Admin", "Store", "StoreKeeper"],
             navMain: [
                 { title: "Dashboard", url: "/store/dashboard", icon: IconDashboard },
             ],
@@ -303,6 +314,7 @@ export const sidebarData = {
             name: "Merchandising",
             logo: IconShirt,
             plan: "Module",
+            roles: ["SuperAdmin", "Admin", "Merchandising", "Merchandiser"],
             navMain: [
                 { title: "Dashboard", url: "/merchandising/dashboard", icon: IconDashboard },
             ],

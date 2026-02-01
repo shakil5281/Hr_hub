@@ -274,7 +274,14 @@ export default function DailyExpensePage() {
                     </SheetHeader>
                     <div className="mt-6">
                         <DailyExpenseForm
-                            initialData={selectedItem}
+                            initialData={selectedItem ? {
+                                date: new Date(selectedItem.date),
+                                category: selectedItem.category,
+                                description: selectedItem.description,
+                                amount: selectedItem.amount,
+                                paidBy: selectedItem.paidBy,
+                                status: selectedItem.status
+                            } : undefined}
                             onSubmit={handleFormSubmit}
                             onCancel={() => setIsSheetOpen(false)}
                         />

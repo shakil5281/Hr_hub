@@ -39,7 +39,7 @@ const formSchema = z.object({
 })
 
 interface OthersExpenseFormProps {
-    initialData?: any
+    initialData?: z.infer<typeof formSchema>
     onSubmit: (values: z.infer<typeof formSchema>) => void
     onCancel: () => void
 }

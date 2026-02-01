@@ -157,7 +157,7 @@ export default function ItemsMasterPage() {
                     </SheetHeader>
                     <div className="mt-6">
                         <ItemForm
-                            initialData={selectedItem}
+                            initialData={selectedItem || undefined}
                             onSubmit={handleFormSubmit}
                             onCancel={() => setIsSheetOpen(false)}
                         />

@@ -25,13 +25,34 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { sidebarData } from "./data/sidebar-data"
 
+import { useAuth } from "@/components/providers/auth-provider"
+
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname()
   const router = useRouter()
+  const { hasAnyRole, user, loading } = useAuth()
+
+  // Filter modules based on user roles
+  const accessibleModules = React.useMemo(() => {
+    // Don't show any modules if still loading or no user data
+    if (loading || !user || !user.roles || user.roles.length === 0) {
+      return []
+    }
+
+    return sidebarData.modules.filter(module => {
+      // @ts-ignore - roles property added dynamically or missing in type def
+      const requiredRoles = module.roles as string[] | undefined
+      if (!requiredRoles || requiredRoles.length === 0) return true
+      return hasAnyRole(requiredRoles)
+    })
+  }, [hasAnyRole, user, loading])
 
   // Find the initial active module based on the current URL
   const initialModule = React.useMemo(() => {
-    const foundModule = sidebarData.modules.find(module => {
+    // If no modules accessible yet, return first from safely or empty
+    const modulesToSearch = accessibleModules.length > 0 ? accessibleModules : sidebarData.modules
+
+    const foundModule = modulesToSearch.find(module => {
       // Check navMain
       const inNavMain = module.navMain.some(item => pathname === item.url || (item.url !== "/" && pathname.startsWith(item.url)))
       if (inNavMain) return true
@@ -42,8 +63,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       )
       return inNavGroup
     })
-    return foundModule || sidebarData.modules[0]
-  }, [pathname])
+    return foundModule || modulesToSearch[0]
+  }, [pathname, accessibleModules])
 
   const [activeModule, setActiveModule] = React.useState(initialModule)
   const [searchQuery, setSearchQuery] = React.useState("")
@@ -51,7 +72,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   // Update active module ONLY when pathname changes
   React.useEffect(() => {
-    const currentPathModule = sidebarData.modules.find(module => {
+    const modulesToSearch = accessibleModules.length > 0 ? accessibleModules : sidebarData.modules
+
+    const currentPathModule = modulesToSearch.find(module => {
       // Check navMain
       const inNavMain = module.navMain.some(item =>
         pathname === item.url || (item.url !== "/" && pathname.startsWith(item.url + "/"))
@@ -70,11 +93,19 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     if (currentPathModule) {
       setActiveModule(currentPathModule)
     }
-  }, [pathname])
+  }, [pathname, accessibleModules])
 
   const filterNavGroup = (items: any[]) => {
-    if (!searchQuery) return items
-    return items
+    // 1. Filter by Roles first
+    const roleFilteredItems = items.filter(item => {
+      const requiredRoles = item.roles as string[] | undefined
+      if (!requiredRoles || requiredRoles.length === 0) return true
+      return hasAnyRole(requiredRoles)
+    })
+
+    if (!searchQuery) return roleFilteredItems
+
+    return roleFilteredItems
       .map((item) => {
         const matchesTitle = item.title.toLowerCase().includes(searchQuery.toLowerCase())
         let filteredChildren: any[] = []
@@ -103,61 +134,82 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     return items.filter((item: any) => item.title.toLowerCase().includes(searchQuery.toLowerCase()))
   }
 
-  const filteredNavMain = filterNavItems(activeModule.navMain)
-  const filteredNavGroup = filterNavGroup(activeModule.navGroup)
+  const filteredNavMain = activeModule ? filterNavItems(activeModule.navMain) : []
+  const filteredNavGroup = activeModule ? filterNavGroup(activeModule.navGroup) : []
   const filteredNavSecondary = filterNavItems(sidebarData.navSecondary)
+
+  // Show empty sidebar while loading or if no modules accessible
+  if (loading || !user || !user.roles || accessibleModules.length === 0 || !activeModule) {
+    return <Sidebar {...props} />
+  }
 
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <SidebarMenuButton
-                  size="lg"
-                  className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-                >
-                  <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                    <activeModule.logo className="size-4" />
-                  </div>
-                  <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-semibold">
-                      {activeModule.name}
-                    </span>
-                    <span className="truncate text-xs">{activeModule.plan}</span>
-                  </div>
-                  <IconSelector className="ml-auto" />
-                </SidebarMenuButton>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
-                align="start"
-                side={isMobile ? "bottom" : "right"}
-                sideOffset={4}
-              >
-                <DropdownMenuLabel className="text-xs text-muted-foreground">
-                  Modules
-                </DropdownMenuLabel>
-                {sidebarData.modules.map((module) => (
-                  <DropdownMenuItem
-                    key={module.name}
-                    onClick={() => {
-                      setActiveModule(module)
-                      if (module.navMain?.[0]?.url) {
-                        router.push(module.navMain[0].url)
-                      }
-                    }}
-                    className="gap-2 p-2"
+            {/* Show module switcher only if user has access to multiple modules */}
+            {accessibleModules.length > 1 ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <SidebarMenuButton
+                    size="lg"
+                    className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
                   >
-                    <div className="flex size-6 items-center justify-center rounded-sm border">
-                      <module.logo className="size-4 shrink-0" />
+                    <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                      <activeModule.logo className="size-4" />
                     </div>
-                    {module.name}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
+                    <div className="grid flex-1 text-left text-sm leading-tight">
+                      <span className="truncate font-semibold">
+                        {activeModule.name}
+                      </span>
+                      <span className="truncate text-xs">{activeModule.plan}</span>
+                    </div>
+                    <IconSelector className="ml-auto" />
+                  </SidebarMenuButton>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
+                  align="start"
+                  side={isMobile ? "bottom" : "right"}
+                  sideOffset={4}
+                >
+                  <DropdownMenuLabel className="text-xs text-muted-foreground">
+                    Modules
+                  </DropdownMenuLabel>
+                  {accessibleModules.map((module) => (
+                    <DropdownMenuItem
+                      key={module.name}
+                      onClick={() => {
+                        setActiveModule(module)
+                        if (module.navMain?.[0]?.url) {
+                          router.push(module.navMain[0].url)
+                        }
+                      }}
+                      className="gap-2 p-2"
+                    >
+                      <div className="flex size-6 items-center justify-center rounded-sm border">
+                        <module.logo className="size-4 shrink-0" />
+                      </div>
+                      {module.name}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              /* Single module - just show the title without dropdown */
+              <SidebarMenuButton size="lg" className="cursor-default hover:bg-transparent">
+                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                  <activeModule.logo className="size-4" />
+                </div>
+                <div className="grid flex-1 text-left text-sm leading-tight">
+                  <span className="truncate font-semibold">
+                    {activeModule.name}
+                  </span>
+                  <span className="truncate text-xs">{activeModule.plan}</span>
+                </div>
+              </SidebarMenuButton>
+            )}
           </SidebarMenuItem>
           <SidebarMenuItem className="px-2 py-1">
             <div className="relative">

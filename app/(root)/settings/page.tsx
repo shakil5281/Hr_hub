@@ -40,6 +40,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { useTheme } from "next-themes"
 import { cn } from "@/lib/utils"
+import { authService, User } from "@/lib/services/auth"
+import { useRouter } from "next/navigation"
 
 const SETTINGS_GROUPS = [
     {
@@ -72,13 +74,76 @@ export default function SettingsPage() {
     const [isLoading, setIsLoading] = React.useState(false)
     const [activeTab, setActiveTab] = React.useState("profile")
     const { setTheme, theme } = useTheme()
+    const router = useRouter() // Hook for navigation if needed
 
-    const onSave = async (section: string) => {
+    // Profile State
+    const [currentUser, setCurrentUser] = React.useState<User | null>(null)
+    const [fullName, setFullName] = React.useState("")
+    const [email, setEmail] = React.useState("")
+    const [isEmailEditable, setIsEmailEditable] = React.useState(false)
+
+    React.useEffect(() => {
+        const loadUser = async () => {
+            try {
+                const profile = await authService.getProfile();
+                if (profile) {
+                    setCurrentUser(profile);
+                    setFullName(profile.fullName || "");
+                    setEmail(profile.email || "");
+                    // Update local storage to ensure header is in sync if name changed elsewhere
+                    localStorage.setItem('user', JSON.stringify({
+                        username: profile.username,
+                        fullName: profile.fullName
+                    }));
+                }
+            } catch (error) {
+                // Fallback to local storage if API fails
+                const storedUser = authService.getCurrentUser();
+                if (storedUser) {
+                    setCurrentUser(storedUser);
+                    setFullName(storedUser.fullName || "");
+                }
+            }
+        }
+        loadUser()
+    }, [])
+
+
+    const handleUpdateProfile = async () => {
         setIsLoading(true)
-        await new Promise(resolve => setTimeout(resolve, 1000))
-        setIsLoading(false)
-        toast.success(`${section} settings updated successfully`)
+        try {
+            // We use the new profile update endpoint
+            const result = await authService.updateProfile({
+                fullName,
+                email: email
+            })
+
+            if (result.success) {
+                toast.success("Profile updated successfully")
+                // Update state and local storage
+                const updatedUser = { ...currentUser, fullName, email } as User
+                setCurrentUser(updatedUser)
+                localStorage.setItem('user', JSON.stringify({
+                    username: updatedUser.username,
+                    fullName: fullName
+                }))
+                setIsEmailEditable(false)
+            } else {
+                toast.error(result.message || "Failed to update profile")
+            }
+
+        } catch (error) {
+            toast.error("An error occurred while updating profile")
+        } finally {
+            setIsLoading(false)
+        }
     }
+
+    // Initials for avatar
+    const initials = fullName
+        ? fullName.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
+        : "US"
+
 
     return (
         <div className="flex flex-col min-h-screen bg-background/50">
@@ -145,7 +210,7 @@ export default function SettingsPage() {
                                         <div className="relative group">
                                             <Avatar className="size-32 border-[6px] border-background shadow-2xl transition-transform group-hover:scale-105">
                                                 <AvatarImage src="/avatars/shadcn.jpg" />
-                                                <AvatarFallback className="text-3xl font-bold bg-primary/10 text-primary">SA</AvatarFallback>
+                                                <AvatarFallback className="text-3xl font-bold bg-primary/10 text-primary">{initials}</AvatarFallback>
                                             </Avatar>
                                             <div className="absolute -bottom-2 -right-2 bg-primary text-primary-foreground size-8 rounded-full flex items-center justify-center border-4 border-background shadow-lg scale-0 group-hover:scale-100 transition-transform">
                                                 <IconPalette className="size-3" />
@@ -166,7 +231,13 @@ export default function SettingsPage() {
                                     <div className="grid gap-6">
                                         <div className="grid gap-2">
                                             <Label htmlFor="fullname">Full Name</Label>
-                                            <Input id="fullname" placeholder="John Doe" defaultValue="Shakil Ahmed" className="h-11" />
+                                            <Input
+                                                id="fullname"
+                                                placeholder="John Doe"
+                                                value={fullName}
+                                                onChange={(e) => setFullName(e.target.value)}
+                                                className="h-11"
+                                            />
                                         </div>
                                         <div className="grid gap-2">
                                             <Label htmlFor="bio">Professional Bio</Label>
@@ -178,15 +249,33 @@ export default function SettingsPage() {
                                             <p className="text-[10px] text-muted-foreground italic">Markdown is supported for bios.</p>
                                         </div>
                                         <div className="grid gap-2 text-sm">
-                                            <Label>Public Email</Label>
-                                            <div className="flex items-center gap-2 text-muted-foreground italic bg-muted/40 p-3 rounded-md border border-dashed">
-                                                <IconMail className="size-4" />
-                                                admin@hrhub.com (Same as login)
-                                                <Button variant="link" size="sm" className="h-auto p-0 ml-auto">Change</Button>
+                                            <Label>Contact Email</Label>
+                                            <div className="flex items-center gap-2 p-1 rounded-md border border-dashed hover:border-solid hover:border-primary/50 transition-colors">
+                                                <div className="p-2 bg-muted/50 rounded-md">
+                                                    <IconMail className="size-4 text-muted-foreground" />
+                                                </div>
+                                                {isEmailEditable ? (
+                                                    <Input
+                                                        value={email}
+                                                        onChange={(e) => setEmail(e.target.value)}
+                                                        className="border-none shadow-none focus-visible:ring-0 h-auto p-0 px-2"
+                                                        placeholder="admin@hrhub.com"
+                                                    />
+                                                ) : (
+                                                    <span className="flex-1 px-2 text-muted-foreground font-medium">{email || "admin@hrhub.com"}</span>
+                                                )}
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="h-8 w-8 p-0 ml-auto mr-1"
+                                                    onClick={() => setIsEmailEditable(!isEmailEditable)}
+                                                >
+                                                    {isEmailEditable ? <IconCheck className="size-4 text-green-500" /> : <span className="text-xs text-primary font-bold">Edit</span>}
+                                                </Button>
                                             </div>
                                         </div>
                                     </div>
-                                    <Button onClick={() => onSave("Profile")} disabled={isLoading} className="w-full sm:w-auto min-w-[140px]">
+                                    <Button onClick={() => handleUpdateProfile()} disabled={isLoading} className="w-full sm:w-auto min-w-[140px]">
                                         {isLoading && <span className="mr-2 animate-spin">⏳</span>}
                                         Save Changes
                                     </Button>
@@ -257,7 +346,7 @@ export default function SettingsPage() {
                                         </div>
                                     </CardContent>
                                     <CardFooter className="border-t bg-muted/20">
-                                        <Button onClick={() => onSave("Password")} size="sm">Update Securely</Button>
+                                        <Button size="sm">Update Securely</Button>
                                     </CardFooter>
                                 </Card>
 

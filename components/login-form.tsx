@@ -7,10 +7,19 @@ import { loginSchema, type LoginInput } from "@/lib/schemas"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form"
 import { IconLoader2 } from "@tabler/icons-react"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
+import { useAuth } from "@/components/providers/auth-provider"
+import { getRedirectUrlForUser } from "@/lib/role-redirect"
 
 export function LoginForm({
   className,
@@ -18,82 +27,113 @@ export function LoginForm({
 }: React.ComponentProps<"div">) {
   const [isLoading, setIsLoading] = React.useState(false)
   const router = useRouter()
+  const { login } = useAuth()
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<LoginInput>({
+  const form = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
+    defaultValues: {
+      username: "",
+      password: "",
+    },
   })
 
   const onSubmit = async (data: LoginInput) => {
     setIsLoading(true)
-    console.log("Login data:", data)
+    try {
+      // Use auth provider's login which handles loading state
+      const response = await login(data)
+      if (response.success) {
+        toast.success("Welcome back!", {
+          description: response.message || "You have successfully logged in.",
+        })
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500))
+        // Get redirect URL based on user roles
+        const redirectUrl = getRedirectUrlForUser(response.roles || [])
 
-    setIsLoading(false)
-    toast.success("Welcome back!", {
-      description: "You have successfully logged in.",
-    })
-    router.push("/")
+        // Router push will happen after full-screen loading completes
+        router.push(redirectUrl)
+      } else {
+        toast.error("Login failed", {
+          description: response.message || "Invalid username or password.",
+        })
+        setIsLoading(false)
+      }
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error && 'response' in error
+        ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
+        : "Invalid username or password.";
+      toast.error("Login failed", {
+        description: errorMessage || "Invalid username or password.",
+      })
+      setIsLoading(false)
+    }
   }
 
   return (
     <div className={cn("grid gap-6", className)} {...props}>
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <div className="grid gap-6">
+      <Form {...form}>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            form.handleSubmit(onSubmit)(e);
+          }}
+          className="space-y-6"
+        >
           <div className="flex flex-col gap-2 text-center">
-            <h1 className="text-2xl font-bold tracking-tight">Welcome back</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Welcome back</h1>
             <p className="text-balance text-sm text-muted-foreground">
-              Enter your email below to login to your account
+              Enter your credentials below to access your account
             </p>
           </div>
-          <div className="grid gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="m@example.com"
-                className={cn("h-12", errors.email && "border-destructive focus-visible:ring-destructive")}
-                {...register("email")}
-                disabled={isLoading}
-              />
-              {errors.email && (
-                <p className="text-[0.8rem] font-medium text-destructive">
-                  {errors.email.message}
-                </p>
-              )}
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
 
-                id="password"
-                type="password"
-                className={cn("h-12", errors.password && "border-destructive focus-visible:ring-destructive")}
-                {...register("password")}
-                disabled={isLoading}
-              />
-              {errors.password && (
-                <p className="text-[0.8rem] font-medium text-destructive">
-                  {errors.password.message}
-                </p>
+          <div className="grid gap-4">
+            <FormField
+              control={form.control}
+              name="username"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Username</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="johndoe"
+                      className="h-12"
+                      {...field}
+                      disabled={isLoading}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )}
-            </div>
-            <Button type="submit" size="lg" className="w-full" disabled={isLoading}>
+            />
+
+            <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Password</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="password"
+                      className="h-12"
+                      {...field}
+                      disabled={isLoading}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <Button type="submit" size="lg" className="w-full mt-2" disabled={isLoading}>
               {isLoading ? (
-                <IconLoader2 className="mr-2 h-4 w-4 animate-spin" />
+                <IconLoader2 className="mr-2 h-5 w-5 animate-spin" />
               ) : null}
-              Login
+              {isLoading ? "Signing in..." : "Login"}
             </Button>
           </div>
-
-        </div>
-      </form>
+        </form>
+      </Form>
     </div>
   )
 }

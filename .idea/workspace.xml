@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="3d340032-978f-44da-b219-58c896b1a5e3" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/app/(root)/accounts/fund-transfer/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(root)/accounts/fund-transfer/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/(root)/layout.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(root)/layout.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/(root)/management/administrator/permissions/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(root)/management/administrator/permissions/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/(root)/management/administrator/users/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(root)/management/administrator/users/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/(root)/management/attendance/job-card/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(root)/management/attendance/job-card/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/(root)/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(root)/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/(root)/production/expense/daily-expense/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(root)/production/expense/daily-expense/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/(root)/production/expense/monthly-expense/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(root)/production/expense/monthly-expense/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/(root)/production/expense/others-expense/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(root)/production/expense/others-expense/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/(root)/settings/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(root)/settings/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/(root)/store/items/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/(root)/store/items/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/layout.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/app/layout.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/components/data-table.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/components/data-table.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/components/layout/app-sidebar.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/components/layout/app-sidebar.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/components/layout/data/sidebar-data.ts" beforeDir="false" afterPath="$PROJECT_DIR$/components/layout/data/sidebar-data.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/components/layout/site-header.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/components/layout/site-header.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/components/login-form.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/components/login-form.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/components/production/expense/daily-expense-form.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/components/production/expense/daily-expense-form.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/components/production/expense/monthly-expense-form.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/components/production/expense/monthly-expense-form.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/components/production/expense/others-expense-form.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/components/production/expense/others-expense-form.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/components/store/grn-form.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/components/store/grn-form.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/components/store/issue-form.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/components/store/issue-form.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/components/store/item-form.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/components/store/item-form.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/schemas.ts" beforeDir="false" afterPath="$PROJECT_DIR$/lib/schemas.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/yarn.lock" beforeDir="false" afterPath="$PROJECT_DIR$/yarn.lock" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="EmbeddingIndexingInfo">
+    <option name="cachedIndexableFilesCount" value="242" />
+    <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="McpProjectServerCommands">
+    <commands />
+    <urls />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 7
+}</component>
+  <component name="ProjectId" id="390JHny1u0lFvnMm8vLaM0VQFnF" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ASKED_SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.MCP Project settings loaded": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
+    "git-widget-placeholder": "master",
+    "ignore.virus.scanning.warn.message": "true",
+    "javascript.preferred.runtime.type.id": "node",
+    "js.debugger.nextJs.config.created.client": "true",
+    "js.debugger.nextJs.config.created.server": "true",
+    "junie.onboarding.icon.badge.shown": "true",
+    "last_opened_file_path": "F:/softwer/hrhub/fontend",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "yarn",
+    "npm.Next.js: server-side.executor": "Run",
+    "settings.editor.selected.configurable": "preferences.lookFeel",
+    "to.speed.mode.migration.done": "true",
+    "ts.external.directory.path": "F:\\softwer\\hrhub\\fontend\\node_modules\\typescript\\lib",
+    "vue.rearranger.settings.migration": "true"
+  }
+}]]></component>
+  <component name="RunManager" selected="npm.Next.js: server-side">
+    <configuration name="Next.js: debug client-side" type="JavascriptDebugType" uri="http://localhost:3000/">
+      <method v="2" />
+    </configuration>
+    <configuration name="Next.js: server-side" type="js.build_tools.npm">
+      <package-json value="$PROJECT_DIR$/package.json" />
+      <command value="run" />
+      <scripts>
+        <script value="dev" />
+      </scripts>
+      <node-interpreter value="project" />
+      <envs />
+      <method v="2" />
+    </configuration>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-js-predefined-d6986cc7102b-9b0f141eb926-JavaScript-WS-253.30387.83" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="3d340032-978f-44da-b219-58c896b1a5e3" name="Changes" comment="" />
+      <created>1769826969458</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1769826969458</updated>
+      <workItem from="1769826970728" duration="187000" />
+      <workItem from="1769827203950" duration="323000" />
+      <workItem from="1769827681407" duration="621000" />
+      <workItem from="1769828830262" duration="840000" />
+      <workItem from="1769833211615" duration="365000" />
+      <workItem from="1769838012618" duration="822000" />
+      <workItem from="1769918985455" duration="1325000" />
+      <workItem from="1769920400955" duration="5140000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+</project>

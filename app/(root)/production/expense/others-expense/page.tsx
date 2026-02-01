@@ -236,7 +236,14 @@ export default function OthersExpensePage() {
                     </SheetHeader>
                     <div className="mt-6">
                         <OthersExpenseForm
-                            initialData={selectedItem}
+                            initialData={selectedItem ? {
+                                date: new Date(selectedItem.date),
+                                title: selectedItem.title,
+                                category: selectedItem.category,
+                                amount: selectedItem.amount,
+                                requestBy: selectedItem.requestBy,
+                                status: selectedItem.status
+                            } : undefined}
                             onSubmit={handleFormSubmit}
                             onCancel={() => setIsSheetOpen(false)}
                         />

@@ -92,7 +92,7 @@ export default function Page() {
                 <IconLayoutDashboard className="size-6 text-primary-foreground" />
               </div>
               <div>
-                <h1 className="text-2xl font-black tracking-tight bg-gradient-to-r from-foreground to-foreground/60 bg-clip-text text-transparent">
+                <h1 className="text-xl  tracking-tight bg-gradient-to-r from-foreground to-foreground/60 bg-clip-text text-transparent">
                   Management Dashboard
                 </h1>
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest">
@@ -363,7 +363,12 @@ function SelectGroup() {
   )
 }
 
-function CustomTooltip({ active, payload }: any) {
+interface TooltipPayload {
+  value: number;
+  payload: { name: string; present: number; target: number };
+}
+
+function CustomTooltip({ active, payload }: { active?: boolean; payload?: TooltipPayload[] }) {
   if (active && payload && payload.length) {
     return (
       <div className="rounded-2xl border bg-background/95 p-4 shadow-2xl backdrop-blur-md animate-in zoom-in-95 duration-200">

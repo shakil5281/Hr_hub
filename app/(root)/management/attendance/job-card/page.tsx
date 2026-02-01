@@ -178,21 +178,21 @@ export default function JobCardPage() {
                 {/* Generation Filter */}
                 <Card className="border">
                     <CardHeader className="pb-4">
-                        <CardTitle className="text-base flex items-center gap-2">
-                            <IconAdjustmentsHorizontal className="size-5 text-primary" />
+                        <CardTitle className="text-sm sm:text-base flex items-center gap-2">
+                            <IconAdjustmentsHorizontal className="size-4 sm:size-5 text-primary" />
                             Report Configuration
                         </CardTitle>
-                        <CardDescription>Select employee and month to generate the attendance job card.</CardDescription>
+                        <CardDescription className="text-xs sm:text-sm">Select employee and month to generate the attendance job card.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 items-end">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4">
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Employee ID</label>
+                                <label className="text-[10px] font-semibold uppercase text-muted-foreground">Employee ID</label>
                                 <div className="relative">
-                                    <IconUser className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                                    <IconUser className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
                                     <Input
                                         placeholder="EMP-XXXX"
-                                        className="pl-10 h-10 rounded-xl"
+                                        className="pl-9 h-9 sm:h-10"
                                         value={empId}
                                         onChange={(e) => setEmpId(e.target.value)}
                                     />
@@ -200,8 +200,8 @@ export default function JobCardPage() {
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Department</label>
-                                <NativeSelect value={department} onChange={(e) => setDepartment(e.target.value)} className="h-10 rounded-xl">
+                                <label className="text-[10px] font-semibold uppercase text-muted-foreground">Department</label>
+                                <NativeSelect value={department} onChange={(e) => setDepartment(e.target.value)} className="h-9 sm:h-10">
                                     <option value="engineering">Engineering</option>
                                     <option value="hr">HR & Admin</option>
                                     <option value="sales">Sales & Marketing</option>
@@ -211,8 +211,8 @@ export default function JobCardPage() {
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Designation</label>
-                                <NativeSelect value={designation} onChange={(e) => setDesignation(e.target.value)} className="h-10 rounded-xl">
+                                <label className="text-[10px] font-semibold uppercase text-muted-foreground">Designation</label>
+                                <NativeSelect value={designation} onChange={(e) => setDesignation(e.target.value)} className="h-9 sm:h-10">
                                     <option value="swe">Software Engineer</option>
                                     <option value="mgr">Manager</option>
                                     <option value="op">Operator</option>
@@ -221,8 +221,8 @@ export default function JobCardPage() {
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Line / Section</label>
-                                <NativeSelect value={line} onChange={(e) => setLine(e.target.value)} className="h-10 rounded-xl">
+                                <label className="text-[10px] font-semibold uppercase text-muted-foreground">Line / Section</label>
+                                <NativeSelect value={line} onChange={(e) => setLine(e.target.value)} className="h-9 sm:h-10">
                                     <option value="line-01">Line 01</option>
                                     <option value="line-02">Line 02</option>
                                     <option value="platform">Platform</option>
@@ -230,158 +230,121 @@ export default function JobCardPage() {
                                 </NativeSelect>
                             </div>
 
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Select Range</label>
+                            <div className="space-y-2 sm:col-span-2 lg:col-span-3 xl:col-span-1">
+                                <label className="text-[10px] font-semibold uppercase text-muted-foreground">Select Range</label>
                                 <DateRangePicker
                                     date={dateRange}
                                     setDate={setDateRange}
                                 />
                             </div>
 
-                            <Button
-                                className="h-10 rounded-xl gap-2 w-full"
-                                onClick={handleGenerate}
-                            >
-                                <IconSearch className="size-5" />
-                                Generate
-                            </Button>
+                            <div className="sm:col-span-2 lg:col-span-3 xl:col-span-5">
+                                <Button
+                                    className="h-9 sm:h-10 gap-2 w-full"
+                                    onClick={handleGenerate}
+                                >
+                                    <IconSearch className="size-4 sm:size-5" />
+                                    Generate Report
+                                </Button>
+                            </div>
                         </div>
                     </CardContent>
                 </Card>
 
                 {!showReport ? (
-                    <div className="flex flex-col items-center justify-center py-20 bg-accent/5 rounded-3xl border-2 border-dashed border-muted/50">
-                        <div className="size-20 bg-background rounded-full flex items-center justify-center border-2 border-muted/20 mb-4 text-muted-foreground/20">
-                            <IconId className="size-10" />
-                        </div>
-                        <h3 className="text-lg font-bold text-muted-foreground">No Report Generated</h3>
-                        <p className="text-sm text-muted-foreground/60 max-w-xs text-center mt-1">
-                            Use the filters above to retrieve an employee's attendance record for any given month.
+                    <div className="flex flex-col items-center justify-center py-16 rounded-lg border">
+                        <IconId className="size-12 text-muted-foreground/30 mb-3" />
+                        <h3 className="text-sm font-semibold text-muted-foreground">No Report Generated</h3>
+                        <p className="text-xs text-muted-foreground/60 mt-1">
+                            Select filters above to generate report
                         </p>
                     </div>
                 ) : (
-                    <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-700">
-                        {/* Report Content - This part looks like a formal Job Card */}
-                        <Card className="border overflow-hidden bg-white dark:bg-slate-950">
-                            {/* Company Branding Section (Job Card Header) */}
-                            <div className="p-8 border-b bg-muted/5 flex flex-col md:flex-row justify-between items-start gap-8">
-                                <div className="space-y-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className="size-12 rounded-2xl bg-slate-900 border-4 border-primary/20 flex items-center justify-center dark:bg-white text-white dark:text-slate-900">
-                                            <span className="font-black text-xl italic underline decoration-primary decoration-4">HH</span>
-                                        </div>
-                                        <div>
-                                            <h2 className="text-2xl font-black tracking-tighter">HR HUB ENTERPRISE</h2>
-                                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest leading-none">Intelligence. Operations. Growth.</p>
-                                        </div>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <div className="px-3 py-1 bg-primary/10 text-primary w-fit rounded-full text-[10px] font-black uppercase tracking-widest">
-                                            Attendance Report
-                                        </div>
-                                        <h3 className="text-3xl font-black text-slate-800 dark:text-slate-100">Monthly Job Card</h3>
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-x-12 gap-y-4 bg-background p-6 rounded-2xl border shadow-sm">
-                                    <div className="space-y-1">
-                                        <p className="text-[10px] font-black text-muted-foreground uppercase opacity-50">Report For</p>
-                                        <p className="text-sm font-bold">
-                                            {dateRange?.from && dateRange?.to ? (
+                    <div className="space-y-4 animate-in fade-in duration-500">
+                        {/* Report Content - Simple Job Card */}
+                        <Card className="border">
+                            {/* Header */}
+                            <div className="p-6 border-b">
+                                <div className="flex items-start justify-between mb-4">
+                                    <div>
+                                        <h2 className="text-lg font-bold">Monthly Job Card</h2>
+                                        <p className="text-xs text-muted-foreground mt-1">
+                                            {dateRange?.from && dateRange?.to && (
                                                 isSameMonth(dateRange.from, dateRange.to) && isSameYear(dateRange.from, dateRange.to) ? (
                                                     format(dateRange.from, "MMMM yyyy")
                                                 ) : (
                                                     `${format(dateRange.from, "MMM dd, yy")} - ${format(dateRange.to, "MMM dd, yy")}`
                                                 )
-                                            ) : "Selected Interval"}
+                                            )}
                                         </p>
                                     </div>
-                                    <div className="space-y-1">
-                                        <p className="text-[10px] font-black text-muted-foreground uppercase opacity-50">Generated On</p>
-                                        <p className="text-sm font-bold">{new Date().toLocaleDateString()}</p>
+                                    <Badge variant="success" className="text-xs">Finalized</Badge>
+                                </div>
+
+                                {/* Employee Info */}
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t">
+                                    <div>
+                                        <p className="text-[10px] text-muted-foreground uppercase mb-1">Name</p>
+                                        <p className="text-sm font-semibold">{MOCK_EMPLOYEE.name}</p>
                                     </div>
-                                    <div className="space-y-1">
-                                        <p className="text-[10px] font-black text-muted-foreground uppercase opacity-50">Shift Code</p>
-                                        <p className="text-sm font-bold">DS-01 (Day)</p>
+                                    <div>
+                                        <p className="text-[10px] text-muted-foreground uppercase mb-1">Employee ID</p>
+                                        <p className="text-sm font-semibold">{MOCK_EMPLOYEE.id}</p>
                                     </div>
-                                    <div className="space-y-1">
-                                        <p className="text-[10px] font-black text-muted-foreground uppercase opacity-50">Status</p>
-                                        <Badge variant="success" className="h-5 px-1.5 text-[8px] font-black uppercase">Finalized</Badge>
+                                    <div>
+                                        <p className="text-[10px] text-muted-foreground uppercase mb-1">Department</p>
+                                        <p className="text-sm font-semibold">{MOCK_EMPLOYEE.department}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] text-muted-foreground uppercase mb-1">Designation</p>
+                                        <p className="text-sm font-semibold">{MOCK_EMPLOYEE.designation}</p>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Employee Information Strip */}
-                            <div className="px-8 py-6 bg-slate-900 text-white flex flex-wrap gap-x-12 gap-y-6">
-                                <div className="flex items-center gap-3">
-                                    <div className="size-10 rounded-full bg-slate-800 border-2 border-slate-700 flex items-center justify-center">
-                                        <IconUser className="size-5 text-primary" />
+                            <CardContent className="p-6">
+                                {/* Summary Stats */}
+                                <div className="grid grid-cols-3 md:grid-cols-6 gap-3 mb-6">
+                                    <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950 border border-emerald-200 dark:border-emerald-800">
+                                        <p className="text-xs text-emerald-600 dark:text-emerald-400 mb-1">Present</p>
+                                        <p className="text-xl font-bold text-emerald-700 dark:text-emerald-300">{totals?.present}</p>
                                     </div>
-                                    <div>
-                                        <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Full Name</p>
-                                        <p className="text-sm font-bold">{MOCK_EMPLOYEE.name}</p>
+                                    <div className="p-3 rounded-lg bg-rose-50 dark:bg-rose-950 border border-rose-200 dark:border-rose-800">
+                                        <p className="text-xs text-rose-600 dark:text-rose-400 mb-1">Absent</p>
+                                        <p className="text-xl font-bold text-rose-700 dark:text-rose-300">{totals?.absent}</p>
                                     </div>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    <div className="size-10 rounded-full bg-slate-800 border-2 border-slate-700 flex items-center justify-center">
-                                        <IconId className="size-5 text-indigo-400" />
+                                    <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-900 border">
+                                        <p className="text-xs text-muted-foreground mb-1">Weekend</p>
+                                        <p className="text-xl font-bold">{totals?.weekend}</p>
                                     </div>
-                                    <div>
-                                        <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Emp ID</p>
-                                        <p className="text-sm font-bold">{MOCK_EMPLOYEE.id}</p>
+                                    <div className="p-3 rounded-lg bg-indigo-50 dark:bg-indigo-950 border border-indigo-200 dark:border-indigo-800">
+                                        <p className="text-xs text-indigo-600 dark:text-indigo-400 mb-1">Holiday</p>
+                                        <p className="text-xl font-bold text-indigo-700 dark:text-indigo-300">{totals?.holiday}</p>
                                     </div>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    <div className="size-10 rounded-full bg-slate-800 border-2 border-slate-700 flex items-center justify-center">
-                                        <IconBriefcase className="size-5 text-emerald-400" />
+                                    <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800">
+                                        <p className="text-xs text-amber-600 dark:text-amber-400 mb-1">Total OT</p>
+                                        <p className="text-xl font-bold text-amber-700 dark:text-amber-300">{totals?.totalOT}h</p>
                                     </div>
-                                    <div>
-                                        <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Department</p>
-                                        <p className="text-sm font-bold">{MOCK_EMPLOYEE.department}</p>
+                                    <div className="p-3 rounded-lg bg-orange-50 dark:bg-orange-950 border border-orange-200 dark:border-orange-800">
+                                        <p className="text-xs text-orange-600 dark:text-orange-400 mb-1">Late</p>
+                                        <p className="text-xl font-bold text-orange-700 dark:text-orange-300">{totals?.totalLate}m</p>
                                     </div>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    <div className="size-10 rounded-full bg-slate-800 border-2 border-slate-700 flex items-center justify-center">
-                                        <IconCalendar className="size-5 text-amber-400" />
-                                    </div>
-                                    <div>
-                                        <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Designation</p>
-                                        <p className="text-sm font-bold">{MOCK_EMPLOYEE.designation}</p>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-3 border-l border-slate-700 pl-12 hidden xl:flex">
-                                    <div>
-                                        <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Section / Grade</p>
-                                        <p className="text-sm font-bold">{MOCK_EMPLOYEE.section} • {MOCK_EMPLOYEE.grade}</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <CardContent className="p-0">
-                                {/* Summary Grid */}
-                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 border-b">
-                                    <SummaryStat label="Present" value={totals?.present} icon={IconCheck} color="text-emerald-500" />
-                                    <SummaryStat label="Absent" value={totals?.absent} icon={IconX} color="text-rose-500" />
-                                    <SummaryStat label="Holiday" value={totals?.holiday} icon={IconCalendar} color="text-indigo-500" />
-                                    <SummaryStat label="Weekend" value={totals?.weekend} icon={IconBriefcase} color="text-slate-500" />
-                                    <SummaryStat label="Total OT" value={`${totals?.totalOT}h`} icon={IconClock} color="text-amber-500" />
-                                    <SummaryStat label="Total Late" value={`${totals?.totalLate}m`} icon={IconAlertCircle} color="text-orange-500" />
                                 </div>
 
-                                {/* Table Header */}
-                                <div className="overflow-x-auto">
-                                    <table className="w-full border-collapse">
-                                        <thead>
-                                            <tr className="bg-muted/30 border-b">
-                                                <th className="px-4 py-4 text-[10px] font-black uppercase text-left tracking-widest text-muted-foreground w-20">Date</th>
-                                                <th className="px-4 py-4 text-[10px] font-black uppercase text-left tracking-widest text-muted-foreground w-20">Day</th>
-                                                <th className="px-4 py-4 text-[10px] font-black uppercase text-center tracking-widest text-muted-foreground w-28">Status</th>
-                                                <th className="px-4 py-4 text-[10px] font-black uppercase text-center tracking-widest text-muted-foreground">In Time</th>
-                                                <th className="px-4 py-4 text-[10px] font-black uppercase text-center tracking-widest text-muted-foreground">Out Time</th>
-                                                <th className="px-4 py-4 text-[10px] font-black uppercase text-center tracking-widest text-muted-foreground">Late (m)</th>
-                                                <th className="px-4 py-4 text-[10px] font-black uppercase text-center tracking-widest text-muted-foreground">OT (h)</th>
-                                                <th className="px-4 py-4 text-[10px] font-black uppercase text-center tracking-widest text-muted-foreground">Total (h)</th>
-                                                <th className="px-4 py-4 text-[10px] font-black uppercase text-left tracking-widest text-muted-foreground">Remarks</th>
+                                {/* Attendance Table */}
+                                <div className="overflow-x-auto rounded-lg border">
+                                    <table className="w-full">
+                                        <thead className="bg-muted/50">
+                                            <tr className="border-b">
+                                                <th className="px-3 py-2 text-left text-[10px] font-semibold uppercase text-muted-foreground">Date</th>
+                                                <th className="px-3 py-2 text-left text-[10px] font-semibold uppercase text-muted-foreground">Day</th>
+                                                <th className="px-3 py-2 text-center text-[10px] font-semibold uppercase text-muted-foreground">Status</th>
+                                                <th className="px-3 py-2 text-center text-[10px] font-semibold uppercase text-muted-foreground">In</th>
+                                                <th className="px-3 py-2 text-center text-[10px] font-semibold uppercase text-muted-foreground">Out</th>
+                                                <th className="px-3 py-2 text-center text-[10px] font-semibold uppercase text-muted-foreground">Late</th>
+                                                <th className="px-3 py-2 text-center text-[10px] font-semibold uppercase text-muted-foreground">OT</th>
+                                                <th className="px-3 py-2 text-center text-[10px] font-semibold uppercase text-muted-foreground">Total</th>
+                                                <th className="px-3 py-2 text-left text-[10px] font-semibold uppercase text-muted-foreground">Remarks</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -389,44 +352,43 @@ export default function JobCardPage() {
                                                 <tr
                                                     key={idx}
                                                     className={cn(
-                                                        "border-b hover:bg-muted/10 transition-colors",
-                                                        row.status === "Weekend" && "bg-slate-50 dark:bg-slate-900/50",
-                                                        row.status === "Holiday" && "bg-indigo-50/30 dark:bg-indigo-900/10",
-                                                        row.status === "Absent" && "bg-rose-50/30 dark:bg-rose-900/10"
+                                                        "border-b hover:bg-muted/20",
+                                                        row.status === "Weekend" && "bg-slate-50 dark:bg-slate-900/30",
+                                                        row.status === "Absent" && "bg-rose-50/50 dark:bg-rose-900/10"
                                                     )}
                                                 >
-                                                    <td className="px-4 py-3 text-sm font-bold">{row.date}</td>
-                                                    <td className="px-4 py-3 text-xs font-medium text-muted-foreground">{row.day}</td>
-                                                    <td className="px-4 py-3 text-center">
+                                                    <td className="px-3 py-2 text-sm font-medium">{row.date}</td>
+                                                    <td className="px-3 py-2 text-xs text-muted-foreground">{row.day}</td>
+                                                    <td className="px-3 py-2 text-center">
                                                         <Badge
                                                             variant={
                                                                 row.status === "Present" ? "success" :
                                                                     row.status === "Absent" ? "destructive" :
-                                                                        row.status === "Weekend" ? "secondary" : "default"
+                                                                        "secondary"
                                                             }
-                                                            className="h-5 px-1.5 text-[8px] font-black uppercase"
+                                                            className="text-[10px]"
                                                         >
                                                             {row.status}
                                                         </Badge>
                                                     </td>
-                                                    <td className="px-4 py-3 text-center text-xs font-bold">{row.inTime}</td>
-                                                    <td className="px-4 py-3 text-center text-xs font-bold">{row.outTime}</td>
-                                                    <td className="px-4 py-3 text-center">
+                                                    <td className="px-3 py-2 text-center text-xs">{row.inTime}</td>
+                                                    <td className="px-3 py-2 text-center text-xs">{row.outTime}</td>
+                                                    <td className="px-3 py-2 text-center">
                                                         {row.late > 0 ? (
-                                                            <span className="text-xs font-black text-rose-500">{row.late}</span>
+                                                            <span className="text-xs font-semibold text-rose-600">{row.late}m</span>
                                                         ) : (
-                                                            <span className="text-xs text-muted-foreground opacity-30">-</span>
+                                                            <span className="text-xs text-muted-foreground">-</span>
                                                         )}
                                                     </td>
-                                                    <td className="px-4 py-3 text-center">
+                                                    <td className="px-3 py-2 text-center">
                                                         {row.ot > 0 ? (
-                                                            <span className="text-xs font-black text-emerald-500">+{row.ot}</span>
+                                                            <span className="text-xs font-semibold text-emerald-600">+{row.ot}h</span>
                                                         ) : (
-                                                            <span className="text-xs text-muted-foreground opacity-30">-</span>
+                                                            <span className="text-xs text-muted-foreground">-</span>
                                                         )}
                                                     </td>
-                                                    <td className="px-4 py-3 text-center text-xs font-bold">{row.total > 0 ? `${row.total}h` : "-"}</td>
-                                                    <td className="px-4 py-3 text-[10px] font-medium text-muted-foreground italic">{row.remarks}</td>
+                                                    <td className="px-3 py-2 text-center text-xs font-medium">{row.total > 0 ? `${row.total}h` : "-"}</td>
+                                                    <td className="px-3 py-2 text-[10px] text-muted-foreground">{row.remarks}</td>
                                                 </tr>
                                             ))}
                                         </tbody>
@@ -434,36 +396,21 @@ export default function JobCardPage() {
                                 </div>
                             </CardContent>
 
-                            {/* Signatures for Print */}
-                            <div className="p-12 pt-20 grid grid-cols-3 gap-12 border-t mt-12 print:block border-dashed">
-                                <div className="border-t-2 border-slate-300 pt-3 text-center">
-                                    <p className="text-[10px] font-black uppercase tracking-widest">Employee Signature</p>
-                                </div>
-                                <div className="border-t-2 border-slate-300 pt-3 text-center">
-                                    <p className="text-[10px] font-black uppercase tracking-widest">Department Head</p>
-                                </div>
-                                <div className="border-t-2 border-slate-300 pt-3 text-center">
-                                    <p className="text-[10px] font-black uppercase tracking-widest">HR Authorized</p>
+                            {/* Signature Section */}
+                            <div className="p-6 border-t">
+                                <div className="grid grid-cols-3 gap-8 pt-12">
+                                    <div className="text-center border-t pt-2">
+                                        <p className="text-[10px] text-muted-foreground uppercase">Employee</p>
+                                    </div>
+                                    <div className="text-center border-t pt-2">
+                                        <p className="text-[10px] text-muted-foreground uppercase">Department Head</p>
+                                    </div>
+                                    <div className="text-center border-t pt-2">
+                                        <p className="text-[10px] text-muted-foreground uppercase">HR</p>
+                                    </div>
                                 </div>
                             </div>
                         </Card>
-
-                        {/* Navigation Footer */}
-                        <div className="flex justify-between items-center py-4 px-2">
-                            <Button variant="ghost" disabled className="rounded-full gap-2">
-                                <IconChevronLeft className="size-4" />
-                                Previous Month
-                            </Button>
-                            <div className="flex gap-2">
-                                <div className="size-2 rounded-full bg-primary" />
-                                <div className="size-2 rounded-full bg-muted" />
-                                <div className="size-2 rounded-full bg-muted" />
-                            </div>
-                            <Button variant="ghost" className="rounded-full gap-2 text-primary">
-                                Next Month
-                                <IconChevronRight className="size-4" />
-                            </Button>
-                        </div>
                     </div>
                 )}
             </main>
@@ -483,14 +430,3 @@ export default function JobCardPage() {
     )
 }
 
-function SummaryStat({ label, value, icon: Icon, color }: any) {
-    return (
-        <div className="p-6 flex flex-col items-center justify-center border-r last:border-r-0 group hover:bg-muted/50 transition-colors">
-            <div className={cn("p-2 rounded-xl bg-background mb-3 shadow-sm border group-hover:scale-110 transition-transform", color)}>
-                <Icon className="size-4" />
-            </div>
-            <p className="text-[9px] font-black text-muted-foreground uppercase tracking-tighter mb-1">{label}</p>
-            <p className="text-lg font-black tracking-tight leading-none">{value}</p>
-        </div>
-    )
-}

@@ -1,13 +1,14 @@
 "use client"
 
 import * as React from "react"
-import { IconCash, IconChartBar, IconDownload, IconPlus } from "@tabler/icons-react"
+import { IconChartBar, IconDownload } from "@tabler/icons-react"
+import { Plus } from "lucide-react"
 import { ColumnDef } from "@tanstack/react-table"
 import { DataTable } from "@/components/data-table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+
 import { ChartAreaInteractive } from "@/components/chart-area-interactive"
 
 type MonthlyExpenseItem = {
@@ -193,7 +194,7 @@ export default function MonthlyExpensePage() {
                         Export
                     </Button>
                     <Button onClick={handleAddClick}>
-                        <IconPlus className="mr-2 size-4" />
+                        <Plus className="mr-2 size-4" />
                         Add Record
                     </Button>
                 </div>
@@ -224,7 +225,7 @@ export default function MonthlyExpensePage() {
                     </SheetHeader>
                     <div className="mt-6">
                         <MonthlyExpenseForm
-                            initialData={selectedItem}
+                            initialData={selectedItem || undefined}
                             onSubmit={handleFormSubmit}
                             onCancel={() => setIsSheetOpen(false)}
                         />

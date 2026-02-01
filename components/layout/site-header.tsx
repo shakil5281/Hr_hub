@@ -1,6 +1,8 @@
 "use client"
 
+import * as React from "react"
 import { IconBell, IconSearch, IconSettings, IconAlertTriangle, IconCircleCheck, IconInfoCircle, IconUser, IconShield, IconKey, IconLifebuoy, IconMessage, IconCreditCard, IconUsers, IconKeyboard } from "@tabler/icons-react"
+import { useRouter } from "next/navigation"
 
 import {
   Avatar,
@@ -18,7 +20,6 @@ import {
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import {
@@ -29,9 +30,26 @@ import {
 import { ModeToggle } from "@/components/mode-toggle"
 import Link from "next/link"
 import { useSearch } from "@/components/search-context"
+import { authService } from "@/lib/services/auth"
 
 export function SiteHeader() {
   const { setOpen } = useSearch()
+  const router = useRouter()
+  const [user, setUser] = React.useState<{ fullName: string; username: string } | null>(null)
+
+  React.useEffect(() => {
+    // Load user from local storage
+    const currentUser = authService.getCurrentUser()
+    if (currentUser) {
+      setUser(currentUser)
+    }
+  }, [])
+
+  const handleLogout = () => {
+    authService.logout()
+    router.push("/login")
+  }
+
   const notifications = [
     {
       id: 1,
@@ -58,6 +76,16 @@ export function SiteHeader() {
       type: "info"
     },
   ]
+
+  // Default values if no user is logged in (should ideally redirect, but for header safety)
+  const displayName = user?.fullName || "Guest User"
+  const displayEmail = user?.username || "guest@hrhub.com"
+  const initials = displayName
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2)
 
   return (
     <header className="flex h-(--header-height) shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height)">
@@ -228,22 +256,22 @@ export function SiteHeader() {
                 <div className="relative">
                   <Avatar className="h-9 w-9 border cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all">
                     <AvatarImage src="/avatars/shadcn.jpg" alt="User" />
-                    <AvatarFallback className="rounded-lg bg-primary/10 text-primary">SA</AvatarFallback>
+                    <AvatarFallback className="rounded-lg bg-primary/10 text-primary font-bold">{initials}</AvatarFallback>
                   </Avatar>
                   <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-green-500 border-2 border-background"></span>
                 </div>
                 <div className="hidden flex-col items-start lg:flex">
-                  <span className="text-sm font-semibold">Shakil Ahmed</span>
-                  <span className="text-[10px] text-muted-foreground font-medium">System Admin</span>
+                  <span className="text-sm font-semibold max-w-[120px] truncate">{displayName}</span>
+                  <span className="text-[10px] text-muted-foreground font-medium truncate max-w-[120px]">{displayEmail}</span>
                 </div>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56" align="end" forceMount>
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">Shakil Ahmed</p>
+                  <p className="text-sm font-medium leading-none">{displayName}</p>
                   <p className="text-xs leading-none text-muted-foreground">
-                    admin@hrhub.com
+                    {displayEmail}
                   </p>
                   <div className="mt-1">
                     <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-green-500/15 text-green-700 dark:text-green-400">
@@ -268,7 +296,10 @@ export function SiteHeader() {
                 </DropdownMenuItem>
               </DropdownMenuGroup>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-950/20">
+              <DropdownMenuItem
+                className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-950/20"
+                onClick={handleLogout}
+              >
                 Log out
               </DropdownMenuItem>
             </DropdownMenuContent>

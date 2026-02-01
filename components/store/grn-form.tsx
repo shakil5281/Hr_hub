@@ -61,7 +61,7 @@ const itemsList = [
 ]
 
 interface GrnFormProps {
-    onSubmit: (values: any) => void
+    onSubmit: (values: z.infer<typeof formSchema>) => void
     onCancel: () => void
 }
 

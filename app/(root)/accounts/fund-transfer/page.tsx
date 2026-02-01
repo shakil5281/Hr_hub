@@ -256,7 +256,7 @@ export default function FundTransferPage() {
                                 <CardContent className="space-y-4">
                                     <div className="space-y-2">
                                         <Label>Branch</Label>
-                                        <Select value={selectedBranch} onValueChange={(v: any) => setSelectedBranch(v)}>
+                                        <Select value={selectedBranch} onValueChange={(v: string) => setSelectedBranch(v as BranchType)}>
                                             <SelectTrigger>
                                                 <SelectValue />
                                             </SelectTrigger>
