@@ -2,21 +2,14 @@
 
 import * as React from "react"
 import {
-    IconUsers,
-    IconUserPlus,
-    IconShieldLock,
-    IconMail,
-    IconClock,
-    IconDotsVertical,
-    IconEdit,
-    IconTrash,
-    IconCircleCheck,
-    IconUserPause,
-    IconCircleX,
-    IconCheck,
     IconRefresh,
     IconShieldCheck,
-    IconX
+    IconX,
+    IconBuildingCommunity,
+    IconDotsVertical,
+    IconUserPlus,
+    IconLoader,
+    IconUsers
 } from "@tabler/icons-react"
 import { Button } from "@/components/ui/button"
 import { DataTable } from "@/components/data-table"
@@ -34,6 +27,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Card, CardContent } from "@/components/ui/card"
 import { authService, type User, type RoleDetails } from "@/lib/services/auth"
+import { companyService, Company } from "@/lib/services/company"
 import { LoadingOverlay } from "@/components/loading-state"
 import {
     Dialog,
@@ -64,6 +58,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
+import { Checkbox } from "@/components/ui/checkbox"
 
 export default function UsersPage() {
     const [users, setUsers] = React.useState<User[]>([])
@@ -97,22 +92,28 @@ export default function UsersPage() {
     })
     const [isCreating, setIsCreating] = React.useState(false)
 
+    // Company Assignment State
+    const [allCompanies, setAllCompanies] = React.useState<Company[]>([])
+    const [selectedCompanyIds, setSelectedCompanyIds] = React.useState<number[]>([])
+    const [isCompanyDialogOpen, setIsCompanyDialogOpen] = React.useState(false)
+    const [isAssigningCompanies, setIsAssigningCompanies] = React.useState(false)
+
     const fetchUsers = React.useCallback(async (silent = false) => {
         if (silent) setIsRefreshing(true)
         else setIsLoading(true)
 
         try {
-            const [userData, rolesData] = await Promise.all([
+            const [userData, rolesData, companiesData] = await Promise.all([
                 authService.getUsers(),
                 authService.getRoles(),
-                new Promise(resolve => setTimeout(resolve, 2500))
+                companyService.getAll(),
+                new Promise(resolve => setTimeout(resolve, 800))
             ])
             setUsers(userData)
             setRoles(rolesData)
+            setAllCompanies(companiesData)
         } catch (error: any) {
-            toast.error("Failed to fetch users", {
-                description: error.response?.data?.message || "Please check your permissions."
-            })
+            toast.error("Failed to fetch users")
         } finally {
             setIsLoading(false)
             setIsRefreshing(false)
@@ -130,21 +131,16 @@ export default function UsersPage() {
         try {
             const result = await authService.assignRole(selectedUser.id, targetRole)
             if (result.success) {
-                toast.success("Role Assigned", {
-                    description: `Successfully assigned ${targetRole} to ${selectedUser.fullName || selectedUser.username}`
-                })
-                // Update local selected user state to reflect change immediately
+                toast.success("Role Assigned")
                 setSelectedUser(prev => prev ? { ...prev, roles: [...prev.roles, targetRole] } : null)
                 setTargetRole("")
                 setIsRoleDialogOpen(false)
                 fetchUsers(true)
             } else {
-                toast.error("Assignment Failed", { description: result.message })
+                toast.error(result.message)
             }
         } catch (error: any) {
-            toast.error("Assignment Failed", {
-                description: error.response?.data?.message || "Something went wrong."
-            })
+            toast.error("Something went wrong.")
         } finally {
             setIsAssigning(false)
         }
@@ -153,25 +149,17 @@ export default function UsersPage() {
     const handleRemoveRole = async (role: string) => {
         if (!selectedUser) return
 
-        // Confirmation is implicit by clicking the specific X, but you could add a confirm dialog if desired.
-        // For now, direct action is faster for admin workflows.
-
         try {
             const result = await authService.removeRole(selectedUser.id, role)
             if (result.success) {
-                toast.success("Role Removed", {
-                    description: `Successfully removed ${role} from ${selectedUser.fullName || selectedUser.username}`
-                })
-                // Update local selected user state to reflect change immediately
+                toast.success("Role Removed")
                 setSelectedUser(prev => prev ? { ...prev, roles: prev.roles.filter(r => r !== role) } : null)
                 fetchUsers(true)
             } else {
-                toast.error("Removal Failed", { description: result.message })
+                toast.error(result.message)
             }
         } catch (error: any) {
-            toast.error("Removal Failed", {
-                description: error.response?.data?.message || "Something went wrong."
-            })
+            toast.error("Something went wrong.")
         }
     }
 
@@ -182,16 +170,14 @@ export default function UsersPage() {
         try {
             const result = await authService.updateUser(selectedUser.id, editForm)
             if (result.success) {
-                toast.success("User Updated", { description: "User details updated successfully." })
+                toast.success("User Updated")
                 setIsEditDialogOpen(false)
                 fetchUsers(true)
             } else {
-                toast.error("Update Failed", { description: result.message })
+                toast.error(result.message)
             }
         } catch (error: any) {
-            toast.error("Update Failed", {
-                description: error.response?.data?.message || "Something went wrong."
-            })
+            toast.error("Something went wrong.")
         } finally {
             setIsUpdating(false)
         }
@@ -204,16 +190,14 @@ export default function UsersPage() {
         try {
             const result = await authService.deleteUser(selectedUser.id)
             if (result.success) {
-                toast.success("User Deleted", { description: "User has been removed from the system." })
+                toast.success("User Deleted")
                 setIsDeleteDialogOpen(false)
                 fetchUsers(true)
             } else {
-                toast.error("Deletion Failed", { description: result.message })
+                toast.error(result.message)
             }
         } catch (error: any) {
-            toast.error("Deletion Failed", {
-                description: error.response?.data?.message || "Something went wrong."
-            })
+            toast.error("Something went wrong.")
         } finally {
             setIsDeleting(false)
         }
@@ -221,7 +205,7 @@ export default function UsersPage() {
 
     const handleCreateUser = async () => {
         if (!createForm.username || !createForm.password || !createForm.email) {
-            toast.error("Validation Error", { description: "Please fill in all required fields." })
+            toast.error("Please fill in all required fields.")
             return
         }
 
@@ -229,39 +213,68 @@ export default function UsersPage() {
         try {
             const result = await authService.createUser(createForm)
             if (result.success) {
-                toast.success("User Created", { description: "New user entity has been provisioned." })
+                toast.success("User Created")
                 setIsCreateDialogOpen(false)
                 setCreateForm({ username: "", email: "", password: "", fullName: "", role: "" })
                 fetchUsers(true)
             } else {
-                toast.error("Creation Failed", { description: result.message })
+                toast.error(result.message)
             }
         } catch (error: any) {
-            toast.error("Creation Failed", {
-                description: error.response?.data?.message || "Something went wrong."
-            })
+            toast.error("Something went wrong.")
         } finally {
             setIsCreating(false)
+        }
+    }
+
+    const handleAssignCompanies = async () => {
+        if (!selectedUser) return
+
+        setIsAssigningCompanies(true)
+        try {
+            await companyService.assignToUser({
+                userId: selectedUser.id,
+                companyIds: selectedCompanyIds
+            })
+            toast.success("Branch Access Updated")
+            setIsCompanyDialogOpen(false)
+            fetchUsers(true)
+        } catch (error: any) {
+            console.error(error)
+            toast.error("Failed to update branch access")
+        } finally {
+            setIsAssigningCompanies(false)
+        }
+    }
+
+    const openCompanyAssignment = async (user: User) => {
+        setSelectedUser(user)
+        setSelectedCompanyIds([]) // Clear while loading
+        setIsCompanyDialogOpen(true)
+
+        try {
+            const userCompanies = await companyService.getUserCompanies(user.id)
+            setSelectedCompanyIds(userCompanies.map(c => c.id))
+        } catch (error) {
+            console.error(error)
+            toast.error("Failed to fetch assigned branches")
         }
     }
 
     const columns: ColumnDef<User>[] = [
         {
             accessorKey: "fullName",
-            header: () => <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-2">User Details</span>,
+            header: "User Details",
             cell: ({ row }) => {
                 const user = row.original
                 return (
-                    <div className="flex items-center gap-3 px-2">
-                        <div className="size-9 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20 text-primary font-bold text-xs">
-                            {user.fullName ? user.fullName.split(" ").map(n => n[0]).join("") : user.username[0].toUpperCase()}
+                    <div className="flex items-center gap-3">
+                        <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-xs font-medium">
+                            {user.fullName ? user.fullName[0] : user.username[0].toUpperCase()}
                         </div>
                         <div className="flex flex-col">
-                            <span className="text-sm font-semibold tracking-tight">{user.fullName || user.username}</span>
-                            <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                                <IconMail className="size-3" />
-                                {user.email}
-                            </div>
+                            <span className="text-sm font-medium">{user.fullName || user.username}</span>
+                            <span className="text-xs text-muted-foreground">{user.email}</span>
                         </div>
                     </div>
                 )
@@ -269,23 +282,19 @@ export default function UsersPage() {
         },
         {
             accessorKey: "username",
-            header: () => <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Username</span>,
-            cell: ({ row }) => (
-                <span className="text-xs font-medium">{row.getValue("username")}</span>
-            )
+            header: "Username",
         },
         {
             accessorKey: "roles",
-            header: () => <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Roles</span>,
+            header: "Roles",
             cell: ({ row }) => {
                 const roles = row.getValue("roles") as string[]
                 return (
                     <div className="flex flex-wrap gap-1">
                         {roles.map(role => (
-                            <div key={role} className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded-md">
-                                <IconShieldLock className="size-3 text-slate-500" />
-                                <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300">{role}</span>
-                            </div>
+                            <Badge key={role} variant="outline" className="text-[10px] py-0">
+                                {role}
+                            </Badge>
                         ))}
                     </div>
                 )
@@ -293,15 +302,11 @@ export default function UsersPage() {
         },
         {
             accessorKey: "isActive",
-            header: () => <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Account Status</span>,
+            header: "Status",
             cell: ({ row }) => {
                 const isActive = row.getValue("isActive") as boolean
                 return (
-                    <Badge
-                        variant={isActive ? "success" : "destructive"}
-                        className="h-5 px-2 text-[10px] font-bold uppercase tracking-tight"
-                    >
-                        {isActive ? <IconCheck className="size-2.5 mr-1" /> : <IconCircleX className="size-2.5 mr-1" />}
+                    <Badge variant={isActive ? "default" : "destructive"} className="text-[10px]">
                         {isActive ? "Active" : "Inactive"}
                     </Badge>
                 )
@@ -309,34 +314,33 @@ export default function UsersPage() {
         },
         {
             id: "actions",
-            header: () => <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-2 text-right block">Actions</span>,
+            header: "Actions",
             cell: ({ row }) => {
                 const user = row.original
                 return (
-                    <div className="flex justify-end px-2">
+                    <div className="text-right">
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" className="h-8 w-8 p-0 rounded-full hover:bg-muted">
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
                                     <IconDotsVertical className="size-4" />
                                 </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-56 rounded-xl shadow-xl border-muted/20">
-                                <DropdownMenuLabel className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground opacity-50 px-3 pt-3">Quick Actions</DropdownMenuLabel>
-
+                            <DropdownMenuContent align="end">
                                 <DropdownMenuItem
-                                    className="gap-3 px-3 py-2.5 rounded-lg focus:bg-primary/5 cursor-pointer"
                                     onClick={() => {
                                         setSelectedUser(user)
                                         setTargetRole("")
                                         setIsRoleDialogOpen(true)
                                     }}
                                 >
-                                    <IconShieldCheck className="size-4 text-emerald-500" />
-                                    <span className="text-xs font-bold">Assign Role</span>
+                                    Assign Role
                                 </DropdownMenuItem>
-
                                 <DropdownMenuItem
-                                    className="gap-3 px-3 py-2.5 rounded-lg focus:bg-primary/5 cursor-pointer"
+                                    onClick={() => openCompanyAssignment(user)}
+                                >
+                                    Branch Access
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
                                     onClick={() => {
                                         setSelectedUser(user)
                                         setEditForm({
@@ -347,26 +351,17 @@ export default function UsersPage() {
                                         setIsEditDialogOpen(true)
                                     }}
                                 >
-                                    <IconEdit className="size-4 text-primary" />
-                                    <span className="text-xs font-bold">Edit Profile</span>
+                                    Edit
                                 </DropdownMenuItem>
-
-                                <DropdownMenuItem className="gap-3 px-3 py-2.5 rounded-lg focus:bg-primary/5 cursor-pointer">
-                                    <IconShieldLock className="size-4 text-indigo-500" />
-                                    <span className="text-xs font-bold">Reset Password</span>
-                                </DropdownMenuItem>
-
-                                <DropdownMenuSeparator className="opacity-50" />
-
+                                <DropdownMenuSeparator />
                                 <DropdownMenuItem
-                                    className="gap-3 px-3 py-2.5 rounded-lg focus:bg-destructive/5 text-destructive cursor-pointer hover:text-destructive!"
+                                    className="text-destructive"
                                     onClick={() => {
                                         setSelectedUser(user)
                                         setIsDeleteDialogOpen(true)
                                     }}
                                 >
-                                    <IconTrash className="size-4" />
-                                    <span className="text-xs font-bold">Delete Account</span>
+                                    Delete
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
@@ -383,342 +378,270 @@ export default function UsersPage() {
     }
 
     return (
-        <div className="flex flex-col min-h-screen bg-background/50 animate-in fade-in duration-700">
-            {/* Premium Header Area */}
-            <div className="bg-background/80 backdrop-blur-xl border-b sticky top-0 z-30">
-                <div className="container mx-auto px-4 py-6 lg:px-8 max-w-[1600px]">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                        <div className="flex items-center gap-4">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary shadow-lg shadow-primary/20">
-                                <IconUsers className="size-6 text-primary-foreground" />
-                            </div>
-                            <div>
-                                <h1 className="text-2xl font-bold tracking-tight">System Users</h1>
-                                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mt-0.5">Access Authority & Identity Matrix</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <Button
-                                variant="outline"
-                                onClick={() => fetchUsers(true)}
-                                disabled={isLoading || isRefreshing}
-                                className="rounded-xl h-11 px-4 gap-2 font-bold"
-                            >
-                                <IconRefresh className={cn("size-4", (isLoading || isRefreshing) && "animate-spin")} />
-                                Reload
-                            </Button>
-                            <Button
-                                className="rounded-xl h-11 px-6 gap-2 shadow-lg shadow-primary/10 font-bold transition-all hover:scale-[1.02] active:scale-[0.98]"
-                                onClick={() => setIsCreateDialogOpen(true)}
-                            >
-                                <IconUserPlus className="size-5" />
-                                Create User Entity
-                            </Button>
-                        </div>
-                    </div>
+        <div className="flex flex-col gap-6 p-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-2xl font-bold">System Users</h1>
+                    <p className="text-sm text-muted-foreground">Manage user accounts and roles.</p>
+                </div>
+                <div className="flex items-center gap-2">
+                    <Button
+                        variant="outline"
+                        onClick={() => fetchUsers(true)}
+                        disabled={isLoading || isRefreshing}
+                        size="sm"
+                    >
+                        <IconRefresh className={cn("size-4 mr-2", (isLoading || isRefreshing) && "animate-spin")} />
+                        Reload
+                    </Button>
+                    <Button
+                        size="sm"
+                        onClick={() => setIsCreateDialogOpen(true)}
+                    >
+                        <IconUserPlus className="size-4 mr-2" />
+                        Add User
+                    </Button>
                 </div>
             </div>
 
-            <main className="container mx-auto px-4 py-8 lg:px-8 max-w-[1600px] space-y-8 relative">
-                {/* Stats Row */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <UserStat color="text-primary" icon={IconUsers} label="Total Staff" value={stats.total.toString()} />
-                    <UserStat color="text-emerald-500" icon={IconCircleCheck} label="Active Users" value={stats.active.toString()} />
-                    <UserStat color="text-rose-500" icon={IconCircleX} label="Inactive Access" value={stats.inactive.toString()} />
-                </div>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <UserStat label="Total Users" value={stats.total.toString()} />
+                <UserStat label="Active" value={stats.active.toString()} />
+                <UserStat label="Inactive" value={stats.inactive.toString()} />
+                <UserStat label="Pending" value="0" />
+            </div>
 
-                {/* Table Container */}
-                <Card className="border shadow-sm rounded-3xl overflow-hidden bg-card">
-                    <div className="p-6 border-b bg-muted/5 flex items-center justify-between">
-                        <div className="space-y-1">
-                            <h2 className="text-sm font-bold uppercase tracking-tight flex items-center gap-2">
-                                Identity Ledger
-                                <Badge variant="secondary" className="rounded-full px-2 py-0 text-[10px] font-bold">
-                                    {isLoading || isRefreshing ? "REFRESHING..." : "LIVE"}
-                                </Badge>
-                            </h2>
-                            <p className="text-xs text-muted-foreground font-medium">Managing distributed identity across system roles.</p>
-                        </div>
-                    </div>
-                    <DataTable
-                        data={users}
-                        columns={columns}
-                        searchKey="fullName"
-                        filterKey="isActive"
-                        showTabs={true}
-                        enableSelection={true}
-                        enableDrag={true}
-                        isLoading={isLoading || isRefreshing}
-                        tabs={[
-                            { label: "Active", value: "true" },
-                            { label: "Inactive", value: "false" },
-                        ]}
-                    />
-                </Card>
-            </main>
+            <Card className="rounded-md">
+                <DataTable
+                    data={users}
+                    columns={columns}
+                    searchKey="fullName"
+                    filterKey="isActive"
+                    showTabs={true}
+                    enableSelection={true}
+                    enableDrag={true}
+                    isLoading={isLoading || isRefreshing}
+                    tabs={[
+                        { label: "Active List", value: "true" },
+                        { label: "Close List", value: "false" },
+                        { label: "Pending List", value: "pending" },
+                    ]}
+                />
+            </Card>
 
-            {/* Role Assignment Dialog */}
+            {/* Create Dialog */}
             <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-                <DialogContent className="sm:max-w-[500px] rounded-3xl">
+                <DialogContent>
                     <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2">
-                            <IconUserPlus className="size-5 text-primary" />
-                            Provision New Identity
-                        </DialogTitle>
-                        <DialogDescription>
-                            Create a new system user with specific role based access.
-                        </DialogDescription>
+                        <DialogTitle>Add New User</DialogTitle>
                     </DialogHeader>
-
                     <div className="grid gap-4 py-4">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">Username <span className="text-rose-500">*</span></Label>
-                                <Input
-                                    value={createForm.username}
-                                    onChange={(e) => setCreateForm({ ...createForm, username: e.target.value })}
-                                    className="rounded-xl h-11 focus:ring-primary/20"
-                                    placeholder="jdoe"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">Full Name</Label>
-                                <Input
-                                    value={createForm.fullName}
-                                    onChange={(e) => setCreateForm({ ...createForm, fullName: e.target.value })}
-                                    className="rounded-xl h-11 focus:ring-primary/20"
-                                    placeholder="John Doe"
-                                />
-                            </div>
+                        <div className="grid gap-2">
+                            <Label>Username</Label>
+                            <Input
+                                value={createForm.username}
+                                onChange={(e) => setCreateForm({ ...createForm, username: e.target.value })}
+                            />
                         </div>
-
-                        <div className="space-y-2">
-                            <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">Email Address <span className="text-rose-500">*</span></Label>
+                        <div className="grid gap-2">
+                            <Label>Full Name</Label>
+                            <Input
+                                value={createForm.fullName}
+                                onChange={(e) => setCreateForm({ ...createForm, fullName: e.target.value })}
+                            />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label>Email</Label>
                             <Input
                                 value={createForm.email}
                                 onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
-                                className="rounded-xl h-11 focus:ring-primary/20"
-                                placeholder="john.doe@company.com"
                                 type="email"
                             />
                         </div>
-
-                        <div className="space-y-2">
-                            <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">Initial Password <span className="text-rose-500">*</span></Label>
+                        <div className="grid gap-2">
+                            <Label>Password</Label>
                             <Input
                                 value={createForm.password}
                                 onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
-                                className="rounded-xl h-11 focus:ring-primary/20"
-                                placeholder="••••••••"
                                 type="password"
                             />
                         </div>
-
-                        <div className="space-y-2">
-                            <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">Initial Role</Label>
+                        <div className="grid gap-2">
+                            <Label>Role</Label>
                             <NativeSelect
                                 value={createForm.role}
                                 onChange={(e) => setCreateForm({ ...createForm, role: e.target.value })}
-                                className="rounded-xl h-11 border-muted-foreground/20 focus:ring-primary/20"
                             >
-                                <option value="" disabled>Select a role (Optional)</option>
-                                <option value="">No Role</option>
+                                <option value="">Select a role</option>
                                 {roles.map(role => (
-                                    <option key={role.id} value={role.name}>
-                                        {role.name}
-                                    </option>
+                                    <option key={role.id} value={role.name}>{role.name}</option>
                                 ))}
                             </NativeSelect>
                         </div>
                     </div>
-
                     <DialogFooter>
-                        <Button variant="ghost" className="rounded-xl font-bold" onClick={() => setIsCreateDialogOpen(false)}>Cancel</Button>
-                        <Button
-                            className="rounded-xl px-8 font-bold shadow-lg shadow-primary/20"
-                            onClick={handleCreateUser}
-                            disabled={isCreating}
-                        >
-                            {isCreating ? "Provisioning..." : "Create User"}
-                        </Button>
+                        <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>Cancel</Button>
+                        <Button onClick={handleCreateUser} disabled={isCreating}>Save</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
 
-            {/* Role Assignment Dialog */}
+            {/* Role Dialog */}
             <Dialog open={isRoleDialogOpen} onOpenChange={setIsRoleDialogOpen}>
-                <DialogContent className="sm:max-w-[425px] rounded-3xl">
+                <DialogContent>
                     <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2">
-                            <IconShieldCheck className="size-5 text-emerald-500" />
-                            Assign System Role
-                        </DialogTitle>
-                        <DialogDescription>
-                            Elevate or modify permissions for <span className="font-bold text-foreground">{selectedUser?.fullName || selectedUser?.username}</span>.
-                        </DialogDescription>
+                        <DialogTitle>Assign Role</DialogTitle>
                     </DialogHeader>
-
-                    <div className="grid gap-4 py-6">
+                    <div className="grid gap-4 py-4">
                         <div className="space-y-2">
-                            <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">Current Roles</label>
-                            <div className="flex flex-wrap gap-1.5 p-3 rounded-2xl bg-muted/30 border border-muted min-h-12">
+                            <Label>Current Roles</Label>
+                            <div className="flex flex-wrap gap-1 p-2 border rounded-md min-h-10">
                                 {selectedUser?.roles.map(role => (
-                                    <Badge key={role} variant="outline" className="bg-background font-bold text-[10px] pr-1 gap-1 flex items-center">
+                                    <Badge key={role} variant="secondary" className="gap-1">
                                         {role}
-                                        <button
-                                            onClick={() => handleRemoveRole(role)}
-                                            className="hover:bg-destructive hover:text-destructive-foreground rounded-full p-0.5 transition-colors"
-                                            title="Remove Role"
-                                        >
+                                        <button onClick={() => handleRemoveRole(role)}>
                                             <IconX className="size-3" />
                                         </button>
                                     </Badge>
                                 ))}
-                                {selectedUser?.roles.length === 0 && <span className="text-xs text-muted-foreground italic">No roles assigned</span>}
                             </div>
                         </div>
-
                         <div className="space-y-2">
-                            <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">Target Authority</label>
+                            <Label>Add Role</Label>
                             <NativeSelect
                                 value={targetRole}
                                 onChange={(e) => setTargetRole(e.target.value)}
-                                className="rounded-xl h-12 border-muted-foreground/20 focus:ring-primary/20"
                             >
-                                <option value="" disabled>Select a role to assign</option>
+                                <option value="">Select a role</option>
                                 {roles.filter(r => !selectedUser?.roles.includes(r.name)).map(role => (
-                                    <option key={role.id} value={role.name}>
-                                        {role.name}
-                                    </option>
+                                    <option key={role.id} value={role.name}>{role.name}</option>
                                 ))}
                             </NativeSelect>
-                            {roles.filter(r => !selectedUser?.roles.includes(r.name)).length === 0 && (
-                                <p className="text-[10px] text-muted-foreground italic ml-1 mt-1">
-                                    User already has all available roles.
-                                </p>
-                            )}
                         </div>
                     </div>
-
                     <DialogFooter>
-                        <Button variant="ghost" className="rounded-xl font-bold" onClick={() => setIsRoleDialogOpen(false)}>Cancel</Button>
-                        <Button
-                            className="rounded-xl px-8 font-bold shadow-lg shadow-primary/20"
-                            onClick={handleAssignRole}
-                            disabled={!targetRole || isAssigning}
-                        >
-                            {isAssigning ? "Assigning Authority..." : "Assign Permissions"}
-                        </Button>
+                        <Button variant="outline" onClick={() => setIsRoleDialogOpen(false)}>Cancel</Button>
+                        <Button onClick={handleAssignRole} disabled={isAssigning}>Assign</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
 
-            {/* Edit Profile Dialog */}
+            {/* Edit Dialog */}
             <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-                <DialogContent className="sm:max-w-[500px] rounded-3xl">
+                <DialogContent>
                     <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2">
-                            <IconEdit className="size-5 text-primary" />
-                            Update User Details
-                        </DialogTitle>
-                        <DialogDescription>
-                            Modify basic identity information for <span className="font-bold text-foreground">@{selectedUser?.username}</span>.
-                        </DialogDescription>
+                        <DialogTitle>Edit User</DialogTitle>
                     </DialogHeader>
-
-                    <div className="grid gap-6 py-6">
-                        <div className="space-y-2">
-                            <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">Full Identity Name</Label>
+                    <div className="grid gap-4 py-4">
+                        <div className="grid gap-2">
+                            <Label>Full Name</Label>
                             <Input
                                 value={editForm.fullName}
                                 onChange={(e) => setEditForm({ ...editForm, fullName: e.target.value })}
-                                className="rounded-xl h-12 focus:ring-primary/20"
-                                placeholder="Enter full name"
                             />
                         </div>
-                        <div className="space-y-2">
-                            <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">Digital Address (Email)</Label>
+                        <div className="grid gap-2">
+                            <Label>Email</Label>
                             <Input
                                 value={editForm.email}
                                 onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
-                                className="rounded-xl h-12 focus:ring-primary/20"
-                                placeholder="Enter email address"
-                                type="email"
                             />
                         </div>
-                        <div className="flex items-center justify-between p-4 rounded-2xl bg-muted/30 border border-muted">
-                            <div className="space-y-0.5">
-                                <Label className="text-sm font-bold">Access Status</Label>
-                                <p className="text-xs text-muted-foreground">Toggle account availability in the system.</p>
-                            </div>
+                        <div className="flex items-center justify-between">
+                            <Label>Status</Label>
                             <Switch
                                 checked={editForm.isActive}
                                 onCheckedChange={(checked) => setEditForm({ ...editForm, isActive: checked })}
                             />
                         </div>
                     </div>
-
                     <DialogFooter>
-                        <Button variant="ghost" className="rounded-xl font-bold" onClick={() => setIsEditDialogOpen(false)}>Discard</Button>
-                        <Button
-                            className="rounded-xl px-8 font-bold shadow-lg shadow-primary/20"
-                            onClick={handleUpdateUser}
-                            disabled={isUpdating}
-                        >
-                            {isUpdating ? "Saving Changes..." : "Commit Updates"}
-                        </Button>
+                        <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>
+                        <Button onClick={handleUpdateUser} disabled={isUpdating}>Save</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
 
-            {/* Delete Confirmation Alert */}
+            {/* Delete Alert */}
             <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-                <AlertDialogContent className="rounded-3xl border-rose-100 dark:border-rose-900">
+                <AlertDialogContent>
                     <AlertDialogHeader>
-                        <div className="size-14 rounded-2xl bg-rose-50 dark:bg-rose-950 flex items-center justify-center mb-4">
-                            <IconTrash className="size-7 text-rose-500" />
-                        </div>
-                        <AlertDialogTitle className="text-xl">Terminate Account?</AlertDialogTitle>
-                        <AlertDialogDescription className="text-sm leading-relaxed">
-                            You are about to permanently remove <span className="font-bold text-foreground">{selectedUser?.fullName || selectedUser?.username}</span> from the central identity ledger.
-                            <span className="block mt-2 font-semibold text-rose-600 dark:text-rose-400">This action is irreversible.</span>
-                        </AlertDialogDescription>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription>This will permanently delete the user account.</AlertDialogDescription>
                     </AlertDialogHeader>
-                    <AlertDialogFooter className="mt-6">
-                        <AlertDialogCancel className="rounded-xl font-bold bg-muted/50">Keep Account</AlertDialogCancel>
-                        <AlertDialogAction
-                            className="rounded-xl font-bold bg-rose-500 hover:bg-rose-600 shadow-lg shadow-rose-200 dark:shadow-rose-900 border-none px-8"
-                            onClick={handleDeleteUser}
-                            disabled={isDeleting}
-                        >
-                            {isDeleting ? "Terminating..." : "Confirm Deletion"}
-                        </AlertDialogAction>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDeleteUser} disabled={isDeleting}>Delete</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+
+            {/* Company Assignment Dialog */}
+            <Dialog open={isCompanyDialogOpen} onOpenChange={setIsCompanyDialogOpen}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Branch Access Management</DialogTitle>
+                        <DialogDescription>
+                            Assign branches/companies that <b>{selectedUser?.fullName || selectedUser?.username}</b> can access.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4 space-y-4">
+                        <div className="max-h-[300px] overflow-y-auto space-y-2 pr-2">
+                            {allCompanies.map(company => (
+                                <div key={company.id} className="flex items-center space-x-3 p-3 rounded-md border bg-muted/30 hover:bg-muted/50 transition-colors">
+                                    <Checkbox
+                                        id={`comp-${company.id}`}
+                                        checked={selectedCompanyIds.includes(company.id)}
+                                        onCheckedChange={(checked) => {
+                                            if (checked) {
+                                                setSelectedCompanyIds([...selectedCompanyIds, company.id])
+                                            } else {
+                                                setSelectedCompanyIds(selectedCompanyIds.filter(id => id !== company.id))
+                                            }
+                                        }}
+                                    />
+                                    <Label htmlFor={`comp-${company.id}`} className="flex-1 cursor-pointer font-medium">
+                                        {company.companyNameEn}
+                                        <span className="block text-[10px] text-muted-foreground font-normal">
+                                            {company.industry} • {company.registrationNo}
+                                        </span>
+                                    </Label>
+                                </div>
+                            ))}
+                            {allCompanies.length === 0 && (
+                                <div className="text-center py-8 text-muted-foreground italic text-sm border-2 border-dashed rounded-lg">
+                                    No companies found in the system.
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsCompanyDialogOpen(false)}>Cancel</Button>
+                        <Button onClick={handleAssignCompanies} disabled={isAssigningCompanies || allCompanies.length === 0}>
+                            {isAssigningCompanies ? (
+                                <>
+                                    <IconLoader className="mr-2 size-4 animate-spin" />
+                                    Saving...
+                                </>
+                            ) : (
+                                "Save Assignments"
+                            )}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }
 
-interface UserStatProps {
-    label: string
-    value: string
-    icon: React.ComponentType<{ className?: string }>
-    color: string
-}
-
-function UserStat({ label, value, icon: Icon, color }: UserStatProps) {
+function UserStat({ label, value }: { label: string; value: string }) {
     return (
-        <Card className="border shadow-none hover:bg-muted/30 transition-all duration-300 group">
-            <CardContent className="p-6 flex items-center gap-4">
-                <div className={cn("size-12 rounded-2xl flex items-center justify-center bg-background border shadow-sm group-hover:scale-110 transition-transform", color)}>
-                    <Icon className="size-6" />
-                </div>
-                <div>
-                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
-                    <h3 className="text-2xl font-bold tabular-nums tracking-tight mt-0.5">{value}</h3>
-                </div>
+        <Card className="rounded-md">
+            <CardContent className="p-4">
+                <p className="text-sm font-medium text-muted-foreground">{label}</p>
+                <h3 className="text-2xl font-bold">{value}</h3>
             </CardContent>
         </Card>
     )
 }
+

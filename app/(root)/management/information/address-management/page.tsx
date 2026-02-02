@@ -4,13 +4,16 @@ import * as React from "react"
 import { useRouter } from "next/navigation"
 import {
     IconHierarchy2,
-    IconWorld,
     IconMapPin,
     IconBuildingCommunity,
-    IconHome2,
     IconMailbox,
     IconPlus,
     IconLoader,
+    IconDownload,
+    IconUpload,
+    IconWorld,
+    IconMapPins,
+    IconFileSpreadsheet,
 } from "@tabler/icons-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -46,7 +49,7 @@ import {
 
 export default function AddressManagementPage() {
     const router = useRouter()
-    const [activeTab, setActiveTab] = React.useState("country")
+    const [activeTab, setActiveTab] = React.useState("division")
     const [isLoading, setIsLoading] = React.useState(true)
 
     // Data states
@@ -60,7 +63,6 @@ export default function AddressManagementPage() {
     const [selectedCountryId, setSelectedCountryId] = React.useState<string>("all")
     const [selectedDivisionId, setSelectedDivisionId] = React.useState<string>("all")
     const [selectedDistrictId, setSelectedDistrictId] = React.useState<string>("all")
-    const [selectedThanaId, setSelectedThanaId] = React.useState<string>("all")
 
     // CRUD Modal states
     const [isCountryModalOpen, setIsCountryModalOpen] = React.useState(false)
@@ -78,10 +80,12 @@ export default function AddressManagementPage() {
     const fetchData = React.useCallback(async () => {
         setIsLoading(true)
         try {
-            const [countriesData] = await Promise.all([
-                addressService.getCountries()
-            ])
+            const countriesData = await addressService.getCountries()
             setCountries(countriesData)
+
+            // Primarily load Divisions
+            const divisionsData = await addressService.getDivisions()
+            setDivisions(divisionsData)
         } catch (error) {
             console.error(error)
             toast.error("Failed to load address data")
@@ -110,13 +114,13 @@ export default function AddressManagementPage() {
                 const data = await addressService.getThanas(dId)
                 setThanas(data)
             } else if (activeTab === "postoffice") {
-                const tId = selectedThanaId === "all" ? undefined : parseInt(selectedThanaId)
-                const data = await addressService.getPostOffices(tId)
+                const dId = selectedDistrictId === "all" ? undefined : parseInt(selectedDistrictId)
+                const data = await addressService.getPostOffices(dId)
                 setPostOffices(data)
             }
         }
         fetchRelated()
-    }, [activeTab, selectedCountryId, selectedDivisionId, selectedDistrictId, selectedThanaId])
+    }, [activeTab, selectedCountryId, selectedDivisionId, selectedDistrictId])
 
     // --- CRUD Handlers ---
 
@@ -124,14 +128,15 @@ export default function AddressManagementPage() {
         e.preventDefault()
         setIsSaving(true)
         const formData = new FormData(e.currentTarget)
-        const name = formData.get("name") as string
+        const nameEn = formData.get("nameEn") as string
+        const nameBn = formData.get("nameBn") as string
 
         try {
             if (editingItem) {
-                await addressService.updateCountry(editingItem.id, { nameEn: name })
+                await addressService.updateCountry(editingItem.id, { nameEn, nameBn })
                 toast.success("Country updated")
             } else {
-                await addressService.createCountry({ nameEn: name })
+                await addressService.createCountry({ nameEn, nameBn })
                 toast.success("Country created")
             }
             setIsCountryModalOpen(false)
@@ -147,20 +152,20 @@ export default function AddressManagementPage() {
         e.preventDefault()
         setIsSaving(true)
         const formData = new FormData(e.currentTarget)
-        const name = formData.get("name") as string
+        const nameEn = formData.get("nameEn") as string
+        const nameBn = formData.get("nameBn") as string
         const countryId = parseInt(formData.get("countryId") as string)
 
         try {
             if (editingItem) {
-                await addressService.updateDivision(editingItem.id, { nameEn: name, countryId })
+                await addressService.updateDivision(editingItem.id, { nameEn, nameBn, countryId })
                 toast.success("Division updated")
             } else {
-                await addressService.createDivision({ nameEn: name, countryId })
+                await addressService.createDivision({ nameEn, nameBn, countryId })
                 toast.success("Division created")
             }
             setIsDivisionModalOpen(false)
-            const data = await addressService.getDivisions(selectedCountryId === "all" ? undefined : parseInt(selectedCountryId))
-            setDivisions(data)
+            fetchData()
         } catch (error) {
             toast.error("Failed to save division")
         } finally {
@@ -172,15 +177,16 @@ export default function AddressManagementPage() {
         e.preventDefault()
         setIsSaving(true)
         const formData = new FormData(e.currentTarget)
-        const name = formData.get("name") as string
+        const nameEn = formData.get("nameEn") as string
+        const nameBn = formData.get("nameBn") as string
         const divisionId = parseInt(formData.get("divisionId") as string)
 
         try {
             if (editingItem) {
-                await addressService.updateDistrict(editingItem.id, { nameEn: name, divisionId })
+                await addressService.updateDistrict(editingItem.id, { nameEn, nameBn, divisionId })
                 toast.success("District updated")
             } else {
-                await addressService.createDistrict({ nameEn: name, divisionId })
+                await addressService.createDistrict({ nameEn, nameBn, divisionId })
                 toast.success("District created")
             }
             setIsDistrictModalOpen(false)
@@ -197,15 +203,16 @@ export default function AddressManagementPage() {
         e.preventDefault()
         setIsSaving(true)
         const formData = new FormData(e.currentTarget)
-        const name = formData.get("name") as string
+        const nameEn = formData.get("nameEn") as string
+        const nameBn = formData.get("nameBn") as string
         const districtId = parseInt(formData.get("districtId") as string)
 
         try {
             if (editingItem) {
-                await addressService.updateThana(editingItem.id, { nameEn: name, districtId })
+                await addressService.updateThana(editingItem.id, { nameEn, nameBn, districtId })
                 toast.success("Thana updated")
             } else {
-                await addressService.createThana({ nameEn: name, districtId })
+                await addressService.createThana({ nameEn, nameBn, districtId })
                 toast.success("Thana created")
             }
             setIsThanaModalOpen(false)
@@ -222,20 +229,21 @@ export default function AddressManagementPage() {
         e.preventDefault()
         setIsSaving(true)
         const formData = new FormData(e.currentTarget)
-        const name = formData.get("name") as string
+        const nameEn = formData.get("nameEn") as string
+        const nameBn = formData.get("nameBn") as string
         const code = formData.get("code") as string
         const districtId = parseInt(formData.get("districtId") as string)
 
         try {
             if (editingItem) {
-                await addressService.updatePostOffice(editingItem.id, { nameEn: name, code, districtId })
+                await addressService.updatePostOffice(editingItem.id, { nameEn, nameBn, code, districtId })
                 toast.success("Post Office updated")
             } else {
-                await addressService.createPostOffice({ nameEn: name, code, districtId })
+                await addressService.createPostOffice({ nameEn, nameBn, code, districtId })
                 toast.success("Post Office created")
             }
             setIsPostOfficeModalOpen(false)
-            const data = await addressService.getPostOffices(selectedThanaId === "all" ? undefined : parseInt(selectedThanaId))
+            const data = await addressService.getPostOffices(selectedDistrictId === "all" ? undefined : parseInt(selectedDistrictId))
             setPostOffices(data)
         } catch (error) {
             toast.error("Failed to save post office")
@@ -257,10 +265,8 @@ export default function AddressManagementPage() {
             toast.success(`${type.charAt(0).toUpperCase() + type.slice(1)} deleted`)
 
             // Reload current view
-            if (type === "country") fetchData()
-            else if (type === "division") {
-                const data = await addressService.getDivisions(selectedCountryId === "all" ? undefined : parseInt(selectedCountryId))
-                setDivisions(data)
+            if (type === "country" || type === "division") {
+                fetchData();
             }
             else if (type === "district") {
                 const data = await addressService.getDistricts(selectedDivisionId === "all" ? undefined : parseInt(selectedDivisionId))
@@ -271,7 +277,7 @@ export default function AddressManagementPage() {
                 setThanas(data)
             }
             else if (type === "postoffice") {
-                const data = await addressService.getPostOffices(selectedThanaId === "all" ? undefined : parseInt(selectedThanaId))
+                const data = await addressService.getPostOffices(selectedDistrictId === "all" ? undefined : parseInt(selectedDistrictId))
                 setPostOffices(data)
             }
 
@@ -281,6 +287,17 @@ export default function AddressManagementPage() {
         }
     }
 
+    const handleExportTemplate = async () => {
+        try {
+            await addressService.exportTemplate()
+            toast.success("Template downloaded")
+        } catch (error) {
+            toast.error("Failed to download template")
+        }
+    }
+
+
+
     // --- Columns ---
     const countryColumns: ColumnDef<Country>[] = [
         {
@@ -289,7 +306,8 @@ export default function AddressManagementPage() {
             cell: ({ row }) => <div className="text-center font-medium">{row.index + 1}</div>,
             size: 40,
         },
-        { accessorKey: "nameEn", header: "Country Name" },
+        { accessorKey: "nameEn", header: "Country Name (English)" },
+        { accessorKey: "nameBn", header: "Country Name (Bangla)", cell: ({ row }) => <span className="font-sutonny text-lg">{row.original.nameBn}</span> },
     ]
 
     const divisionColumns: ColumnDef<Division>[] = [
@@ -299,7 +317,8 @@ export default function AddressManagementPage() {
             cell: ({ row }) => <div className="text-center font-medium">{row.index + 1}</div>,
             size: 40,
         },
-        { accessorKey: "nameEn", header: "Division Name" },
+        { accessorKey: "nameEn", header: "Division Name (English)" },
+        { accessorKey: "nameBn", header: "Division Name (Bangla)", cell: ({ row }) => <span className="font-sutonny text-lg">{row.original.nameBn}</span> },
         { accessorKey: "countryName", header: "Country" },
     ]
 
@@ -310,7 +329,8 @@ export default function AddressManagementPage() {
             cell: ({ row }) => <div className="text-center font-medium">{row.index + 1}</div>,
             size: 40,
         },
-        { accessorKey: "nameEn", header: "District Name" },
+        { accessorKey: "nameEn", header: "District Name (English)" },
+        { accessorKey: "nameBn", header: "District Name (Bangla)", cell: ({ row }) => <span className="font-sutonny text-lg">{row.original.nameBn}</span> },
         { accessorKey: "divisionName", header: "Division" },
     ]
 
@@ -321,7 +341,8 @@ export default function AddressManagementPage() {
             cell: ({ row }) => <div className="text-center font-medium">{row.index + 1}</div>,
             size: 40,
         },
-        { accessorKey: "nameEn", header: "Thana Name" },
+        { accessorKey: "nameEn", header: "Thana Name (English)" },
+        { accessorKey: "nameBn", header: "Thana Name (Bangla)", cell: ({ row }) => <span className="font-sutonny text-lg">{row.original.nameBn}</span> },
         { accessorKey: "districtName", header: "District" },
     ]
 
@@ -332,9 +353,10 @@ export default function AddressManagementPage() {
             cell: ({ row }) => <div className="text-center font-medium">{row.index + 1}</div>,
             size: 40,
         },
-        { accessorKey: "nameEn", header: "Post Office Name" },
+        { accessorKey: "nameEn", header: "Post Office Name (English)" },
+        { accessorKey: "nameBn", header: "Post Office Name (Bangla)", cell: ({ row }) => <span className="font-sutonny text-lg">{row.original.nameBn}</span> },
         { accessorKey: "code", header: "Post Code" },
-        { accessorKey: "thanaName", header: "Thana" },
+        { accessorKey: "districtName", header: "District" },
     ]
 
     return (
@@ -350,6 +372,35 @@ export default function AddressManagementPage() {
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => router.push('/management/information/address-management/import')}
+                        className="gap-2"
+                    >
+                        <IconUpload className="size-4" />
+                        Import Data
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={handleExportTemplate} className="gap-2">
+                        <IconDownload className="size-4" />
+                        Excel Template
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={async () => {
+                            try {
+                                await addressService.exportDemo()
+                                toast.success("Demo data downloaded")
+                            } catch (error) {
+                                toast.error("Failed to download demo data")
+                            }
+                        }}
+                        className="gap-2"
+                    >
+                        <IconFileSpreadsheet className="size-4" />
+                        Demo Data
+                    </Button>
                     <Button variant="outline" size="sm" onClick={() => fetchData()}>
                         <IconLoader className={cn("size-4 mr-2", isLoading && "animate-spin")} />
                         Refresh
@@ -366,17 +417,17 @@ export default function AddressManagementPage() {
                                     { val: "country", icon: IconWorld, label: "Country" },
                                     { val: "division", icon: IconMapPin, label: "Division" },
                                     { val: "district", icon: IconBuildingCommunity, label: "District" },
-                                    { val: "thana", icon: IconHome2, label: "Thana" },
+                                    { val: "thana", icon: IconMapPins, label: "Thana" },
                                     { val: "postoffice", icon: IconMailbox, label: "Post Office" },
-                                ].map((t) => (
+                                ].map((tab) => (
                                     <TabsTrigger
-                                        key={t.val}
-                                        value={t.val}
+                                        key={tab.val}
+                                        value={tab.val}
                                         className="flex-1 h-full rounded-full data-[state=active]:bg-[#108545] data-[state=active]:text-white transition-all duration-300 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 font-medium p-0"
                                     >
                                         <div className="flex items-center justify-center gap-2">
-                                            <t.icon className="size-4.5" />
-                                            <span className="text-sm leading-none">{t.label}</span>
+                                            <tab.icon className="size-4.5" />
+                                            <span className="text-sm leading-none">{tab.label}</span>
                                         </div>
                                     </TabsTrigger>
                                 ))}
@@ -440,7 +491,7 @@ export default function AddressManagementPage() {
                                             </NativeSelect>
                                         </div>
                                     )}
-                                    {activeTab === "thana" && (
+                                    {(activeTab === "thana" || activeTab === "postoffice") && (
                                         <div className="flex flex-col gap-2 min-w-[200px]">
                                             <Label className="text-xs font-medium text-muted-foreground">District Filter</Label>
                                             <NativeSelect
@@ -450,20 +501,6 @@ export default function AddressManagementPage() {
                                                 <option value="all">All Districts</option>
                                                 {districts.map(d => (
                                                     <option key={d.id} value={d.id.toString()}>{d.nameEn}</option>
-                                                ))}
-                                            </NativeSelect>
-                                        </div>
-                                    )}
-                                    {activeTab === "postoffice" && (
-                                        <div className="flex flex-col gap-2 min-w-[200px]">
-                                            <Label className="text-xs font-medium text-muted-foreground">Thana Filter</Label>
-                                            <NativeSelect
-                                                value={selectedThanaId}
-                                                onChange={(e) => setSelectedThanaId(e.target.value)}
-                                            >
-                                                <option value="all">All Thanas</option>
-                                                {thanas.map(t => (
-                                                    <option key={t.id} value={t.id.toString()}>{t.nameEn}</option>
                                                 ))}
                                             </NativeSelect>
                                         </div>
@@ -546,12 +583,22 @@ export default function AddressManagementPage() {
                     <form onSubmit={handleSaveCountry}>
                         <DialogHeader>
                             <DialogTitle>{editingItem ? "Edit Country" : "New Country"}</DialogTitle>
-                            <DialogDescription>Add a country to your address book.</DialogDescription>
+                            <DialogDescription>Create a country.</DialogDescription>
                         </DialogHeader>
                         <div className="py-4 space-y-4">
                             <div className="grid gap-2">
-                                <Label htmlFor="country-name">Country Name</Label>
-                                <Input id="country-name" name="name" defaultValue={editingItem?.nameEn} placeholder="e.g. Bangladesh" required />
+                                <Label htmlFor="country-name">Country Name (English)</Label>
+                                <Input id="country-name" name="nameEn" defaultValue={editingItem?.nameEn} placeholder="e.g. Bangladesh" required />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="country-name-bn">Country Name (Bangla)</Label>
+                                <Input
+                                    id="country-name-bn"
+                                    name="nameBn"
+                                    defaultValue={editingItem?.nameBn}
+                                    placeholder="e.g. বাংলাদেশ"
+                                    className="font-sutonny text-lg"
+                                />
                             </div>
                         </div>
                         <DialogFooter>
@@ -568,7 +615,7 @@ export default function AddressManagementPage() {
                     <form onSubmit={handleSaveDivision}>
                         <DialogHeader>
                             <DialogTitle>{editingItem ? "Edit Division" : "New Division"}</DialogTitle>
-                            <DialogDescription>Create a division under a country.</DialogDescription>
+                            <DialogDescription>Create a division.</DialogDescription>
                         </DialogHeader>
                         <div className="py-4 space-y-4">
                             <div className="grid gap-2">
@@ -579,8 +626,18 @@ export default function AddressManagementPage() {
                                 </NativeSelect>
                             </div>
                             <div className="grid gap-2">
-                                <Label htmlFor="div-name">Division Name</Label>
-                                <Input id="div-name" name="name" defaultValue={editingItem?.nameEn} placeholder="e.g. Dhaka" required />
+                                <Label htmlFor="div-name">Division Name (English)</Label>
+                                <Input id="div-name" name="nameEn" defaultValue={editingItem?.nameEn} placeholder="e.g. Dhaka" required />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="div-name-bn">Division Name (Bangla)</Label>
+                                <Input
+                                    id="div-name-bn"
+                                    name="nameBn"
+                                    defaultValue={editingItem?.nameBn}
+                                    placeholder="e.g. ঢাকা"
+                                    className="font-sutonny text-lg"
+                                />
                             </div>
                         </div>
                         <DialogFooter>
@@ -608,8 +665,18 @@ export default function AddressManagementPage() {
                                 </NativeSelect>
                             </div>
                             <div className="grid gap-2">
-                                <Label htmlFor="dist-name">District Name</Label>
-                                <Input id="dist-name" name="name" defaultValue={editingItem?.nameEn} placeholder="e.g. Gazipur" required />
+                                <Label htmlFor="dist-name">District Name (English)</Label>
+                                <Input id="dist-name" name="nameEn" defaultValue={editingItem?.nameEn} placeholder="e.g. Gazipur" required />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="dist-name-bn">District Name (Bangla)</Label>
+                                <Input
+                                    id="dist-name-bn"
+                                    name="nameBn"
+                                    defaultValue={editingItem?.nameBn}
+                                    placeholder="e.g. গাজীপুর"
+                                    className="font-sutonny text-lg"
+                                />
                             </div>
                         </div>
                         <DialogFooter>
@@ -637,8 +704,18 @@ export default function AddressManagementPage() {
                                 </NativeSelect>
                             </div>
                             <div className="grid gap-2">
-                                <Label htmlFor="thana-name">Thana Name</Label>
-                                <Input id="thana-name" name="name" defaultValue={editingItem?.nameEn} placeholder="e.g. Tongi" required />
+                                <Label htmlFor="thana-name">Thana Name (English)</Label>
+                                <Input id="thana-name" name="nameEn" defaultValue={editingItem?.nameEn} placeholder="e.g. Tongi" required />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="thana-name-bn">Thana Name (Bangla)</Label>
+                                <Input
+                                    id="thana-name-bn"
+                                    name="nameBn"
+                                    defaultValue={editingItem?.nameBn}
+                                    placeholder="e.g. টঙ্গী"
+                                    className="font-sutonny text-lg"
+                                />
                             </div>
                         </div>
                         <DialogFooter>
@@ -655,19 +732,29 @@ export default function AddressManagementPage() {
                     <form onSubmit={handleSavePostOffice}>
                         <DialogHeader>
                             <DialogTitle>{editingItem ? "Edit Post Office" : "New Post Office"}</DialogTitle>
-                            <DialogDescription>Create a post office under a thana.</DialogDescription>
+                            <DialogDescription>Create a post office under a district.</DialogDescription>
                         </DialogHeader>
                         <div className="py-4 space-y-4">
                             <div className="grid gap-2">
-                                <Label htmlFor="po-district">District</Label>
-                                <NativeSelect id="po-district" name="districtId" defaultValue={editingItem?.districtId} required>
+                                <Label htmlFor="po-dist">District</Label>
+                                <NativeSelect id="po-dist" name="districtId" defaultValue={editingItem?.districtId} required>
                                     <option value="">Select District</option>
                                     {districts.map(d => <option key={d.id} value={d.id}>{d.nameEn}</option>)}
                                 </NativeSelect>
                             </div>
                             <div className="grid gap-2">
-                                <Label htmlFor="po-name">Post Office Name</Label>
-                                <Input id="po-name" name="name" defaultValue={editingItem?.nameEn} placeholder="e.g. Tongi College Gate" required />
+                                <Label htmlFor="po-name">Post Office Name (English)</Label>
+                                <Input id="po-name" name="nameEn" defaultValue={editingItem?.nameEn} placeholder="e.g. Tongi College Gate" required />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="po-name-bn">Post Office Name (Bangla)</Label>
+                                <Input
+                                    id="po-name-bn"
+                                    name="nameBn"
+                                    defaultValue={editingItem?.nameBn}
+                                    placeholder="e.g. টঙ্গী কলেজ গেট"
+                                    className="font-sutonny text-lg"
+                                />
                             </div>
                             <div className="grid gap-2">
                                 <Label htmlFor="po-code">Post Code</Label>

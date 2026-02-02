@@ -1,8 +1,8 @@
 "use client"
 
 import * as React from "react"
-import { useRouter } from "next/navigation"
-import { IconArrowLeft, IconUserCircle, IconCheck, IconPhoto } from "@tabler/icons-react"
+import { useRouter, useParams } from "next/navigation"
+import { IconArrowLeft, IconUserCircle, IconCheck, IconPhoto, IconLoader } from "@tabler/icons-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -10,13 +10,16 @@ import { Label } from "@/components/ui/label"
 import { NativeSelect } from "@/components/ui/select"
 import { DatePicker } from "@/components/ui/date-picker"
 import { toast } from "sonner"
-import { employeeService, type CreateEmployeeDto } from "@/lib/services/employee"
+import { employeeService, type UpdateEmployeeDto } from "@/lib/services/employee"
 import { organogramService } from "@/lib/services/organogram"
 
-export default function CreateEmployeePage() {
+export default function EditEmployeePage() {
     const router = useRouter()
+    const params = useParams()
+    const employeeIdParam = params?.id as string
     const [isLoading, setIsLoading] = React.useState(false)
-    const [joinDate, setJoinDate] = React.useState<Date | undefined>(new Date())
+    const [isFetching, setIsFetching] = React.useState(true)
+    const [joinDate, setJoinDate] = React.useState<Date | undefined>(undefined)
     const [dob, setDob] = React.useState<Date | undefined>(undefined)
 
     // Form states
@@ -34,6 +37,7 @@ export default function CreateEmployeePage() {
     const [designationId, setDesignationId] = React.useState<number>(0)
     const [lineId, setLineId] = React.useState<number>(0)
     const [status, setStatus] = React.useState("Active")
+    const [isActive, setIsActive] = React.useState(true)
     const [profileImageUrl, setProfileImageUrl] = React.useState<string | undefined>(undefined)
     const [isUploading, setIsUploading] = React.useState(false)
     const fileInputRef = React.useRef<HTMLInputElement>(null)
@@ -43,6 +47,44 @@ export default function CreateEmployeePage() {
     const [sections, setSections] = React.useState<any[]>([])
     const [designations, setDesignations] = React.useState<any[]>([])
     const [lines, setLines] = React.useState<any[]>([])
+
+    // Fetch employee data
+    React.useEffect(() => {
+        if (!employeeIdParam) return
+
+        const fetchEmployee = async () => {
+            setIsFetching(true)
+            try {
+                const employee = await employeeService.getEmployee(parseInt(employeeIdParam))
+
+                setFullNameEn(employee.fullNameEn || "")
+                setEmployeeId(employee.employeeId || "")
+                setFullNameBn(employee.fullNameBn || "")
+                setNid(employee.nid || "")
+                setProximity(employee.proximity || "")
+                setGender(employee.gender || "")
+                setReligion(employee.religion || "")
+                setEmail(employee.email || "")
+                setPhone(employee.phoneNumber || "")
+                setDepartmentId(employee.departmentId || 0)
+                setSectionId(employee.sectionId || 0)
+                setDesignationId(employee.designationId || 0)
+                setLineId(employee.lineId || 0)
+                setStatus(employee.status || "Active")
+                setIsActive(employee.isActive)
+                setProfileImageUrl(employee.profileImageUrl)
+                setJoinDate(employee.joinDate ? new Date(employee.joinDate) : undefined)
+                setDob(employee.dateOfBirth ? new Date(employee.dateOfBirth) : undefined)
+            } catch (error) {
+                toast.error("Failed to load employee data")
+                console.error(error)
+            } finally {
+                setIsFetching(false)
+            }
+        }
+
+        fetchEmployee()
+    }, [employeeIdParam])
 
     // Fetch dropdown data
     React.useEffect(() => {
@@ -117,7 +159,7 @@ export default function CreateEmployeePage() {
         setIsLoading(true)
 
         try {
-            const data: CreateEmployeeDto = {
+            const data: UpdateEmployeeDto = {
                 employeeId: employeeId || undefined,
                 fullNameEn,
                 fullNameBn: fullNameBn || undefined,
@@ -135,17 +177,26 @@ export default function CreateEmployeePage() {
                 email: email || undefined,
                 phoneNumber: phone || undefined,
                 profileImageUrl: profileImageUrl || undefined,
+                isActive,
             }
 
-            await employeeService.createEmployee(data)
-            toast.success("Employee created successfully")
+            await employeeService.updateEmployee(parseInt(employeeIdParam), data)
+            toast.success("Employee updated successfully")
             router.push("/management/human-resource/employee-info")
         } catch (error: any) {
-            toast.error(error?.response?.data?.message || "Failed to create employee")
+            toast.error(error?.response?.data?.message || "Failed to update employee")
             console.error(error)
         } finally {
             setIsLoading(false)
         }
+    }
+
+    if (isFetching) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <IconLoader className="size-8 animate-spin text-primary" />
+            </div>
+        )
     }
 
     return (
@@ -156,7 +207,7 @@ export default function CreateEmployeePage() {
                 </Button>
                 <div className="flex items-center gap-2">
                     <IconUserCircle className="size-6 text-primary" />
-                    <h1 className="text-2xl font-bold tracking-tight">Add New Employee</h1>
+                    <h1 className="text-2xl font-bold tracking-tight">Edit Employee</h1>
                 </div>
             </div>
 
@@ -203,7 +254,7 @@ export default function CreateEmployeePage() {
                             </CardHeader>
                             <CardContent className="space-y-4 pt-4">
                                 <div className="grid gap-2">
-                                    <Label htmlFor="status">Initial Status</Label>
+                                    <Label htmlFor="status">Status</Label>
                                     <NativeSelect
                                         id="status"
                                         value={status}
@@ -212,6 +263,17 @@ export default function CreateEmployeePage() {
                                         <option value="Active">Active</option>
                                         <option value="On Leave">On Leave</option>
                                         <option value="Probation">Probation</option>
+                                    </NativeSelect>
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="isActive">Active Status</Label>
+                                    <NativeSelect
+                                        id="isActive"
+                                        value={isActive ? "true" : "false"}
+                                        onChange={(e) => setIsActive(e.target.value === "true")}
+                                    >
+                                        <option value="true">Active</option>
+                                        <option value="false">Inactive</option>
                                     </NativeSelect>
                                 </div>
                                 <div className="grid gap-2">
@@ -421,18 +483,11 @@ export default function CreateEmployeePage() {
 
                 <div className="flex justify-end gap-3 mt-4 border-t pt-6">
                     <Button variant="outline" type="button" onClick={() => router.back()}>Cancel</Button>
-                    <Button
-                        variant="secondary"
-                        type="button"
-                        onClick={() => router.push("/management/human-resource/employee-info/others-information")}
-                    >
-                        Others Information
-                    </Button>
                     <Button type="submit" className="min-w-32" disabled={isLoading}>
-                        {isLoading ? "Saving..." : (
+                        {isLoading ? "Updating..." : (
                             <span className="flex items-center gap-2">
                                 <IconCheck className="size-4" />
-                                Save Employee
+                                Update Employee
                             </span>
                         )}
                     </Button>

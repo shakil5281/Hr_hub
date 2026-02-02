@@ -57,7 +57,8 @@ export const sidebarData = {
                     icon: IconInfoCircle,
                     items: [
                         { title: "Company information", url: "/management/information/company-information" },
-                        { title: "Address", url: "/management/information/address" },
+                        { title: "Company Organogram", url: "/management/information/company-organogram" },
+                        { title: "Address", url: "/management/information/address-management" },
                         { title: "Shift", url: "/management/information/shift" },
                     ],
                 },

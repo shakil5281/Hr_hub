@@ -8,23 +8,41 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { IconBuilding, IconCircleCheckFilled, IconLoader } from "@tabler/icons-react"
 import { type ColumnDef } from "@tanstack/react-table"
-import companyData from "./company-data.json"
+import { companyService, Company } from "@/lib/services/company"
+import { toast } from "sonner"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 
-interface CompanyData {
-    id: number
-    companyName: string
-    registrationNo: string
-    industry: string
-    email: string
-    status: string
-    founded: string
-}
-
-const companyColumns: ColumnDef<CompanyData>[] = [
+const companyColumns: ColumnDef<Company>[] = [
     {
-        accessorKey: "companyName",
-        header: "Company Name",
-        cell: ({ row }) => <span className="font-medium">{row.original.companyName}</span>,
+        id: "sl",
+        header: "SL",
+        cell: ({ row }) => <div className="text-center font-medium">{row.index + 1}</div>,
+        size: 40,
+    },
+    {
+        accessorKey: "logoPath",
+        header: "Logo",
+        cell: ({ row }) => row.original.logoPath ? (
+            <img
+                src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}${row.original.logoPath}`}
+                alt="Logo"
+                className="size-10 object-contain rounded border"
+            />
+        ) : (
+            <div className="size-10 bg-muted flex items-center justify-center rounded border">
+                <IconBuilding className="size-5 text-muted-foreground" />
+            </div>
+        ),
+    },
+    {
+        accessorKey: "companyNameEn",
+        header: "Company Name (English)",
+        cell: ({ row }) => <span className="font-medium">{row.original.companyNameEn}</span>,
+    },
+    {
+        accessorKey: "companyNameBn",
+        header: "Company Name (Bangla)",
+        cell: ({ row }) => <span className="font-sutonny text-lg">{row.original.companyNameBn}</span>,
     },
     {
         accessorKey: "registrationNo",
@@ -44,10 +62,14 @@ const companyColumns: ColumnDef<CompanyData>[] = [
         header: "Official Email",
     },
     {
+        accessorKey: "phoneNumber",
+        header: "Phone",
+    },
+    {
         accessorKey: "status",
         header: "Status",
         cell: ({ row }) => (
-            <Badge variant="outline" className="flex items-center gap-1.5 w-fit font-normal">
+            <Badge variant="outline" className="flex items-center gap-1.5 w-fit font-normal capitalize">
                 {row.original.status === "Active" ? (
                     <IconCircleCheckFilled className="size-3.5 text-green-500" />
                 ) : (
@@ -65,9 +87,40 @@ const companyColumns: ColumnDef<CompanyData>[] = [
 
 export default function CompanyInformationPage() {
     const router = useRouter()
+    const [companies, setCompanies] = React.useState<Company[]>([])
+    const [isLoading, setIsLoading] = React.useState(true)
+    const [deleteId, setDeleteId] = React.useState<number | null>(null)
 
-    const handleEdit = (company: CompanyData) => {
-        router.push(`/information/company-information/edit/${company.id}`)
+    const fetchCompanies = React.useCallback(async () => {
+        try {
+            setIsLoading(true)
+            const data = await companyService.getAll()
+            setCompanies(data)
+        } catch (error) {
+            console.error(error)
+            toast.error("Failed to fetch companies")
+        } finally {
+            setIsLoading(false)
+        }
+    }, [])
+
+    React.useEffect(() => {
+        fetchCompanies()
+    }, [fetchCompanies])
+
+    const handleEdit = (company: Company) => {
+        router.push(`/management/information/company-information/edit/${company.id}`)
+    }
+
+    const handleDelete = async (company: Company) => {
+        try {
+            await companyService.delete(company.id)
+            toast.success("Company deleted successfully")
+            fetchCompanies()
+        } catch (error) {
+            console.error(error)
+            toast.error("Failed to delete company")
+        }
     }
 
     return (
@@ -78,13 +131,17 @@ export default function CompanyInformationPage() {
             </div>
 
             <DataTable
-                data={companyData as CompanyData[]}
+                data={companies}
                 columns={companyColumns}
                 showTabs={false}
                 showColumnCustomizer={false}
+                isLoading={isLoading}
+                enableSelection={true}
+                enableDrag={true}
                 addLabel="Add New"
-                onAddClick={() => router.push("/information/company-information/create")}
+                onAddClick={() => router.push("/management/information/company-information/create")}
                 onEditClick={handleEdit}
+                onDelete={handleDelete}
             />
         </div>
     )

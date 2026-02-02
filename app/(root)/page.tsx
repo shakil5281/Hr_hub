@@ -81,272 +81,232 @@ const upcomingEvents = [
 
 export default function Page() {
   return (
-    <div className="flex flex-col min-h-screen bg-background/50 animate-in fade-in duration-1000">
-
+    <div className="flex flex-col gap-6 p-6">
       {/* Header Area */}
-      <div className="border-b bg-background/80 backdrop-blur-md sticky top-0 z-20">
-        <div className="container mx-auto px-4 py-6 lg:px-8 max-w-[1600px]">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary shadow-lg shadow-primary/20">
-                <IconLayoutDashboard className="size-6 text-primary-foreground" />
-              </div>
-              <div>
-                <h1 className="text-xl  tracking-tight bg-gradient-to-r from-foreground to-foreground/60 bg-clip-text text-transparent">
-                  Management Dashboard
-                </h1>
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest">
-                  Enterprise Pulse • Session Active
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" className="hidden sm:flex rounded-full px-4 border-2">
-                <IconRefresh className="mr-2 size-4" />
-                Refresh Stats
-              </Button>
-              <Button size="sm" className="rounded-full px-6 shadow-xl shadow-primary/20">
-                <IconUserPlus className="mr-2 size-4" />
-                Hire Talent
-              </Button>
-              <Button variant="ghost" size="icon" className="rounded-full">
-                <IconBellRinging className="size-5" />
-              </Button>
-            </div>
-          </div>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">Management Dashboard</h1>
+          <p className="text-sm text-muted-foreground uppercase tracking-wider">Enterprise Pulse • Session Active</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm">
+            <IconRefresh className="mr-2 size-4" />
+            Reload
+          </Button>
+          <Button size="sm">
+            <IconUserPlus className="mr-2 size-4" />
+            Add Employee
+          </Button>
         </div>
       </div>
 
-      <main className="container mx-auto px-4 py-8 lg:px-8 max-w-[1600px] space-y-8 animate-in slide-in-from-bottom-6 duration-1000 delay-150">
+      {/* 1. KPI Summary Cards */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <SummaryCard
+          title="Total Workforce"
+          value="1,284"
+          icon={IconUsers}
+          trend={{ value: "4.2%", label: "growth", isUp: true }}
+          status="primary"
+          chartData={[40, 45, 42, 50, 48, 55, 60, 65].map((v) => ({ value: v }))}
+        />
+        <SummaryCard
+          title="Attendance"
+          value="97.2%"
+          icon={IconUserCheck}
+          trend={{ value: "0.8%", label: "vs yesterday", isUp: true }}
+          status="success"
+          chartData={[90, 92, 94, 91, 95, 96, 97, 98].map((v) => ({ value: v }))}
+        />
+        <SummaryCard
+          title="On Leave"
+          value="14"
+          icon={IconUserOff}
+          trend={{ value: "2", label: "urgent", isUp: false }}
+          status="warning"
+          chartData={[10, 15, 12, 14, 18, 16, 14, 12].map((v) => ({ value: v }))}
+        />
+        <SummaryCard
+          title="Open Positions"
+          value="42"
+          icon={IconBriefcase}
+          trend={{ value: "3", label: "new", isUp: true }}
+          status="info"
+          chartData={[30, 32, 35, 38, 40, 39, 41, 42].map((v) => ({ value: v }))}
+        />
+      </div>
 
-        {/* 1. KPI Summary Cards */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <SummaryCard
-            title="Total Workforce"
-            value="1,284"
-            icon={IconUsers}
-            trend={{ value: "4.2%", label: "growth", isUp: true }}
-            status="primary"
-            chartData={[40, 45, 42, 50, 48, 55, 60, 65].map((v) => ({ value: v }))}
-          />
-          <SummaryCard
-            title="Attendance"
-            value="97.2%"
-            icon={IconUserCheck}
-            trend={{ value: "0.8%", label: "vs yesterday", isUp: true }}
-            status="success"
-            chartData={[90, 92, 94, 91, 95, 96, 97, 98].map((v) => ({ value: v }))}
-          />
-          <SummaryCard
-            title="On Leave"
-            value="14"
-            icon={IconUserOff}
-            trend={{ value: "2", label: "urgent", isUp: false }}
-            status="warning"
-            chartData={[10, 15, 12, 14, 18, 16, 14, 12].map((v) => ({ value: v }))}
-          />
-          <SummaryCard
-            title="Open Positions"
-            value="42"
-            icon={IconBriefcase}
-            trend={{ value: "3", label: "new", isUp: true }}
-            status="info"
-            chartData={[30, 32, 35, 38, 40, 39, 41, 42].map((v) => ({ value: v }))}
-          />
-        </div>
-
-        {/* 2. Primary Analytics & Insights */}
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-
-          {/* Attendance Analysis */}
-          <Card className="xl:col-span-2 border-2 shadow-xl shadow-accent/5 overflow-hidden group">
-            <CardHeader className="flex flex-row items-center justify-between pb-8">
-              <div>
-                <CardTitle className="text-xl font-bold">Attendance Velocity</CardTitle>
-                <CardDescription>Real-time monitoring of workplace presence.</CardDescription>
-              </div>
-              <SelectGroup />
-            </CardHeader>
-            <CardContent className="h-[350px] w-full px-2">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={attendanceData}>
-                  <defs>
-                    <linearGradient id="colorMain" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.15} />
-                      <stop offset="95%" stopColor="var(--primary)" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700 }} dy={10} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700 }} />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Area
-                    type="monotone"
-                    dataKey="present"
-                    stroke="var(--primary)"
-                    strokeWidth={4}
-                    fillOpacity={1}
-                    fill="url(#colorMain)"
-                    animationDuration={1500}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="target"
-                    stroke="var(--muted-foreground)"
-                    strokeWidth={2}
-                    strokeDasharray="5 5"
-                    fill="none"
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-
-          {/* Department Mix & Premium Insights */}
-          <div className="space-y-8">
-            <Card className="border-2 shadow-xl shadow-accent/5">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base font-bold">Workforce Allocation</CardTitle>
-              </CardHeader>
-              <CardContent className="flex flex-col items-center">
-                <div className="h-[220px] w-full relative flex items-center justify-center">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={deptData}
-                        innerRadius={65}
-                        outerRadius={85}
-                        paddingAngle={5}
-                        dataKey="value"
-                      >
-                        {deptData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
-                  <div className="absolute flex flex-col items-center justify-center animate-pulse">
-                    <span className="text-3xl font-black">1284</span>
-                    <span className="text-[10px] text-muted-foreground font-black uppercase tracking-tighter">Total Staff</span>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 w-full gap-x-4 gap-y-2 mt-4">
-                  {deptData.map((item) => (
-                    <div key={item.name} className="flex items-center gap-2 group cursor-help">
-                      <div className="size-2 rounded-full" style={{ backgroundColor: item.color }} />
-                      <span className="text-[10px] font-bold text-muted-foreground uppercase group-hover:text-primary transition-colors">{item.name}</span>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Premium Dark Widget */}
-            <div className="p-6 rounded-3xl bg-slate-950 text-white shadow-2xl relative overflow-hidden group border-4 border-primary/10">
-              <div className="relative z-10 space-y-4">
-                <div className="flex items-center gap-2 text-primary">
-                  <IconTarget className="size-5" />
-                  <span className="text-[10px] font-black uppercase tracking-widest text-primary-foreground/60">Strategic Audit</span>
-                </div>
-                <h3 className="text-lg font-bold leading-tight">
-                  Utilization at <span className="text-primary">94%</span> capacity
-                </h3>
-                <p className="text-xs text-slate-400 leading-relaxed font-medium">
-                  Resources are highly optimized this quarter. Recommend reviewing open headcount for upcoming Q3 projects to avoid burnout.
-                </p>
-                <Button variant="outline" size="sm" className="w-full rounded-full border-slate-700 bg-transparent text-white hover:bg-slate-900 h-9 text-xs">
-                  Analyze Workforce Health
-                  <IconChevronRight className="ml-1 size-3" />
-                </Button>
-              </div>
-              <div className="absolute top-0 right-0 size-32 bg-primary/10 blur-[60px] rounded-full group-hover:scale-150 transition-transform duration-1000" />
+      {/* 2. Primary Analytics & Insights */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        {/* Attendance Analysis */}
+        <Card className="xl:col-span-2 rounded-md">
+          <CardHeader className="flex flex-row items-center justify-between pb-8">
+            <div>
+              <CardTitle className="text-lg font-bold">Attendance Statistics</CardTitle>
+              <CardDescription>Daily workplace presence tracking.</CardDescription>
             </div>
-          </div>
-        </div>
+            <SelectGroup />
+          </CardHeader>
+          <CardContent className="h-[350px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={attendanceData}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10 }} dy={10} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10 }} />
+                <Tooltip content={<CustomTooltip />} />
+                <Area
+                  type="monotone"
+                  dataKey="present"
+                  stroke="var(--primary)"
+                  strokeWidth={2}
+                  fill="var(--primary)"
+                  fillOpacity={0.1}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="target"
+                  stroke="var(--muted-foreground)"
+                  strokeWidth={1}
+                  strokeDasharray="5 5"
+                  fill="none"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
 
-        {/* 3. Operational Details Row */}
-        <div className="grid grid-cols-1 xl:grid-cols-5 gap-8">
-
-          {/* Recent Joiners Table */}
-          <Card className="xl:col-span-3 border-none bg-accent/5 shadow-none overflow-hidden">
-            <CardHeader className="px-0 pt-0">
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <CardTitle className="text-xl">Latest Talent</CardTitle>
-                  <CardDescription>Verified onboarding records for this month.</CardDescription>
-                </div>
-                <Button variant="ghost" size="sm" className="rounded-full text-xs font-bold uppercase tracking-tight">
-                  Explore Directory
-                  <IconArrowUpRight className="ml-1 size-3" />
-                </Button>
-              </div>
+        {/* Department Mix */}
+        <div className="space-y-6">
+          <Card className="rounded-md">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base font-bold">Workforce Allocation</CardTitle>
             </CardHeader>
-            <CardContent className="px-0 pt-4">
-              <div className="grid gap-3">
-                {recentHires.map((hire) => (
-                  <div key={hire.name} className="flex items-center justify-between p-4 bg-background border-2 border-transparent hover:border-primary/20 rounded-2xl transition-all group group cursor-pointer shadow-sm hover:shadow-md">
-                    <div className="flex items-center gap-4">
-                      <Avatar className="size-11 border-2 border-muted group-hover:border-primary/30 transition-colors shadow-sm">
-                        <AvatarImage src={hire.image} />
-                        <AvatarFallback>{hire.name[0]}</AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <h4 className="text-sm font-bold">{hire.name}</h4>
-                        <p className="text-xs text-muted-foreground">{hire.position}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-6">
-                      <div className="hidden sm:flex flex-col items-end">
-                        <Badge variant="outline" className="bg-primary/5 text-[10px] font-black border-primary/20">{hire.dept}</Badge>
-                        <span className="text-[10px] text-muted-foreground mt-1 font-bold">{hire.date}</span>
-                      </div>
-                      <Button variant="ghost" size="icon" className="size-8 rounded-full">
-                        <IconDotsVertical className="size-4" />
-                      </Button>
-                    </div>
+            <CardContent className="flex flex-col items-center">
+              <div className="h-[220px] w-full relative flex items-center justify-center">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={deptData}
+                      innerRadius={60}
+                      outerRadius={80}
+                      paddingAngle={2}
+                      dataKey="value"
+                    >
+                      {deptData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="absolute flex flex-col items-center justify-center">
+                  <span className="text-2xl font-bold">1284</span>
+                  <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-tighter">Total Staff</span>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 w-full gap-2 mt-4">
+                {deptData.map((item) => (
+                  <div key={item.name} className="flex items-center gap-2">
+                    <div className="size-2 rounded-full" style={{ backgroundColor: item.color }} />
+                    <span className="text-[10px] text-muted-foreground">{item.name}</span>
                   </div>
                 ))}
               </div>
             </CardContent>
           </Card>
 
-          {/* Milestones & Events */}
-          <Card className="xl:col-span-2 border-2 shadow-xl shadow-accent/5 bg-accent/30 backdrop-blur-sm">
-            <CardHeader>
-              <div className="p-3 bg-white dark:bg-slate-900 border rounded-2xl w-fit mb-2 shadow-sm">
-                <IconCalendar className="size-5 text-indigo-500" />
-              </div>
-              <CardTitle className="text-lg">Organization Milestones</CardTitle>
-              <CardDescription>Celebrating personal and professional growth.</CardDescription>
+          <Card className="rounded-md">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base font-bold flex items-center gap-2">
+                <IconTarget className="size-4 text-primary" />
+                System Audit
+              </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6">
-              {upcomingEvents.map((event, idx) => (
-                <div key={idx} className="flex gap-4 group">
-                  <div className={cn("size-10 rounded-2xl flex items-center justify-center shrink-0 shadow-sm border group-hover:scale-110 transition-transform", event.color)}>
-                    <event.icon className="size-5 shadow-inner" />
-                  </div>
-                  <div className="flex-1 border-b border-muted pb-4 last:border-0 group-hover:border-primary/30 transition-colors">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h4 className="text-sm font-bold">{event.name}</h4>
-                        <p className="text-xs text-muted-foreground font-medium">{event.event}</p>
-                      </div>
-                      <Badge variant="secondary" className="text-[10px] font-black bg-white dark:bg-slate-800 border uppercase">{event.date}</Badge>
+            <CardContent className="space-y-4">
+              <h3 className="text-sm font-semibold">
+                Utilization at <span className="text-primary">94%</span> capacity
+              </h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Resources are highly optimized this quarter. Recommend reviewing open headcount for upcoming Q3 projects to avoid burnout.
+              </p>
+              <Button variant="outline" size="sm" className="w-full">
+                View Reports
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* 3. Operational Details Row */}
+      <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
+        {/* Recent Joiners Table */}
+        <Card className="xl:col-span-3 rounded-md">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-lg font-bold">Recent Hires</CardTitle>
+                <CardDescription>Latest employee onboarding records.</CardDescription>
+              </div>
+              <Button variant="link" size="sm" className="text-xs">
+                View All
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {recentHires.map((hire) => (
+                <div key={hire.name} className="flex items-center justify-between p-3 border rounded-md hover:bg-muted/50 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <Avatar className="size-9">
+                      <AvatarImage src={hire.image} />
+                      <AvatarFallback>{hire.name[0]}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <h4 className="text-sm font-semibold">{hire.name}</h4>
+                      <p className="text-xs text-muted-foreground">{hire.position}</p>
                     </div>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <Badge variant="secondary" className="text-[10px]">{hire.dept}</Badge>
+                    <span className="text-[10px] text-muted-foreground">{hire.date}</span>
                   </div>
                 </div>
               ))}
-            </CardContent>
-            <CardFooter className="pt-0">
-              <Button variant="outline" className="w-full rounded-xl border-dashed border-2 hover:bg-white dark:hover:bg-slate-900 transition-colors h-11">
-                <IconGift className="mr-2 size-4 text-pink-500" />
-                Workforce Milestone Report
-              </Button>
-            </CardFooter>
-          </Card>
-        </div>
-      </main>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Milestones & Events */}
+        <Card className="xl:col-span-2 rounded-md">
+          <CardHeader>
+            <CardTitle className="text-lg font-bold">Upcoming Events</CardTitle>
+            <CardDescription>Organization milestones and celebrations.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {upcomingEvents.map((event, idx) => (
+              <div key={idx} className="flex gap-3">
+                <div className={cn("size-8 rounded-md flex items-center justify-center shrink-0 border", event.color)}>
+                  <event.icon className="size-4" />
+                </div>
+                <div className="flex-1 border-b pb-3 last:border-0">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h4 className="text-sm font-semibold">{event.name}</h4>
+                      <p className="text-xs text-muted-foreground">{event.event}</p>
+                    </div>
+                    <Badge variant="outline" className="text-[10px]">{event.date}</Badge>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </CardContent>
+          <CardFooter>
+            <Button variant="outline" className="w-full text-xs">
+              View Calendar
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
     </div>
   )
 }

@@ -279,7 +279,9 @@ export function DataTable<TData extends { id: string | number }>({
     if (activeTab === "all") {
       column.setFilterValue(undefined)
     } else {
-      column.setFilterValue(activeTab)
+      // Handle boolean strings from tabs
+      const filterValue = activeTab === "true" ? true : activeTab === "false" ? false : activeTab
+      column.setFilterValue(filterValue)
     }
   }, [activeTab, filterKey, table])
 
@@ -295,8 +297,8 @@ export function DataTable<TData extends { id: string | number }>({
   }
 
   const tableContent = (
-    <div className="flex flex-col gap-4 overflow-auto px-4 lg:px-6">
-      <div className="overflow-hidden rounded-lg border">
+    <div className="flex flex-col gap-4 overflow-auto px-4">
+      <div className="overflow-hidden rounded-md border">
         <DndContext
           collisionDetection={closestCenter}
           modifiers={[restrictToVerticalAxis]}
@@ -305,7 +307,7 @@ export function DataTable<TData extends { id: string | number }>({
           id={sortableId}
         >
           <Table>
-            <TableHeader className="bg-muted sticky top-0 z-10">
+            <TableHeader className="bg-muted/50 sticky top-0 z-10">
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow key={headerGroup.id}>
                   {headerGroup.headers.map((header) => {
@@ -323,13 +325,13 @@ export function DataTable<TData extends { id: string | number }>({
                 </TableRow>
               ))}
             </TableHeader>
-            <TableBody className="**:data-[slot=table-cell]:first:w-8">
+            <TableBody className="**:data-[slot=table-cell]:first:w-10 **:data-[slot=table-cell]:nth-child(2):w-10">
               {isLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
-                  <TableRow key={i} className="hover:bg-transparent border-none">
+                  <TableRow key={i}>
                     {tableColumns.map((col, j) => (
                       <TableCell key={j} className="py-4">
-                        <div className="h-4 w-full bg-muted animate-pulse rounded-md" />
+                        <div className="h-4 w-full bg-muted animate-pulse rounded" />
                       </TableCell>
                     ))}
                   </TableRow>
@@ -357,17 +359,18 @@ export function DataTable<TData extends { id: string | number }>({
           </Table>
         </DndContext>
       </div>
-      <div className="flex items-center justify-between px-4 pb-4">
-        <div className="text-muted-foreground hidden flex-1 text-sm lg:flex">
+      <div className="flex items-center justify-between py-2">
+        <div className="text-muted-foreground text-sm">
           {table.getFilteredSelectedRowModel().rows.length} of{" "}
           {table.getFilteredRowModel().rows.length} row(s) selected.
         </div>
-        <div className="flex items-center gap-6 lg:gap-8">
-          <div className="hidden items-center gap-2 lg:flex">
-            {/* <Label htmlFor="rows-per-page" className="text-sm">Rows per page</Label> */}
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">Rows:</span>
             <NativeSelect
               value={`${table.getState().pagination.pageSize}`}
               onChange={(e) => table.setPageSize(Number(e.target.value))}
+              className="h-8 py-0"
             >
               {[10, 20, 30, 40, 50].map((pageSize) => (
                 <option key={pageSize} value={`${pageSize}`}>
@@ -379,11 +382,11 @@ export function DataTable<TData extends { id: string | number }>({
           <div className="text-sm font-medium">
             Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <Button
               variant="outline"
               size="icon"
-              className="size-8 rounded-md"
+              className="h-8 w-8"
               onClick={() => table.setPageIndex(0)}
               disabled={!table.getCanPreviousPage()}
             >
@@ -392,7 +395,7 @@ export function DataTable<TData extends { id: string | number }>({
             <Button
               variant="outline"
               size="icon"
-              className="size-8 rounded-md"
+              className="h-8 w-8"
               onClick={() => table.previousPage()}
               disabled={!table.getCanPreviousPage()}
             >
@@ -401,7 +404,7 @@ export function DataTable<TData extends { id: string | number }>({
             <Button
               variant="outline"
               size="icon"
-              className="size-8 rounded-md"
+              className="h-8 w-8"
               onClick={() => table.nextPage()}
               disabled={!table.getCanNextPage()}
             >
@@ -410,7 +413,7 @@ export function DataTable<TData extends { id: string | number }>({
             <Button
               variant="outline"
               size="icon"
-              className="size-8 rounded-md"
+              className="h-8 w-8"
               onClick={() => table.setPageIndex(table.getPageCount() - 1)}
               disabled={!table.getCanNextPage()}
             >
@@ -428,7 +431,7 @@ export function DataTable<TData extends { id: string | number }>({
       onDelete: onDelete as (row: unknown) => void
     }}>
       <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab} className="w-full flex flex-col gap-4">
-        <div className="flex items-center justify-between px-4 lg:px-6 gap-4">
+        <div className="flex items-center justify-between px-4 gap-4">
           <div className="flex flex-1 items-center gap-2">
             {searchKey && (
               <Input
@@ -437,7 +440,7 @@ export function DataTable<TData extends { id: string | number }>({
                 onChange={(event) =>
                   table.getColumn(searchKey)?.setFilterValue(event.target.value)
                 }
-                className="max-w-[240px] h-10 rounded-xl"
+                className="max-w-xs h-9"
               />
             )}
             {filters?.map((filter) => (
@@ -451,10 +454,10 @@ export function DataTable<TData extends { id: string | number }>({
               )
             ))}
             {showTabs && (
-              <TabsList className="bg-muted/50 p-1 rounded-xl h-10">
-                <TabsTrigger value="all" className="rounded-lg px-4 h-8 text-xs font-semibold uppercase tracking-wider">All Matrix</TabsTrigger>
+              <TabsList className="h-9">
+                <TabsTrigger value="all" className="px-3 text-xs">All</TabsTrigger>
                 {tabs?.map((tab) => (
-                  <TabsTrigger key={tab.value} value={tab.value} className="rounded-lg px-4 h-8 text-xs font-semibold uppercase tracking-wider">
+                  <TabsTrigger key={tab.value} value={tab.value} className="px-3 text-xs">
                     {tab.label}
                   </TabsTrigger>
                 ))}
@@ -463,8 +466,9 @@ export function DataTable<TData extends { id: string | number }>({
             {isFiltered && (
               <Button
                 variant="ghost"
+                size="sm"
                 onClick={() => table.resetColumnFilters()}
-                className="h-8 px-2 lg:px-3 text-rose-500 hover:text-rose-600 hover:bg-rose-50"
+                className="h-8 text-destructive"
               >
                 Reset
                 <IconTrash className="ml-2 h-4 w-4" />
@@ -491,7 +495,7 @@ export function DataTable<TData extends { id: string | number }>({
                     <AlertDialogFooter>
                       <AlertDialogCancel>Cancel</AlertDialogCancel>
                       <AlertDialogAction
-                        className="bg-destructive text-destructive-foreground"
+                        variant="destructive"
                         onClick={() => {
                           const rows = table.getFilteredSelectedRowModel().rows.map(r => r.original);
                           onDeleteSelected?.(rows);
@@ -505,15 +509,16 @@ export function DataTable<TData extends { id: string | number }>({
                   </AlertDialogContent>
                 </AlertDialog>
               )}
-              <Button size="sm" className="gap-2" onClick={onAddClick}>
-                <IconPlus className="size-4" />
-                <span>{addLabel}</span>
-              </Button>
+              {onAddClick && (
+                <Button size="sm" className="gap-2" onClick={onAddClick}>
+                  <IconPlus className="size-4" />
+                  <span>{addLabel}</span>
+                </Button>
+              )}
             </div>
           )}
         </div>
 
-        {/* Render the table only once */}
         <div className="m-0 border-0 p-0 shadow-none">
           {tableContent}
         </div>
@@ -572,7 +577,7 @@ function RowActions({ row }: { row: Row<any> }) {
             <IconDotsVertical className="size-4" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-40">
+        <DropdownMenuContent align="end">
           <DropdownMenuItem onClick={() => setShowViewSheet(true)}>View details</DropdownMenuItem>
           <DropdownMenuItem onClick={() => onEditClick?.(row.original)}>Edit</DropdownMenuItem>
           <DropdownMenuSeparator />
@@ -585,18 +590,17 @@ function RowActions({ row }: { row: Row<any> }) {
       <Sheet open={showViewSheet} onOpenChange={setShowViewSheet}>
         <SheetContent className={cn("flex flex-col h-full", isMobile ? "w-full" : "sm:max-w-xl")}>
           <SheetHeader className="border-b pb-4 shrink-0">
-            <SheetTitle>Record Details</SheetTitle>
-            <SheetDescription>Comprehensive overview of all fields associated with this entry.</SheetDescription>
+            <SheetTitle>Details</SheetTitle>
           </SheetHeader>
 
-          <div className="flex-1 overflow-y-auto py-6 px-4">
-            <div className="grid gap-6 sm:grid-cols-2">
+          <div className="flex-1 overflow-y-auto py-6">
+            <div className="grid gap-4 sm:grid-cols-2">
               {details.map(([key, value]) => (
-                <div key={key} className="space-y-1.5">
-                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                <div key={key} className="space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground uppercase">
                     {key.replace(/([A-Z])/g, ' $1').trim()}
                   </p>
-                  <div className="text-sm font-medium p-3 bg-muted/40 rounded-lg border border-border/50 wrap-break-word">
+                  <div className="text-sm border p-2 rounded-md bg-muted/50">
                     {typeof value === 'object' ? JSON.stringify(value) : String(value)}
                   </div>
                 </div>
@@ -604,20 +608,19 @@ function RowActions({ row }: { row: Row<any> }) {
             </div>
           </div>
 
-          <SheetFooter className="border-t pt-4 shrink-0 flex flex-row items-center justify-between gap-2">
+          <SheetFooter className="border-t pt-4">
             <Button
               variant="outline"
-              className="flex-1 sm:flex-none"
+              size="sm"
               onClick={() => {
                 setShowViewSheet(false);
                 onEditClick?.(row.original);
               }}
             >
-              <IconEdit className="mr-2 size-4" />
-              Edit Record
+              Edit
             </Button>
             <SheetClose asChild>
-              <Button variant="secondary" className="flex-1 sm:flex-none">Close</Button>
+              <Button variant="secondary" size="sm">Close</Button>
             </SheetClose>
           </SheetFooter>
         </SheetContent>
@@ -626,13 +629,13 @@ function RowActions({ row }: { row: Row<any> }) {
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>This will delete the record permanently.</AlertDialogDescription>
+            <AlertDialogTitle>Delete Record</AlertDialogTitle>
+            <AlertDialogDescription>Are you sure you want to delete this record?</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              variant="destructive"
               onClick={() => {
                 onDelete?.(row.original)
                 setShowDeleteDialog(false)
@@ -650,7 +653,7 @@ function RowActions({ row }: { row: Row<any> }) {
 export function getActionsColumn<TData extends { id: string | number }>(): ColumnDef<TData> {
   return {
     id: "actions",
-    header: () => <div className="text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground mr-2">Actions</div>,
+    header: () => <div className="text-right text-xs font-medium uppercase text-muted-foreground">Actions</div>,
     cell: ({ row }) => <RowActions row={row} />,
     size: 50,
   }

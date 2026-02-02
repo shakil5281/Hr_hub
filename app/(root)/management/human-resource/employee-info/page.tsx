@@ -5,31 +5,21 @@ import { useRouter } from "next/navigation"
 import { DataTable } from "@/components/data-table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { NativeSelect } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import {
     IconUserCircle,
-    IconSearch,
     IconFilter,
     IconPlus,
     IconCircleCheckFilled,
     IconLoader,
-    IconClock
+    IconClock,
+    IconFileSpreadsheet
 } from "@tabler/icons-react"
 import { type ColumnDef } from "@tanstack/react-table"
-import employeeData from "./employee-data.json"
-
-interface Employee {
-    id: number
-    employeeId: string
-    name: string
-    designation: string
-    department: string
-    email: string
-    joinDate: string
-    status: string
-}
+import { employeeService, type Employee } from "@/lib/services/employee"
+import { toast } from "sonner"
 
 const employeeColumns: ColumnDef<Employee>[] = [
     {
@@ -38,20 +28,20 @@ const employeeColumns: ColumnDef<Employee>[] = [
         cell: ({ row }) => <span className="font-mono text-xs font-semibold">{row.original.employeeId}</span>,
     },
     {
-        accessorKey: "name",
+        accessorKey: "fullNameEn",
         header: "Employee Name",
-        cell: ({ row }) => <span className="font-medium">{row.original.name}</span>,
+        cell: ({ row }) => <span className="font-medium">{row.original.fullNameEn}</span>,
     },
     {
-        accessorKey: "designation",
+        accessorKey: "designationName",
         header: "Designation",
     },
     {
-        accessorKey: "department",
+        accessorKey: "departmentName",
         header: "Department",
         cell: ({ row }) => (
             <Badge variant="outline" className="font-normal">
-                {row.original.department}
+                {row.original.departmentName || 'N/A'}
             </Badge>
         ),
     },
@@ -77,23 +67,66 @@ const employeeColumns: ColumnDef<Employee>[] = [
     {
         accessorKey: "joinDate",
         header: "Join Date",
+        cell: ({ row }) => new Date(row.original.joinDate).toLocaleDateString(),
     },
 ]
 
 export default function EmployeeInfoPage() {
     const router = useRouter()
     const [statusFilter, setStatusFilter] = React.useState("All")
-    const [deptFilter, setDeptFilter] = React.useState("All")
+    const [deptFilter, setDeptFilter] = React.useState<number | "All">("All")
+    const [employees, setEmployees] = React.useState<Employee[]>([])
+    const [isLoading, setIsLoading] = React.useState(true)
+    const [departments, setDepartments] = React.useState<{ id: number; name: string }[]>([])
 
-    const filteredData = React.useMemo(() => {
-        return employeeData.filter((emp) => {
-            const statusMatch = statusFilter === "All" || emp.status === statusFilter
-            const deptMatch = deptFilter === "All" || emp.department === deptFilter
-            return statusMatch && deptMatch
-        })
+    const fetchEmployees = React.useCallback(async () => {
+        setIsLoading(true)
+        try {
+            const params: any = {}
+            if (statusFilter !== "All") params.status = statusFilter
+            if (deptFilter !== "All") params.departmentId = deptFilter
+            params.isActive = true
+
+            const data = await employeeService.getEmployees(params)
+            setEmployees(data)
+
+            // Extract unique departments
+            const uniqueDepts = Array.from(
+                new Map(
+                    data
+                        .filter(emp => emp.departmentId && emp.departmentName)
+                        .map(emp => [emp.departmentId, { id: emp.departmentId, name: emp.departmentName! }])
+                ).values()
+            )
+            setDepartments(uniqueDepts)
+        } catch (error) {
+            toast.error("Failed to load employees")
+            console.error(error)
+        } finally {
+            setIsLoading(false)
+        }
     }, [statusFilter, deptFilter])
 
-    const departments = Array.from(new Set(employeeData.map(emp => emp.department)))
+    React.useEffect(() => {
+        fetchEmployees()
+    }, [fetchEmployees])
+
+    const handleDelete = async (employee: Employee) => {
+        if (!confirm(`Are you sure you want to deactivate ${employee.fullNameEn}?`)) return
+
+        try {
+            await employeeService.deleteEmployee(employee.id)
+            toast.success("Employee deactivated successfully")
+            fetchEmployees()
+        } catch (error) {
+            toast.error("Failed to deactivate employee")
+            console.error(error)
+        }
+    }
+
+    const filteredData = React.useMemo(() => {
+        return employees
+    }, [employees])
 
     return (
         <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
@@ -102,10 +135,20 @@ export default function EmployeeInfoPage() {
                     <IconUserCircle className="size-6 text-primary" />
                     <h1 className="text-2xl font-bold tracking-tight">Employee Information</h1>
                 </div>
-                <Button className="w-fit" onClick={() => router.push("/human-resource/employee-info/create")}>
-                    <IconPlus className="mr-2 size-4" />
-                    New Employee
-                </Button>
+                <div className="flex gap-2">
+                    <Button
+                        variant="outline"
+                        className="w-fit"
+                        onClick={() => router.push("/management/human-resource/employee-info/import")}
+                    >
+                        <IconFileSpreadsheet className="mr-2 size-4" />
+                        Import Data
+                    </Button>
+                    <Button className="w-fit" onClick={() => router.push("/management/human-resource/employee-info/create")}>
+                        <IconPlus className="mr-2 size-4" />
+                        New Employee
+                    </Button>
+                </div>
             </div>
 
             <div className="px-4 lg:px-6">
@@ -122,12 +165,12 @@ export default function EmployeeInfoPage() {
                                 <Label htmlFor="dept-filter" className="text-[10px] uppercase font-bold text-muted-foreground">Department</Label>
                                 <NativeSelect
                                     id="dept-filter"
-                                    value={deptFilter}
-                                    onChange={(e) => setDeptFilter(e.target.value)}
+                                    value={deptFilter.toString()}
+                                    onChange={(e) => setDeptFilter(e.target.value === "All" ? "All" : parseInt(e.target.value))}
                                 >
                                     <option value="All">All Departments</option>
                                     {departments.map(dept => (
-                                        <option key={dept} value={dept}>{dept}</option>
+                                        <option key={dept.id} value={dept.id}>{dept.name}</option>
                                     ))}
                                 </NativeSelect>
                             </div>
@@ -141,7 +184,7 @@ export default function EmployeeInfoPage() {
                                     <option value="All">All Statuses</option>
                                     <option value="Active">Active</option>
                                     <option value="On Leave">On Leave</option>
-                                    <option value="Inactive">Inactive</option>
+                                    <option value="Probation">Probation</option>
                                 </NativeSelect>
                             </div>
                             <div className="flex items-end mt-auto">
@@ -162,14 +205,32 @@ export default function EmployeeInfoPage() {
                 </Card>
             </div>
 
-            <DataTable
-                data={filteredData as Employee[]}
-                columns={employeeColumns}
-                showTabs={false}
-                addLabel="New Employee"
-                onAddClick={() => router.push("/human-resource/employee-info/create")}
-                onEditClick={(emp) => router.push(`/human-resource/employee-info/edit/${emp.id}`)}
-            />
+            {isLoading ? (
+                <div className="flex items-center justify-center py-12">
+                    <IconLoader className="size-8 animate-spin text-primary" />
+                </div>
+            ) : (
+                <DataTable
+                    data={filteredData}
+                    columns={employeeColumns}
+                    showTabs={false}
+                    showActions={true}
+                    enableSelection={true}
+                    addLabel="New Employee"
+                    searchKey="fullNameEn"
+                    onAddClick={() => router.push("/management/human-resource/employee-info/create")}
+                    onEditClick={(emp) => router.push(`/management/human-resource/employee-info/edit/${emp.id}`)}
+                    onDelete={handleDelete}
+                    onDeleteSelected={async (employees) => {
+                        try {
+                            await Promise.all(employees.map(emp => employeeService.deleteEmployee(emp.id)))
+                            fetchEmployees()
+                        } catch (error) {
+                            toast.error("Failed to delete some employees")
+                        }
+                    }}
+                />
+            )}
         </div>
     )
 }

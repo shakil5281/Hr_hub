@@ -135,3 +135,16 @@
 Button {
   @apply cursor-pointer;
 }
+
+@font-face {
+  font-family: 'SutonnyMJ';
+  src: local('SutonnyMJ'), local('SutonnyMJ Regular'), local('SutonnyOMJ'), url('/fonts/SutonnyMJ.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@layer utilities {
+  .font-sutonny {
+    font-family: 'SutonnyMJ', sans-serif !important;
+  }
+}
