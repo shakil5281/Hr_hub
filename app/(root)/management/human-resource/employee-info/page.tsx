@@ -69,6 +69,15 @@ const employeeColumns: ColumnDef<Employee>[] = [
         header: "Join Date",
         cell: ({ row }) => new Date(row.original.joinDate).toLocaleDateString(),
     },
+    {
+        accessorKey: "isOTEnabled",
+        header: "OT Status",
+        cell: ({ row }) => (
+            <Badge variant={row.original.isOTEnabled ? "default" : "secondary"} className="font-normal">
+                {row.original.isOTEnabled ? "Enabled" : "Disabled"}
+            </Badge>
+        ),
+    },
 ]
 
 export default function EmployeeInfoPage() {
@@ -112,8 +121,6 @@ export default function EmployeeInfoPage() {
     }, [fetchEmployees])
 
     const handleDelete = async (employee: Employee) => {
-        if (!confirm(`Are you sure you want to deactivate ${employee.fullNameEn}?`)) return
-
         try {
             await employeeService.deleteEmployee(employee.id)
             toast.success("Employee deactivated successfully")
@@ -216,9 +223,7 @@ export default function EmployeeInfoPage() {
                     showTabs={false}
                     showActions={true}
                     enableSelection={true}
-                    addLabel="New Employee"
                     searchKey="fullNameEn"
-                    onAddClick={() => router.push("/management/human-resource/employee-info/create")}
                     onEditClick={(emp) => router.push(`/management/human-resource/employee-info/edit/${emp.id}`)}
                     onDelete={handleDelete}
                     onDeleteSelected={async (employees) => {

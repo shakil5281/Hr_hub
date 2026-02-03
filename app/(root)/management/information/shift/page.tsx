@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { IconClock, IconPlus, IconPencil, IconTrash } from "@tabler/icons-react"
+import { IconClock, IconPlus } from "@tabler/icons-react"
 import { Button } from "@/components/ui/button"
 import { DataTable } from "@/components/data-table"
 import { ColumnDef } from "@tanstack/react-table"
@@ -26,74 +26,39 @@ import {
 } from "@/components/ui/select"
 import { toast } from "sonner"
 import { Checkbox } from "@/components/ui/checkbox"
+import { shiftService, Shift } from "@/lib/services/shift"
 
-// --- Types ---
-
-type Shift = {
-    id: number
-    name: string
-    startTime: string
-    endTime: string
-    lateInTime: string
-    lunchTimeStart: string
-    lunchHour: string
-    regHour: string
-    weekends: string[]
-    status: "Active" | "Inactive"
-}
-
-// --- Mock Data ---
-
-const initialShifts: Shift[] = [
-    {
-        id: 1,
-        name: "General Shift",
-        startTime: "09:00 AM",
-        endTime: "06:00 PM",
-        lateInTime: "09:15 AM",
-        lunchTimeStart: "01:00 PM",
-        lunchHour: "1.0",
-        regHour: "8.0",
-        weekends: ["Friday", "Saturday"],
-        status: "Active"
-    },
-    {
-        id: 2,
-        name: "Morning Shift",
-        startTime: "06:00 AM",
-        endTime: "02:00 PM",
-        lateInTime: "06:15 AM",
-        lunchTimeStart: "11:00 AM",
-        lunchHour: "0.5",
-        regHour: "7.5",
-        weekends: ["Friday"],
-        status: "Active"
-    },
-    {
-        id: 3,
-        name: "Evening Shift",
-        startTime: "02:00 PM",
-        endTime: "10:00 PM",
-        lateInTime: "02:15 PM",
-        lunchTimeStart: "07:00 PM",
-        lunchHour: "0.5",
-        regHour: "7.5",
-        weekends: ["Friday"],
-        status: "Active"
-    },
-]
+// --- Constants ---
 
 const DAYS_OF_WEEK = ["Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
 
 export default function ShiftPage() {
-    const [data, setData] = React.useState<Shift[]>(initialShifts)
+    const [data, setData] = React.useState<Shift[]>([])
+    const [loading, setLoading] = React.useState(true)
     const [isSheetOpen, setIsSheetOpen] = React.useState(false)
     const [currentShift, setCurrentShift] = React.useState<Partial<Shift>>({})
     const [isEditing, setIsEditing] = React.useState(false)
 
+    const fetchShifts = async () => {
+        try {
+            setLoading(true)
+            const shifts = await shiftService.getShifts()
+            setData(shifts)
+        } catch (error) {
+            console.error(error)
+            toast.error("Failed to fetch shifts")
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    React.useEffect(() => {
+        fetchShifts()
+    }, [])
+
     // Calculate generic hours difference
-    const calculateHours = (start: string, end: string, lunchDuration: string) => {
-        if (!start || !end) return ""
+    const calculateHours = (start?: string, end?: string, lunchDuration: number = 0) => {
+        if (!start || !end) return "0.0"
 
         try {
             const [startH, startM] = start.split(":").map(Number)
@@ -103,38 +68,26 @@ export default function ShiftPage() {
             if (diff < 0) diff += 24 * 60 // Handle overnight shifts
 
             const hours = diff / 60
-            const lunch = parseFloat(lunchDuration) || 0
-
-            return Math.max(0, hours - lunch).toFixed(1)
+            return Math.max(0, hours - lunchDuration).toFixed(1)
         } catch (e) {
-            return ""
+            return "0.0"
         }
     }
-
-    // Effect to auto-calculate regHour when dependencies change
-    React.useEffect(() => {
-        if (isSheetOpen && currentShift.startTime && currentShift.endTime) {
-            const reg = calculateHours(currentShift.startTime, currentShift.endTime, currentShift.lunchHour || "0")
-            if (reg && reg !== currentShift.regHour) {
-                setCurrentShift(prev => ({ ...prev, regHour: reg }))
-            }
-        }
-    }, [currentShift.startTime, currentShift.endTime, currentShift.lunchHour, isSheetOpen])
 
     // --- Columns ---
 
     const columns: ColumnDef<Shift>[] = [
         {
-            accessorKey: "name",
+            accessorKey: "nameEn",
             header: "Shift Name",
-            cell: ({ row }) => <span className="font-medium">{row.getValue("name")}</span>
+            cell: ({ row }) => <span className="font-medium">{row.getValue("nameEn")}</span>
         },
         {
-            accessorKey: "startTime",
+            accessorKey: "inTime",
             header: "Start Time"
         },
         {
-            accessorKey: "endTime",
+            accessorKey: "outTime",
             header: "End Time"
         },
         {
@@ -143,15 +96,19 @@ export default function ShiftPage() {
             cell: ({ row }) => <span className="font-mono text-xs">{row.getValue("lunchHour")}</span>
         },
         {
-            accessorKey: "regHour",
             header: "Reg Hours",
-            cell: ({ row }) => <span className="font-mono text-xs bg-muted px-2 py-0.5 rounded-sm">{row.getValue("regHour")}</span>
+            cell: ({ row }) => {
+                const s = row.original
+                const hours = calculateHours(s.inTime, s.outTime, Number(s.lunchHour))
+                return <span className="font-mono text-xs bg-muted px-2 py-0.5 rounded-sm">{hours}</span>
+            }
         },
         {
             accessorKey: "weekends",
             header: "Weekends",
             cell: ({ row }) => {
-                const weekends = row.getValue("weekends") as string[]
+                const weekends = (row.getValue("weekends") as string || "").split(",").filter(Boolean)
+                if (weekends.length === 0) return <span className="text-muted-foreground text-xs italic">None</span>
                 return <span className="text-muted-foreground text-xs">{weekends.slice(0, 2).join(", ")}{weekends.length > 2 && "..."}</span>
             }
         },
@@ -170,14 +127,13 @@ export default function ShiftPage() {
     const handleAddClick = () => {
         setIsEditing(false)
         setCurrentShift({
-            name: "",
-            startTime: "",
-            endTime: "",
-            lateInTime: "",
-            lunchTimeStart: "",
-            lunchHour: "1.0",
-            regHour: "",
-            weekends: ["Friday"],
+            nameEn: "",
+            inTime: "09:00",
+            outTime: "17:00",
+            lateInTime: "09:15",
+            lunchTimeStart: "13:00",
+            lunchHour: 1.0,
+            weekends: "Friday",
             status: "Active"
         })
         setIsSheetOpen(true)
@@ -189,33 +145,64 @@ export default function ShiftPage() {
         setIsSheetOpen(true)
     }
 
-    const handleDelete = (shift: Shift) => {
-        setData(prev => prev.filter(s => s.id !== shift.id))
-        toast.success("Shift deleted successfully")
+    const handleDelete = async (shift: Shift) => {
+        try {
+            await shiftService.deleteShift(shift.id)
+            toast.success("Shift deleted successfully")
+            fetchShifts()
+        } catch (error: any) {
+            console.error(error)
+            const message = error.response?.data?.message || "Failed to delete shift"
+            toast.error(message)
+        }
     }
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
 
-        if (isEditing) {
-            setData(prev => prev.map(s => s.id === currentShift.id ? { ...currentShift, id: s.id } as Shift : s))
-            toast.success("Shift updated successfully")
-        } else {
-            const newId = Math.max(...data.map(s => s.id), 0) + 1
-            setData(prev => [...prev, { ...currentShift, id: newId } as Shift])
-            toast.success("New shift created successfully")
+        try {
+            const dto = {
+                nameEn: currentShift.nameEn || "",
+                nameBn: currentShift.nameBn,
+                inTime: currentShift.inTime || "",
+                outTime: currentShift.outTime || "",
+                lateInTime: currentShift.lateInTime,
+                lunchTimeStart: currentShift.lunchTimeStart,
+                lunchHour: Number(currentShift.lunchHour) || 0,
+                weekends: currentShift.weekends,
+                status: currentShift.status || "Active"
+            }
+
+            if (isEditing && currentShift.id) {
+                await shiftService.updateShift(currentShift.id, dto)
+                toast.success("Shift updated successfully")
+            } else {
+                await shiftService.createShift(dto)
+                toast.success("New shift created successfully")
+            }
+            setIsSheetOpen(false)
+            fetchShifts()
+        } catch (error) {
+            console.error(error)
+            toast.error("Failed to save shift")
         }
-        setIsSheetOpen(false)
     }
 
     const handleWeekendChange = (day: string) => {
-        const currentWeekends = currentShift.weekends || []
+        const currentWeekendsStr = currentShift.weekends || ""
+        let currentWeekends = currentWeekendsStr.split(",").filter(Boolean)
+
         if (currentWeekends.includes(day)) {
-            setCurrentShift(prev => ({ ...prev, weekends: currentWeekends.filter(d => d !== day) }))
+            currentWeekends = currentWeekends.filter(d => d !== day)
         } else {
-            setCurrentShift(prev => ({ ...prev, weekends: [...currentWeekends, day] }))
+            currentWeekends.push(day)
         }
+
+        setCurrentShift(prev => ({ ...prev, weekends: currentWeekends.join(",") }))
     }
+
+    const selectedWeekends = (currentShift.weekends || "").split(",").filter(Boolean)
+    const regHours = calculateHours(currentShift.inTime, currentShift.outTime, Number(currentShift.lunchHour))
 
     return (
         <div className="flex flex-col gap-6 p-4 lg:p-6 max-w-5xl mx-auto w-full">
@@ -236,11 +223,10 @@ export default function ShiftPage() {
             <DataTable
                 data={data}
                 columns={columns}
-                addLabel="Create Shift"
-                onAddClick={handleAddClick}
                 onEditClick={handleEditClick}
                 onDelete={handleDelete}
                 showColumnCustomizer={false}
+                isLoading={loading}
             />
 
             {/* Create/Edit Sheet */}
@@ -255,33 +241,42 @@ export default function ShiftPage() {
                     <form onSubmit={handleSubmit} className="space-y-6 py-6">
                         <div className="space-y-4">
                             <div className="grid gap-2">
-                                <Label htmlFor="name">Shift Name</Label>
+                                <Label htmlFor="nameEn">Shift Name (English)</Label>
                                 <Input
-                                    id="name"
-                                    value={currentShift.name}
-                                    onChange={e => setCurrentShift(prev => ({ ...prev, name: e.target.value }))}
+                                    id="nameEn"
+                                    value={currentShift.nameEn || ""}
+                                    onChange={e => setCurrentShift(prev => ({ ...prev, nameEn: e.target.value }))}
                                     placeholder="e.g. General Shift"
                                     required
                                 />
                             </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="nameBn">Shift Name (Bangla)</Label>
+                                <Input
+                                    id="nameBn"
+                                    value={currentShift.nameBn || ""}
+                                    onChange={e => setCurrentShift(prev => ({ ...prev, nameBn: e.target.value }))}
+                                    placeholder="e.g. সাধারণ শিফট"
+                                />
+                            </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="grid gap-2">
-                                    <Label htmlFor="start-time">Start Time</Label>
+                                    <Label htmlFor="inTime">Start Time</Label>
                                     <Input
-                                        id="start-time"
+                                        id="inTime"
                                         type="time"
-                                        value={currentShift.startTime?.replace(/ AM| PM/g, "")}
-                                        onChange={e => setCurrentShift(prev => ({ ...prev, startTime: e.target.value }))}
+                                        value={currentShift.inTime || ""}
+                                        onChange={e => setCurrentShift(prev => ({ ...prev, inTime: e.target.value }))}
                                         required
                                     />
                                 </div>
                                 <div className="grid gap-2">
-                                    <Label htmlFor="end-time">End Time</Label>
+                                    <Label htmlFor="outTime">End Time</Label>
                                     <Input
-                                        id="end-time"
+                                        id="outTime"
                                         type="time"
-                                        value={currentShift.endTime?.replace(/ AM| PM/g, "")}
-                                        onChange={e => setCurrentShift(prev => ({ ...prev, endTime: e.target.value }))}
+                                        value={currentShift.outTime || ""}
+                                        onChange={e => setCurrentShift(prev => ({ ...prev, outTime: e.target.value }))}
                                         required
                                     />
                                 </div>
@@ -289,20 +284,20 @@ export default function ShiftPage() {
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="grid gap-2">
-                                    <Label htmlFor="late-in-time">Late In Time</Label>
+                                    <Label htmlFor="lateInTime">Late In Time</Label>
                                     <Input
-                                        id="late-in-time"
+                                        id="lateInTime"
                                         type="time"
-                                        value={currentShift.lateInTime?.replace(/ AM| PM/g, "")}
+                                        value={currentShift.lateInTime || ""}
                                         onChange={e => setCurrentShift(prev => ({ ...prev, lateInTime: e.target.value }))}
                                     />
                                 </div>
                                 <div className="grid gap-2">
-                                    <Label htmlFor="lunch-time">Lunch Start Time</Label>
+                                    <Label htmlFor="lunchTimeStart">Lunch Start Time</Label>
                                     <Input
-                                        id="lunch-time"
+                                        id="lunchTimeStart"
                                         type="time"
-                                        value={currentShift.lunchTimeStart?.replace(/ AM| PM/g, "")}
+                                        value={currentShift.lunchTimeStart || ""}
                                         onChange={e => setCurrentShift(prev => ({ ...prev, lunchTimeStart: e.target.value }))}
                                     />
                                 </div>
@@ -310,13 +305,13 @@ export default function ShiftPage() {
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="grid gap-2">
-                                    <Label htmlFor="lunch-hour">Lunch Duration (Hours)</Label>
+                                    <Label htmlFor="lunchHour">Lunch Duration (Hours)</Label>
                                     <Input
-                                        id="lunch-hour"
+                                        id="lunchHour"
                                         type="number"
                                         step="0.5"
-                                        value={currentShift.lunchHour}
-                                        onChange={e => setCurrentShift(prev => ({ ...prev, lunchHour: e.target.value }))}
+                                        value={currentShift.lunchHour || 0}
+                                        onChange={e => setCurrentShift(prev => ({ ...prev, lunchHour: parseFloat(e.target.value) }))}
                                         placeholder="e.g. 1.0"
                                     />
                                 </div>
@@ -324,9 +319,8 @@ export default function ShiftPage() {
                                     <Label htmlFor="reg-hour">Regular Hours (Auto-Calc)</Label>
                                     <Input
                                         id="reg-hour"
-                                        type="number"
-                                        step="0.1"
-                                        value={currentShift.regHour}
+                                        type="text"
+                                        value={regHours}
                                         className="bg-muted font-mono"
                                         readOnly
                                     />
@@ -340,7 +334,7 @@ export default function ShiftPage() {
                                         <div key={day} className="flex items-center space-x-2">
                                             <Checkbox
                                                 id={`day-${day}`}
-                                                checked={currentShift.weekends?.includes(day)}
+                                                checked={selectedWeekends.includes(day)}
                                                 onCheckedChange={() => handleWeekendChange(day)}
                                             />
                                             <Label htmlFor={`day-${day}`} className="font-normal cursor-pointer text-sm">
@@ -380,3 +374,4 @@ export default function ShiftPage() {
         </div>
     )
 }
+

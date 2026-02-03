@@ -14,7 +14,8 @@ import {
     IconDeviceFloppy,
     IconSearch,
     IconLoader2,
-    IconFileLike
+    IconFileLike,
+    IconWriting
 } from "@tabler/icons-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -25,6 +26,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { NativeSelect } from "@/components/ui/select"
 import { toast } from "sonner"
 import { employeeService, type Employee, type UpdateEmployeeDto } from "@/lib/services/employee"
+import {
+    addressService,
+    type Division,
+    type District,
+    type Thana,
+    type PostOffice
+} from "@/lib/services/address"
 
 export default function OthersInformationPage() {
     const router = useRouter()
@@ -37,6 +45,60 @@ export default function OthersInformationPage() {
     const [searchId, setSearchId] = React.useState("")
     const [isUploading, setIsUploading] = React.useState(false)
     const sigInputRef = React.useRef<HTMLInputElement>(null)
+
+    // Address dropdown data
+    const [divisions, setDivisions] = React.useState<Division[]>([])
+
+    const [presentDistricts, setPresentDistricts] = React.useState<District[]>([])
+    const [presentThanas, setPresentThanas] = React.useState<Thana[]>([])
+    const [presentPostOffices, setPresentPostOffices] = React.useState<PostOffice[]>([])
+
+    const [permanentDistricts, setPermanentDistricts] = React.useState<District[]>([])
+    const [permanentThanas, setPermanentThanas] = React.useState<Thana[]>([])
+    const [permanentPostOffices, setPermanentPostOffices] = React.useState<PostOffice[]>([])
+
+    // Fetch initial divisions
+    React.useEffect(() => {
+        addressService.getDivisions().then(setDivisions).catch(console.error)
+    }, [])
+
+    // Present Address Cascade
+    React.useEffect(() => {
+        if (employee?.presentDivisionId) {
+            addressService.getDistricts(employee.presentDivisionId).then(setPresentDistricts).catch(console.error)
+        } else {
+            setPresentDistricts([])
+        }
+    }, [employee?.presentDivisionId])
+
+    React.useEffect(() => {
+        if (employee?.presentDistrictId) {
+            addressService.getThanas(employee.presentDistrictId).then(setPresentThanas).catch(console.error)
+            addressService.getPostOffices(employee.presentDistrictId).then(setPresentPostOffices).catch(console.error)
+        } else {
+            setPresentThanas([])
+            setPresentPostOffices([])
+        }
+    }, [employee?.presentDistrictId])
+
+    // Permanent Address Cascade
+    React.useEffect(() => {
+        if (employee?.permanentDivisionId) {
+            addressService.getDistricts(employee.permanentDivisionId).then(setPermanentDistricts).catch(console.error)
+        } else {
+            setPermanentDistricts([])
+        }
+    }, [employee?.permanentDivisionId])
+
+    React.useEffect(() => {
+        if (employee?.permanentDistrictId) {
+            addressService.getThanas(employee.permanentDistrictId).then(setPermanentThanas).catch(console.error)
+            addressService.getPostOffices(employee.permanentDistrictId).then(setPermanentPostOffices).catch(console.error)
+        } else {
+            setPermanentThanas([])
+            setPermanentPostOffices([])
+        }
+    }, [employee?.permanentDistrictId])
 
     // Load employee data
     const loadEmployee = React.useCallback(async (id: number) => {
@@ -81,6 +143,40 @@ export default function OthersInformationPage() {
         }
     }
 
+    const handleGrossSalaryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const gross = parseFloat(e.target.value) || 0
+
+        // Fixed allowances as per requirements
+        const medical = 750
+        const food = 1250
+        const conveyance = 450
+        const other = 0
+
+        // Calculate Basic & House Rent
+        // Formula: Basic = (Gross - Medical - Food - Conveyance) / 1.5
+        const fixedTotal = medical + food + conveyance + other
+        let basic = 0
+        let houseRent = 0
+
+        if (gross > fixedTotal) {
+            basic = (gross - fixedTotal) / 1.5
+            houseRent = gross - fixedTotal - basic
+        }
+
+        if (employee) {
+            setEmployee({
+                ...employee,
+                grossSalary: gross,
+                basicSalary: parseFloat(basic.toFixed(2)),
+                houseRent: parseFloat(houseRent.toFixed(2)),
+                medicalAllowance: medical,
+                foodAllowance: food,
+                conveyance: conveyance,
+                otherAllowance: other
+            })
+        }
+    }
+
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault()
         if (!employee) return
@@ -96,8 +192,22 @@ export default function OthersInformationPage() {
                 gender: formData.get("gender") as string,
 
                 // Address
+                // Address
                 presentAddress: formData.get("presentAddress") as string,
+                presentAddressBn: formData.get("presentAddressBn") as string,
+                presentDivisionId: parseInt(formData.get("presentDivisionId") as string) || undefined,
+                presentDistrictId: parseInt(formData.get("presentDistrictId") as string) || undefined,
+                presentThanaId: parseInt(formData.get("presentThanaId") as string) || undefined,
+                presentPostOfficeId: parseInt(formData.get("presentPostOfficeId") as string) || undefined,
+                presentPostalCode: formData.get("presentPostalCode") as string,
+
                 permanentAddress: formData.get("permanentAddress") as string,
+                permanentAddressBn: formData.get("permanentAddressBn") as string,
+                permanentDivisionId: parseInt(formData.get("permanentDivisionId") as string) || undefined,
+                permanentDistrictId: parseInt(formData.get("permanentDistrictId") as string) || undefined,
+                permanentThanaId: parseInt(formData.get("permanentThanaId") as string) || undefined,
+                permanentPostOfficeId: parseInt(formData.get("permanentPostOfficeId") as string) || undefined,
+                permanentPostalCode: formData.get("permanentPostalCode") as string,
 
                 // Family
                 fatherNameEn: formData.get("fatherNameEn") as string,
@@ -247,13 +357,17 @@ export default function OthersInformationPage() {
                                 <IconPhone className="size-5" />
                                 <span>Emergency Contact</span>
                             </TabsTrigger>
+                            <TabsTrigger value="signature" className="flex items-center gap-2 px-4 py-3 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                                <IconWriting className="size-5" />
+                                <span>Signature</span>
+                            </TabsTrigger>
                         </TabsList>
                     </div>
 
                     {/* Family Information */}
                     <TabsContent value="family">
                         <Card className="border-l-4 border-l-primary shadow-md">
-                            <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent">
+                            <CardHeader className="bg-linear-to-r from-primary/5 to-transparent">
                                 <div className="flex items-center gap-3">
                                     <div className="p-2 bg-primary/10 rounded-lg">
                                         <IconUsers className="size-6 text-primary" />
@@ -272,7 +386,7 @@ export default function OthersInformationPage() {
                                     </div>
                                     <div className="grid gap-2">
                                         <Label htmlFor="fatherNameBn">Father&apos;s Name (Bangla)</Label>
-                                        <Input id="fatherNameBn" name="fatherNameBn" defaultValue={employee?.fatherNameBn} className="font-hindi" />
+                                        <Input id="fatherNameBn" name="fatherNameBn" defaultValue={employee?.fatherNameBn} className="font-sutonny" />
                                     </div>
                                     <div className="grid gap-2">
                                         <Label htmlFor="motherNameEn">Mother&apos;s Name (English)</Label>
@@ -280,7 +394,7 @@ export default function OthersInformationPage() {
                                     </div>
                                     <div className="grid gap-2">
                                         <Label htmlFor="motherNameBn">Mother&apos;s Name (Bangla)</Label>
-                                        <Input id="motherNameBn" name="motherNameBn" defaultValue={employee?.motherNameBn} className="font-hindi" />
+                                        <Input id="motherNameBn" name="motherNameBn" defaultValue={employee?.motherNameBn} className="font-sutonny" />
                                     </div>
                                     <div className="grid gap-2">
                                         <Label htmlFor="maritalStatus">Marital Status</Label>
@@ -302,7 +416,7 @@ export default function OthersInformationPage() {
                                         </div>
                                         <div className="grid gap-2">
                                             <Label htmlFor="spouseNameBn">Spouse Name (Bangla)</Label>
-                                            <Input id="spouseNameBn" name="spouseNameBn" defaultValue={employee?.spouseNameBn} className="font-hindi" />
+                                            <Input id="spouseNameBn" name="spouseNameBn" defaultValue={employee?.spouseNameBn} className="font-sutonny" />
                                         </div>
                                         <div className="grid gap-2">
                                             <Label htmlFor="spouseOccupation">Spouse Occupation</Label>
@@ -321,7 +435,7 @@ export default function OthersInformationPage() {
                     {/* Address Information */}
                     <TabsContent value="address">
                         <Card className="border-l-4 border-l-primary shadow-md">
-                            <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent">
+                            <CardHeader className="bg-linear-to-r from-primary/5 to-transparent">
                                 <div className="flex items-center gap-3">
                                     <div className="p-2 bg-primary/10 rounded-lg">
                                         <IconMapPin className="size-6 text-primary" />
@@ -333,14 +447,176 @@ export default function OthersInformationPage() {
                                 </div>
                             </CardHeader>
                             <CardContent className="grid gap-6 pt-6">
-                                <div className="grid gap-4">
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="presentAddress">Present Address</Label>
-                                        <Textarea id="presentAddress" name="presentAddress" defaultValue={employee?.presentAddress} rows={3} />
+                                {/* Present Address */}
+                                <div className="space-y-4">
+                                    <h3 className="text-sm font-semibold border-b pb-2">Present Address</h3>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        <div className="grid gap-2 sm:col-span-2 lg:col-span-3">
+                                            <Label htmlFor="presentAddress">Address Line (English)</Label>
+                                            <Input id="presentAddress" name="presentAddress" defaultValue={employee?.presentAddress} placeholder="House/Road/Village etc." />
+                                        </div>
+                                        <div className="grid gap-2 sm:col-span-2 lg:col-span-3">
+                                            <Label htmlFor="presentAddressBn">Address Line (Bangla)</Label>
+                                            <Input id="presentAddressBn" name="presentAddressBn" defaultValue={employee?.presentAddressBn} placeholder="বাড়ি/সড়ক/গ্রাম ইত্যাদি" className="font-sutonny" />
+                                        </div>
+
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="presentDivisionId">Division</Label>
+                                            <NativeSelect
+                                                id="presentDivisionId"
+                                                name="presentDivisionId"
+                                                value={employee?.presentDivisionId || 0}
+                                                onChange={(e) => setEmployee(prev => prev ? ({ ...prev, presentDivisionId: parseInt(e.target.value) }) : null)}
+                                            >
+                                                <option value="0">Select Division</option>
+                                                {divisions.map(d => <option key={d.id} value={d.id}>{d.nameEn}</option>)}
+                                            </NativeSelect>
+                                        </div>
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="presentDistrictId">District</Label>
+                                            <NativeSelect
+                                                id="presentDistrictId"
+                                                name="presentDistrictId"
+                                                value={employee?.presentDistrictId || 0}
+                                                onChange={(e) => setEmployee(prev => prev ? ({ ...prev, presentDistrictId: parseInt(e.target.value) }) : null)}
+                                                disabled={!employee?.presentDivisionId}
+                                            >
+                                                <option value="0">Select District</option>
+                                                {presentDistricts.map(d => <option key={d.id} value={d.id}>{d.nameEn}</option>)}
+                                            </NativeSelect>
+                                        </div>
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="presentThanaId">Thana</Label>
+                                            <NativeSelect
+                                                id="presentThanaId"
+                                                name="presentThanaId"
+                                                value={employee?.presentThanaId || 0}
+                                                onChange={(e) => setEmployee(prev => prev ? ({ ...prev, presentThanaId: parseInt(e.target.value) }) : null)}
+                                                disabled={!employee?.presentDistrictId}
+                                            >
+                                                <option value="0">Select Thana</option>
+                                                {presentThanas.map(t => <option key={t.id} value={t.id}>{t.nameEn}</option>)}
+                                            </NativeSelect>
+                                        </div>
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="presentPostOfficeId">Post Office</Label>
+                                            <NativeSelect
+                                                id="presentPostOfficeId"
+                                                name="presentPostOfficeId"
+                                                value={employee?.presentPostOfficeId || 0}
+                                                onChange={(e) => {
+                                                    const id = parseInt(e.target.value);
+                                                    const po = presentPostOffices.find(p => p.id === id);
+                                                    setEmployee(prev => prev ? ({ ...prev, presentPostOfficeId: id, presentPostalCode: po?.code || prev.presentPostalCode }) : null)
+                                                }}
+                                                disabled={!employee?.presentDistrictId}
+                                            >
+                                                <option value="0">Select Post Office</option>
+                                                {presentPostOffices.map(p => <option key={p.id} value={p.id}>{p.nameEn} ({p.code})</option>)}
+                                            </NativeSelect>
+                                        </div>
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="presentPostalCode">Postal Code</Label>
+                                            <Input id="presentPostalCode" name="presentPostalCode" value={employee?.presentPostalCode || ""} onChange={(e) => setEmployee(prev => prev ? ({ ...prev, presentPostalCode: e.target.value }) : null)} />
+                                        </div>
                                     </div>
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="permanentAddress">Permanent Address</Label>
-                                        <Textarea id="permanentAddress" name="permanentAddress" defaultValue={employee?.permanentAddress} rows={3} />
+                                </div>
+
+                                {/* Permanent Address */}
+                                <div className="space-y-4 pt-4 border-t">
+                                    <div className="flex items-center justify-between">
+                                        <h3 className="text-sm font-semibold">Permanent Address</h3>
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => {
+                                                if (employee) {
+                                                    setEmployee({
+                                                        ...employee,
+                                                        permanentAddress: employee.presentAddress,
+                                                        permanentAddressBn: employee.presentAddressBn,
+                                                        permanentDivisionId: employee.presentDivisionId,
+                                                        permanentDistrictId: employee.presentDistrictId,
+                                                        permanentThanaId: employee.presentThanaId,
+                                                        permanentPostOfficeId: employee.presentPostOfficeId,
+                                                        permanentPostalCode: employee.presentPostalCode
+                                                    })
+                                                }
+                                            }}
+                                        >
+                                            Same as Present
+                                        </Button>
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        <div className="grid gap-2 sm:col-span-2 lg:col-span-3">
+                                            <Label htmlFor="permanentAddress">Address Line (English)</Label>
+                                            <Input id="permanentAddress" name="permanentAddress" defaultValue={employee?.permanentAddress} placeholder="House/Road/Village etc." />
+                                        </div>
+                                        <div className="grid gap-2 sm:col-span-2 lg:col-span-3">
+                                            <Label htmlFor="permanentAddressBn">Address Line (Bangla)</Label>
+                                            <Input id="permanentAddressBn" name="permanentAddressBn" defaultValue={employee?.permanentAddressBn} placeholder="বাড়ি/সড়ক/গ্রাম ইত্যাদি" className="font-sutonny" />
+                                        </div>
+
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="permanentDivisionId">Division</Label>
+                                            <NativeSelect
+                                                id="permanentDivisionId"
+                                                name="permanentDivisionId"
+                                                value={employee?.permanentDivisionId || 0}
+                                                onChange={(e) => setEmployee(prev => prev ? ({ ...prev, permanentDivisionId: parseInt(e.target.value) }) : null)}
+                                            >
+                                                <option value="0">Select Division</option>
+                                                {divisions.map(d => <option key={d.id} value={d.id}>{d.nameEn}</option>)}
+                                            </NativeSelect>
+                                        </div>
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="permanentDistrictId">District</Label>
+                                            <NativeSelect
+                                                id="permanentDistrictId"
+                                                name="permanentDistrictId"
+                                                value={employee?.permanentDistrictId || 0}
+                                                onChange={(e) => setEmployee(prev => prev ? ({ ...prev, permanentDistrictId: parseInt(e.target.value) }) : null)}
+                                                disabled={!employee?.permanentDivisionId}
+                                            >
+                                                <option value="0">Select District</option>
+                                                {permanentDistricts.map(d => <option key={d.id} value={d.id}>{d.nameEn}</option>)}
+                                            </NativeSelect>
+                                        </div>
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="permanentThanaId">Thana</Label>
+                                            <NativeSelect
+                                                id="permanentThanaId"
+                                                name="permanentThanaId"
+                                                value={employee?.permanentThanaId || 0}
+                                                onChange={(e) => setEmployee(prev => prev ? ({ ...prev, permanentThanaId: parseInt(e.target.value) }) : null)}
+                                                disabled={!employee?.permanentDistrictId}
+                                            >
+                                                <option value="0">Select Thana</option>
+                                                {permanentThanas.map(t => <option key={t.id} value={t.id}>{t.nameEn}</option>)}
+                                            </NativeSelect>
+                                        </div>
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="permanentPostOfficeId">Post Office</Label>
+                                            <NativeSelect
+                                                id="permanentPostOfficeId"
+                                                name="permanentPostOfficeId"
+                                                value={employee?.permanentPostOfficeId || 0}
+                                                onChange={(e) => {
+                                                    const id = parseInt(e.target.value);
+                                                    const po = permanentPostOffices.find(p => p.id === id);
+                                                    setEmployee(prev => prev ? ({ ...prev, permanentPostOfficeId: id, permanentPostalCode: po?.code || prev.permanentPostalCode }) : null)
+                                                }}
+                                                disabled={!employee?.permanentDistrictId}
+                                            >
+                                                <option value="0">Select Post Office</option>
+                                                {permanentPostOffices.map(p => <option key={p.id} value={p.id}>{p.nameEn} ({p.code})</option>)}
+                                            </NativeSelect>
+                                        </div>
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="permanentPostalCode">Postal Code</Label>
+                                            <Input id="permanentPostalCode" name="permanentPostalCode" value={employee?.permanentPostalCode || ""} onChange={(e) => setEmployee(prev => prev ? ({ ...prev, permanentPostalCode: e.target.value }) : null)} />
+                                        </div>
                                     </div>
                                 </div>
                             </CardContent>
@@ -350,46 +626,57 @@ export default function OthersInformationPage() {
                     {/* Salary Information */}
                     <TabsContent value="salary">
                         <Card className="border-l-4 border-l-primary shadow-md">
-                            <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent">
+                            <CardHeader className="bg-linear-to-r from-primary/5 to-transparent">
                                 <div className="flex items-center gap-3">
                                     <div className="p-2 bg-primary/10 rounded-lg">
                                         <IconCash className="size-6 text-primary" />
                                     </div>
                                     <div>
                                         <CardTitle className="text-lg">Salary Information</CardTitle>
-                                        <CardDescription>Salary structure and allowances</CardDescription>
+                                        <CardDescription>Salary structure and allowances (Calculated automatically based on Gross Salary)</CardDescription>
                                     </div>
                                 </div>
                             </CardHeader>
                             <CardContent className="grid gap-6 pt-6">
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    <div className="grid gap-2 border-b pb-2 sm:col-span-2 lg:col-span-3 mb-2">
+                                        <Label htmlFor="grossSalary" className="font-bold text-primary text-lg">Gross Salary</Label>
+                                        <Input
+                                            id="grossSalary"
+                                            name="grossSalary"
+                                            type="number"
+                                            step="0.01"
+                                            value={employee?.grossSalary || ''}
+                                            onChange={handleGrossSalaryChange}
+                                            className="border-primary/50 font-bold text-lg h-12"
+                                            placeholder="Enter Gross Salary to calculate Breakdown"
+                                        />
+                                        <p className="text-xs text-muted-foreground">Enter the Gross Salary to automatically calculate the breakdown below.</p>
+                                    </div>
+
                                     <div className="grid gap-2">
                                         <Label htmlFor="basicSalary">Basic Salary</Label>
-                                        <Input id="basicSalary" name="basicSalary" type="number" step="0.01" defaultValue={employee?.basicSalary} />
+                                        <Input id="basicSalary" name="basicSalary" type="number" step="0.01" value={employee?.basicSalary || 0} readOnly className="bg-muted" />
                                     </div>
                                     <div className="grid gap-2">
                                         <Label htmlFor="houseRent">House Rent</Label>
-                                        <Input id="houseRent" name="houseRent" type="number" step="0.01" defaultValue={employee?.houseRent} />
+                                        <Input id="houseRent" name="houseRent" type="number" step="0.01" value={employee?.houseRent || 0} readOnly className="bg-muted" />
                                     </div>
                                     <div className="grid gap-2">
                                         <Label htmlFor="medicalAllowance">Medical Allowance</Label>
-                                        <Input id="medicalAllowance" name="medicalAllowance" type="number" step="0.01" defaultValue={employee?.medicalAllowance} />
+                                        <Input id="medicalAllowance" name="medicalAllowance" type="number" step="0.01" value={employee?.medicalAllowance || 0} readOnly className="bg-muted" />
                                     </div>
                                     <div className="grid gap-2">
                                         <Label htmlFor="conveyance">Conveyance</Label>
-                                        <Input id="conveyance" name="conveyance" type="number" step="0.01" defaultValue={employee?.conveyance} />
+                                        <Input id="conveyance" name="conveyance" type="number" step="0.01" value={employee?.conveyance || 0} readOnly className="bg-muted" />
                                     </div>
                                     <div className="grid gap-2">
                                         <Label htmlFor="foodAllowance">Food Allowance</Label>
-                                        <Input id="foodAllowance" name="foodAllowance" type="number" step="0.01" defaultValue={employee?.foodAllowance} />
+                                        <Input id="foodAllowance" name="foodAllowance" type="number" step="0.01" value={employee?.foodAllowance || 0} readOnly className="bg-muted" />
                                     </div>
                                     <div className="grid gap-2">
                                         <Label htmlFor="otherAllowance">Other Allowance</Label>
-                                        <Input id="otherAllowance" name="otherAllowance" type="number" step="0.01" defaultValue={employee?.otherAllowance} />
-                                    </div>
-                                    <div className="grid gap-2 border-t pt-2 sm:col-span-2 lg:col-span-1">
-                                        <Label htmlFor="grossSalary" className="font-bold text-primary">Gross Salary</Label>
-                                        <Input id="grossSalary" name="grossSalary" type="number" step="0.01" defaultValue={employee?.grossSalary} className="border-primary/30 font-bold" />
+                                        <Input id="otherAllowance" name="otherAllowance" type="number" step="0.01" value={employee?.otherAllowance || 0} readOnly className="bg-muted" />
                                     </div>
                                 </div>
                             </CardContent>
@@ -399,7 +686,7 @@ export default function OthersInformationPage() {
                     {/* Account Information */}
                     <TabsContent value="accounts">
                         <Card className="border-l-4 border-l-primary shadow-md">
-                            <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent">
+                            <CardHeader className="bg-linear-to-r from-primary/5 to-transparent">
                                 <div className="flex items-center gap-3">
                                     <div className="p-2 bg-primary/10 rounded-lg">
                                         <IconCreditCard className="size-6 text-primary" />
@@ -414,11 +701,37 @@ export default function OthersInformationPage() {
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div className="grid gap-2">
                                         <Label htmlFor="bankName">Bank Name</Label>
-                                        <Input id="bankName" name="bankName" defaultValue={employee?.bankName} />
+                                        <NativeSelect
+                                            id="bankName"
+                                            name="bankName"
+                                            defaultValue={employee?.bankName || "Islami Bank Bangladesh Limited"}
+                                        >
+                                            <option value="Islami Bank Bangladesh Limited">Islami Bank Bangladesh Limited</option>
+                                            <option value="Dutch Bangla Bank">Dutch Bangla Bank</option>
+                                            <option value="BRAC Bank">BRAC Bank</option>
+                                            <option value="Sonali Bank">Sonali Bank</option>
+                                            <option value="The City Bank">The City Bank</option>
+                                            <option value="Eastern Bank Limited">Eastern Bank Limited</option>
+                                            <option value="Other">Other</option>
+                                        </NativeSelect>
                                     </div>
                                     <div className="grid gap-2">
                                         <Label htmlFor="bankBranchName">Branch Name</Label>
-                                        <Input id="bankBranchName" name="bankBranchName" defaultValue={employee?.bankBranchName} />
+                                        <NativeSelect
+                                            id="bankBranchName"
+                                            name="bankBranchName"
+                                            defaultValue={employee?.bankBranchName || "Chawrasta"}
+                                        >
+                                            <option value="Chawrasta">Chawrasta</option>
+                                            <option value="Motijheel">Motijheel</option>
+                                            <option value="Gulshan">Gulshan</option>
+                                            <option value="Banani">Banani</option>
+                                            <option value="Mirpur">Mirpur</option>
+                                            <option value="Dhanmondi">Dhanmondi</option>
+                                            <option value="Uttara">Uttara</option>
+                                            <option value="Agrabad">Agrabad</option>
+                                            <option value="Other">Other</option>
+                                        </NativeSelect>
                                     </div>
                                     <div className="grid gap-2">
                                         <Label htmlFor="bankAccountNo">Account Number</Label>
@@ -430,10 +743,11 @@ export default function OthersInformationPage() {
                                     </div>
                                     <div className="grid gap-2">
                                         <Label htmlFor="bankAccountType">Account Type</Label>
-                                        <NativeSelect id="bankAccountType" name="bankAccountType" defaultValue={employee?.bankAccountType}>
+                                        <NativeSelect id="bankAccountType" name="bankAccountType" defaultValue={employee?.bankAccountType || "Savings"}>
                                             <option value="Savings">Savings</option>
                                             <option value="Current">Current</option>
                                             <option value="Salary">Salary</option>
+                                            <option value="mCash">mCash</option>
                                         </NativeSelect>
                                     </div>
                                 </div>
@@ -444,7 +758,7 @@ export default function OthersInformationPage() {
                     {/* Emergency Contact */}
                     <TabsContent value="emergency">
                         <Card className="border-l-4 border-l-primary shadow-md">
-                            <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent">
+                            <CardHeader className="bg-linear-to-r from-primary/5 to-transparent">
                                 <div className="flex items-center gap-3">
                                     <div className="p-2 bg-primary/10 rounded-lg">
                                         <IconPhone className="size-6 text-primary" />
@@ -474,6 +788,58 @@ export default function OthersInformationPage() {
                                         <Input id="emergencyContactAddress" name="emergencyContactAddress" defaultValue={employee?.emergencyContactAddress} />
                                     </div>
                                 </div>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+
+                    {/* Signature Information */}
+                    <TabsContent value="signature">
+                        <Card className="border-l-4 border-l-primary shadow-md">
+                            <CardHeader className="bg-linear-to-r from-primary/5 to-transparent">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-primary/10 rounded-lg">
+                                        <IconWriting className="size-6 text-primary" />
+                                    </div>
+                                    <div>
+                                        <CardTitle className="text-lg">Employee Signature</CardTitle>
+                                        <CardDescription>Digital signature for documents</CardDescription>
+                                    </div>
+                                </div>
+                            </CardHeader>
+                            <CardContent className="flex flex-col items-center justify-center py-10">
+                                <input
+                                    type="file"
+                                    className="hidden"
+                                    ref={sigInputRef}
+                                    onChange={handleSigUpload}
+                                    accept="image/*"
+                                />
+                                <div
+                                    className="w-full max-w-md h-48 rounded-lg bg-muted flex items-center justify-center border-2 border-dashed border-primary/20 mb-4 relative group cursor-pointer hover:bg-muted/80 transition-colors overflow-hidden"
+                                    onClick={() => sigInputRef.current?.click()}
+                                >
+                                    {employee?.signatureImageUrl ? (
+                                        <img
+                                            src={`${process.env.NEXT_PUBLIC_API_URL}${employee.signatureImageUrl}`}
+                                            alt="Signature"
+                                            className="h-full object-contain p-4"
+                                        />
+                                    ) : (
+                                        <div className="flex flex-col items-center gap-2">
+                                            <IconWriting className="size-12 text-muted-foreground opacity-20" />
+                                            <span className="text-muted-foreground">No signature uploaded</span>
+                                        </div>
+                                    )}
+                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                        <span className="text-white font-bold uppercase tracking-wider">
+                                            {isUploading ? "Uploading..." : "Click to Update Signature"}
+                                        </span>
+                                    </div>
+                                </div>
+                                <p className="text-sm text-muted-foreground flex items-center gap-2">
+                                    <IconCheck className="size-4 text-green-500" />
+                                    Transparent PNG or high-contrast JPG recommended.
+                                </p>
                             </CardContent>
                         </Card>
                     </TabsContent>

@@ -12,6 +12,7 @@ import { DatePicker } from "@/components/ui/date-picker"
 import { toast } from "sonner"
 import { employeeService, type UpdateEmployeeDto } from "@/lib/services/employee"
 import { organogramService } from "@/lib/services/organogram"
+import { Switch } from "@/components/ui/switch"
 
 export default function EditEmployeePage() {
     const router = useRouter()
@@ -37,7 +38,11 @@ export default function EditEmployeePage() {
     const [designationId, setDesignationId] = React.useState<number>(0)
     const [lineId, setLineId] = React.useState<number>(0)
     const [status, setStatus] = React.useState("Active")
+    const [shiftId, setShiftId] = React.useState<number>(0)
+    const [groupId, setGroupId] = React.useState<number>(0)
+    const [floorId, setFloorId] = React.useState<number>(0)
     const [isActive, setIsActive] = React.useState(true)
+    const [isOTEnabled, setIsOTEnabled] = React.useState(false)
     const [profileImageUrl, setProfileImageUrl] = React.useState<string | undefined>(undefined)
     const [isUploading, setIsUploading] = React.useState(false)
     const fileInputRef = React.useRef<HTMLInputElement>(null)
@@ -47,6 +52,9 @@ export default function EditEmployeePage() {
     const [sections, setSections] = React.useState<any[]>([])
     const [designations, setDesignations] = React.useState<any[]>([])
     const [lines, setLines] = React.useState<any[]>([])
+    const [shifts, setShifts] = React.useState<any[]>([])
+    const [groups, setGroups] = React.useState<any[]>([])
+    const [floors, setFloors] = React.useState<any[]>([])
 
     // Fetch employee data
     React.useEffect(() => {
@@ -70,8 +78,12 @@ export default function EditEmployeePage() {
                 setSectionId(employee.sectionId || 0)
                 setDesignationId(employee.designationId || 0)
                 setLineId(employee.lineId || 0)
+                setShiftId(employee.shiftId || 0)
+                setGroupId(employee.groupId || 0)
+                setFloorId(employee.floorId || 0)
                 setStatus(employee.status || "Active")
                 setIsActive(employee.isActive)
+                setIsOTEnabled(employee.isOTEnabled)
                 setProfileImageUrl(employee.profileImageUrl)
                 setJoinDate(employee.joinDate ? new Date(employee.joinDate) : undefined)
                 setDob(employee.dateOfBirth ? new Date(employee.dateOfBirth) : undefined)
@@ -90,14 +102,16 @@ export default function EditEmployeePage() {
     React.useEffect(() => {
         const fetchData = async () => {
             try {
-                const [depts, desigs, lns] = await Promise.all([
+                const [depts, shfs, grps, flrs] = await Promise.all([
                     organogramService.getDepartments(),
-                    organogramService.getDesignations(),
-                    organogramService.getLines(),
+                    organogramService.getShifts(),
+                    organogramService.getGroups(),
+                    organogramService.getFloors()
                 ])
                 setDepartments(depts)
-                setDesignations(desigs)
-                setLines(lns)
+                setShifts(shfs)
+                setGroups(grps)
+                setFloors(flrs)
             } catch (error) {
                 console.error("Failed to load dropdown data", error)
             }
@@ -115,6 +129,28 @@ export default function EditEmployeePage() {
             setSections([])
         }
     }, [departmentId])
+
+    // Fetch designations and lines when section changes
+    React.useEffect(() => {
+        if (sectionId > 0) {
+            const fetchData = async () => {
+                try {
+                    const [desigs, lns] = await Promise.all([
+                        organogramService.getDesignations(sectionId),
+                        organogramService.getLines(sectionId)
+                    ])
+                    setDesignations(desigs)
+                    setLines(lns)
+                } catch (error) {
+                    console.error("Failed to load section data", error)
+                }
+            }
+            fetchData()
+        } else {
+            setDesignations([])
+            setLines([])
+        }
+    }, [sectionId])
 
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
@@ -172,12 +208,16 @@ export default function EditEmployeePage() {
                 sectionId: sectionId > 0 ? sectionId : undefined,
                 designationId,
                 lineId: lineId > 0 ? lineId : undefined,
+                shiftId: shiftId > 0 ? shiftId : undefined,
+                groupId: groupId > 0 ? groupId : undefined,
+                floorId: floorId > 0 ? floorId : undefined,
                 status,
                 joinDate: joinDate.toISOString(),
                 email: email || undefined,
                 phoneNumber: phone || undefined,
                 profileImageUrl: profileImageUrl || undefined,
                 isActive,
+                isOTEnabled,
             }
 
             await employeeService.updateEmployee(parseInt(employeeIdParam), data)
@@ -280,6 +320,17 @@ export default function EditEmployeePage() {
                                     <Label htmlFor="joinDate">Joining Date *</Label>
                                     <DatePicker date={joinDate} setDate={setJoinDate} placeholder="Select Joining Date" />
                                 </div>
+                                <div className="flex items-center justify-between space-x-2 border p-3 rounded-lg bg-muted/20">
+                                    <div className="flex flex-col gap-0.5">
+                                        <Label htmlFor="is_ot_enabled" className="text-sm font-medium">OT Status</Label>
+                                        <p className="text-[10px] text-muted-foreground">Enabled overtime for this employee</p>
+                                    </div>
+                                    <Switch
+                                        id="is_ot_enabled"
+                                        checked={isOTEnabled}
+                                        onCheckedChange={setIsOTEnabled}
+                                    />
+                                </div>
                             </CardContent>
                         </Card>
                     </div>
@@ -340,6 +391,7 @@ export default function EditEmployeePage() {
                                             placeholder="যেমন: জন ডো"
                                             value={fullNameBn}
                                             onChange={(e) => setFullNameBn(e.target.value)}
+                                            className="font-sutonny"
                                             lang="bn"
                                             dir="ltr"
                                         />
@@ -423,7 +475,15 @@ export default function EditEmployeePage() {
                                             id="department"
                                             required
                                             value={departmentId}
-                                            onChange={(e) => setDepartmentId(parseInt(e.target.value))}
+                                            onChange={(e) => {
+                                                const id = parseInt(e.target.value)
+                                                setDepartmentId(id)
+                                                setSectionId(0)
+                                                setDesignationId(0)
+                                                setLineId(0)
+                                                setDesignations([])
+                                                setLines([])
+                                            }}
                                         >
                                             <option value="0">Select Department</option>
                                             {departments.map(dept => (
@@ -436,7 +496,12 @@ export default function EditEmployeePage() {
                                         <NativeSelect
                                             id="section"
                                             value={sectionId}
-                                            onChange={(e) => setSectionId(parseInt(e.target.value))}
+                                            onChange={(e) => {
+                                                const id = parseInt(e.target.value)
+                                                setSectionId(id)
+                                                setDesignationId(0)
+                                                setLineId(0)
+                                            }}
                                             disabled={!departmentId}
                                         >
                                             <option value="0">Select Section</option>
@@ -455,6 +520,7 @@ export default function EditEmployeePage() {
                                             required
                                             value={designationId}
                                             onChange={(e) => setDesignationId(parseInt(e.target.value))}
+                                            disabled={!sectionId}
                                         >
                                             <option value="0">Select Designation</option>
                                             {designations.map(desig => (
@@ -468,10 +534,53 @@ export default function EditEmployeePage() {
                                             id="line"
                                             value={lineId}
                                             onChange={(e) => setLineId(parseInt(e.target.value))}
+                                            disabled={!sectionId}
                                         >
                                             <option value="0">Select Line</option>
                                             {lines.map(line => (
                                                 <option key={line.id} value={line.id}>{line.nameEn}</option>
+                                            ))}
+                                        </NativeSelect>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="shift">Shift</Label>
+                                        <NativeSelect
+                                            id="shift"
+                                            value={shiftId}
+                                            onChange={(e) => setShiftId(parseInt(e.target.value))}
+                                        >
+                                            <option value="0">Select Shift</option>
+                                            {shifts.map(item => (
+                                                <option key={item.id} value={item.id}>{item.nameEn}</option>
+                                            ))}
+                                        </NativeSelect>
+                                    </div>
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="group">Group</Label>
+                                        <NativeSelect
+                                            id="group"
+                                            value={groupId}
+                                            onChange={(e) => setGroupId(parseInt(e.target.value))}
+                                        >
+                                            <option value="0">Select Group</option>
+                                            {groups.map(item => (
+                                                <option key={item.id} value={item.id}>{item.nameEn}</option>
+                                            ))}
+                                        </NativeSelect>
+                                    </div>
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="floor">Floor</Label>
+                                        <NativeSelect
+                                            id="floor"
+                                            value={floorId}
+                                            onChange={(e) => setFloorId(parseInt(e.target.value))}
+                                        >
+                                            <option value="0">Select Floor</option>
+                                            {floors.map(item => (
+                                                <option key={item.id} value={item.id}>{item.nameEn}</option>
                                             ))}
                                         </NativeSelect>
                                     </div>
@@ -483,6 +592,13 @@ export default function EditEmployeePage() {
 
                 <div className="flex justify-end gap-3 mt-4 border-t pt-6">
                     <Button variant="outline" type="button" onClick={() => router.back()}>Cancel</Button>
+                    <Button
+                        variant="secondary"
+                        type="button"
+                        onClick={() => router.push(`/management/human-resource/employee-info/others-information?id=${employeeIdParam}`)}
+                    >
+                        Others Information
+                    </Button>
                     <Button type="submit" className="min-w-32" disabled={isLoading}>
                         {isLoading ? "Updating..." : (
                             <span className="flex items-center gap-2">

@@ -35,6 +35,27 @@ export interface Line {
     sectionName?: string;
 }
 
+export interface Shift {
+    id: number;
+    nameEn: string;
+    nameBn?: string;
+    inTime: string;
+    outTime: string;
+    lateLimit: number;
+}
+
+export interface Group {
+    id: number;
+    nameEn: string;
+    nameBn?: string;
+}
+
+export interface Floor {
+    id: number;
+    nameEn: string;
+    nameBn?: string;
+}
+
 export const organogramService = {
     // Departments
     getDepartments: async (companyId?: number) => {
@@ -113,6 +134,40 @@ export const organogramService = {
     },
     deleteLine: async (id: number) => {
         const response = await api.delete(`/organogram/lines/${id}`);
+        return response.data;
+    },
+
+    // Shifts
+    getShifts: async () => {
+        const response = await api.get<Shift[]>('/shift');
+        return response.data;
+    },
+    getShift: async (id: number) => {
+        const response = await api.get<Shift>(`/shift/${id}`);
+        return response.data;
+    },
+    createShift: async (data: { nameEn: string; nameBn?: string; inTime: string; outTime: string; lateLimit: number }) => {
+        const response = await api.post<Shift>('/shift', data);
+        return response.data;
+    },
+    updateShift: async (id: number, data: { nameEn: string; nameBn?: string; inTime: string; outTime: string; lateLimit: number }) => {
+        const response = await api.put(`/shift/${id}`, data);
+        return response.data;
+    },
+    deleteShift: async (id: number) => {
+        const response = await api.delete(`/shift/${id}`);
+        return response.data;
+    },
+
+    // Groups
+    getGroups: async () => {
+        const response = await api.get<Group[]>('/organogram/groups');
+        return response.data;
+    },
+
+    // Floors
+    getFloors: async () => {
+        const response = await api.get<Floor[]>('/organogram/floors');
         return response.data;
     },
 

@@ -18,6 +18,12 @@ export interface Employee {
     designationName?: string;
     lineId?: number;
     lineName?: string;
+    shiftId?: number;
+    shiftName?: string;
+    groupId?: number;
+    groupName?: string;
+    floorId?: number;
+    floorName?: string;
     status: string;
     joinDate: string;
     profileImageUrl?: string;
@@ -25,7 +31,20 @@ export interface Employee {
     email?: string;
     phoneNumber?: string;
     presentAddress?: string;
+    presentAddressBn?: string;
+    presentDivisionId?: number;
+    presentDistrictId?: number;
+    presentThanaId?: number;
+    presentPostOfficeId?: number;
+    presentPostalCode?: string;
+
     permanentAddress?: string;
+    permanentAddressBn?: string;
+    permanentDivisionId?: number;
+    permanentDistrictId?: number;
+    permanentThanaId?: number;
+    permanentPostOfficeId?: number;
+    permanentPostalCode?: string;
 
     // Family Information
     fatherNameEn?: string;
@@ -61,6 +80,7 @@ export interface Employee {
     emergencyContactAddress?: string;
 
     isActive: boolean;
+    isOTEnabled: boolean;
     createdAt: string;
 }
 
@@ -77,12 +97,28 @@ export interface CreateEmployeeDto {
     sectionId?: number;
     designationId: number;
     lineId?: number;
+    shiftId?: number;
+    groupId?: number;
+    floorId?: number;
     status: string;
     joinDate: string;
     email?: string;
     phoneNumber?: string;
     presentAddress?: string;
+    presentAddressBn?: string;
+    presentDivisionId?: number;
+    presentDistrictId?: number;
+    presentThanaId?: number;
+    presentPostOfficeId?: number;
+    presentPostalCode?: string;
+
     permanentAddress?: string;
+    permanentAddressBn?: string;
+    permanentDivisionId?: number;
+    permanentDistrictId?: number;
+    permanentThanaId?: number;
+    permanentPostOfficeId?: number;
+    permanentPostalCode?: string;
     profileImageUrl?: string;
     signatureImageUrl?: string;
 
@@ -118,10 +154,12 @@ export interface CreateEmployeeDto {
     emergencyContactRelation?: string;
     emergencyContactPhone?: string;
     emergencyContactAddress?: string;
+    isOTEnabled?: boolean;
 }
 
 export interface UpdateEmployeeDto extends CreateEmployeeDto {
     isActive: boolean;
+    isOTEnabled: boolean;
 }
 
 export const employeeService = {

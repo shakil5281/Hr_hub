@@ -601,7 +601,9 @@ function RowActions({ row }: { row: Row<any> }) {
                     {key.replace(/([A-Z])/g, ' $1').trim()}
                   </p>
                   <div className="text-sm border p-2 rounded-md bg-muted/50">
-                    {typeof value === 'object' ? JSON.stringify(value) : String(value)}
+                    {value === null || value === undefined || String(value).trim() === ""
+                      ? "-"
+                      : (typeof value === 'object' ? JSON.stringify(value) : String(value))}
                   </div>
                 </div>
               ))}

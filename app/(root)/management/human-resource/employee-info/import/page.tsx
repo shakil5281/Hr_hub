@@ -160,7 +160,12 @@ export default function EmployeeImportPage() {
                                     2
                                 </span>
                                 <span className="text-muted-foreground">
-                                    Fill in employee information in the template (Department, Designation, Section, and Line names must match exactly)
+                                    Fill in employee information including Address, Family, Salary, and Account details.
+                                    <br />
+                                    <span className="text-xs opacity-80 mt-1 block">
+                                        Note: Department, Designation, and Address locations (District, Thana etc.) must match system names exactly.
+                                        Gross Salary will auto-calculate breakdown if other fields are empty.
+                                    </span>
                                 </span>
                             </li>
                             <li className="flex gap-3">
