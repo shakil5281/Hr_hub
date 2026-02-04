@@ -1,16 +1,17 @@
 "use client"
 
 import * as React from "react"
+import { format } from "date-fns"
 import {
     IconEdit,
     IconUser,
-    IconCalendar,
     IconClock,
     IconMessageDots,
     IconSend,
     IconHistory,
     IconCheck,
-    IconInfoCircle
+    IconInfoCircle,
+    IconLoader
 } from "@tabler/icons-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -20,25 +21,117 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { DatePicker } from "@/components/ui/date-picker"
 import { Separator } from "@/components/ui/separator"
-import { cn } from "@/lib/utils"
+import { manualAttendanceService, type ManualAttendanceHistory } from "@/lib/services/manualAttendance"
+import { employeeService } from "@/lib/services/employee"
+import { toast } from "sonner"
 
 export default function ManualEntryPage() {
     const [empId, setEmpId] = React.useState("")
+    const [empName, setEmpName] = React.useState("")
+    const [selectedEmployeeId, setSelectedEmployeeId] = React.useState<number | null>(null)
     const [date, setDate] = React.useState<Date | undefined>(new Date())
     const [inTime, setInTime] = React.useState("09:00")
     const [outTime, setOutTime] = React.useState("18:00")
     const [reason, setReason] = React.useState("device-error")
     const [remarks, setRemarks] = React.useState("")
+    const [status, setStatus] = React.useState("Present")
     const [isSubmitting, setIsSubmitting] = React.useState(false)
+    const [isSearching, setIsSearching] = React.useState(false)
+    const [history, setHistory] = React.useState<ManualAttendanceHistory[]>([])
+    const [isLoadingHistory, setIsLoadingHistory] = React.useState(true)
 
-    const handleSubmit = (e: React.FormEvent) => {
+    // Fetch history on mount
+    React.useEffect(() => {
+        fetchHistory()
+    }, [])
+
+    const fetchHistory = async () => {
+        try {
+            setIsLoadingHistory(true)
+            const data = await manualAttendanceService.getHistory({ pageSize: 10 })
+            setHistory(data)
+        } catch (error) {
+            console.error("Failed to fetch history", error)
+        } finally {
+            setIsLoadingHistory(false)
+        }
+    }
+
+    const searchEmployee = async () => {
+        if (!empId.trim()) {
+            toast.error("Please enter an Employee ID")
+            return
+        }
+
+        setIsSearching(true)
+        try {
+            const employees = await employeeService.getEmployees({ searchTerm: empId })
+
+            if (employees.length === 0) {
+                toast.error("Employee not found")
+                setSelectedEmployeeId(null)
+                setEmpName("")
+                return
+            }
+
+            const employee = employees[0]
+            setSelectedEmployeeId(employee.id)
+            setEmpName(employee.fullNameEn)
+            toast.success(`Employee found: ${employee.fullNameEn}`)
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || "Failed to search employee")
+            setSelectedEmployeeId(null)
+            setEmpName("")
+        } finally {
+            setIsSearching(false)
+        }
+    }
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
+
+        if (!selectedEmployeeId) {
+            toast.error("Please search and select an employee first")
+            return
+        }
+
+        if (!date) {
+            toast.error("Please select a date")
+            return
+        }
+
         setIsSubmitting(true)
-        // Simulate API call
-        setTimeout(() => {
+        try {
+            const data = await manualAttendanceService.createEntry({
+                employeeId: selectedEmployeeId,
+                date: format(date, "yyyy-MM-dd"),
+                inTime: inTime || null,
+                outTime: outTime || null,
+                reason: reason,
+                remarks: remarks,
+                status: status
+            })
+
+            toast.success("Manual attendance entry submitted successfully!")
+
+            // Reset form
+            setEmpId("")
+            setEmpName("")
+            setSelectedEmployeeId(null)
+            setDate(new Date())
+            setInTime("09:00")
+            setOutTime("18:00")
+            setReason("device-error")
+            setRemarks("")
+            setStatus("Present")
+
+            // Refresh history
+            fetchHistory()
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || "Failed to submit entry")
+        } finally {
             setIsSubmitting(false)
-            alert("Entry submitted successfully")
-        }, 1000)
+        }
     }
 
     return (
@@ -57,9 +150,14 @@ export default function ManualEntryPage() {
                             </div>
                         </div>
                         <div className="flex items-center gap-2">
-                            <Button variant="outline" size="sm" className="rounded-full h-8 px-4 text-xs font-bold">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="rounded-full h-8 px-4 text-xs font-bold"
+                                onClick={fetchHistory}
+                            >
                                 <IconHistory className="mr-2 size-4" />
-                                Entry History
+                                Refresh History
                             </Button>
                         </div>
                     </div>
@@ -83,18 +181,57 @@ export default function ManualEntryPage() {
                                 <form onSubmit={handleSubmit} className="space-y-6">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         {/* Employee Search */}
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Employee ID</label>
-                                            <div className="relative">
-                                                <IconUser className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                                                <Input
-                                                    placeholder="Search by ID or Name"
-                                                    className="pl-10 h-11 rounded-xl"
-                                                    value={empId}
-                                                    onChange={(e) => setEmpId(e.target.value)}
-                                                    required
-                                                />
+                                        <div className="space-y-4 md:col-span-2">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Employee ID</label>
+                                                    <div className="flex gap-2">
+                                                        <div className="relative flex-1">
+                                                            <IconUser className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                                                            <Input
+                                                                placeholder="ID"
+                                                                className="pl-10 h-11 rounded-xl"
+                                                                value={empId}
+                                                                onChange={(e) => setEmpId(e.target.value)}
+                                                                onKeyDown={(e) => {
+                                                                    if (e.key === 'Enter') {
+                                                                        e.preventDefault()
+                                                                        searchEmployee()
+                                                                    }
+                                                                }}
+                                                            />
+                                                        </div>
+                                                        <Button
+                                                            type="button"
+                                                            variant="outline"
+                                                            className="h-11 rounded-xl px-4"
+                                                            onClick={searchEmployee}
+                                                            disabled={isSearching}
+                                                        >
+                                                            {isSearching ? <IconLoader className="size-4 animate-spin" /> : "Search"}
+                                                        </Button>
+                                                    </div>
+                                                </div>
+
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Employee Name</label>
+                                                    <div className="relative">
+                                                        <IconUser className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                                                        <Input
+                                                            placeholder="Search ID to fill name"
+                                                            className="pl-10 h-11 rounded-xl bg-muted/30"
+                                                            value={empName}
+                                                            readOnly
+                                                        />
+                                                    </div>
+                                                </div>
                                             </div>
+
+                                            {selectedEmployeeId && (
+                                                <p className="text-xs text-emerald-600 font-medium px-1">
+                                                    ✓ Verified: {empName} (PK: {selectedEmployeeId})
+                                                </p>
+                                            )}
                                         </div>
 
                                         {/* Date Selection */}
@@ -105,6 +242,21 @@ export default function ManualEntryPage() {
                                                 setDate={setDate}
                                                 className="h-11 rounded-xl"
                                             />
+                                        </div>
+
+                                        {/* Status Selection */}
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Status</label>
+                                            <NativeSelect
+                                                className="h-11 rounded-xl"
+                                                value={status}
+                                                onChange={(e) => setStatus(e.target.value)}
+                                            >
+                                                <option value="Present">Present</option>
+                                                <option value="Late">Late</option>
+                                                <option value="Absent">Absent</option>
+                                                <option value="On Leave">On Leave</option>
+                                            </NativeSelect>
                                         </div>
 
                                         {/* Time Inputs */}
@@ -156,11 +308,10 @@ export default function ManualEntryPage() {
                                             <div className="relative">
                                                 <IconMessageDots className="absolute left-3 top-3 size-4 text-muted-foreground" />
                                                 <Textarea
-                                                    placeholder="Specify the reason for manual entry..."
+                                                    placeholder="Specify the reason for manual entry (optional)..."
                                                     className="pl-10 min-h-[100px] rounded-2xl resize-none py-3"
                                                     value={remarks}
                                                     onChange={(e) => setRemarks(e.target.value)}
-                                                    required
                                                 />
                                             </div>
                                         </div>
@@ -174,9 +325,14 @@ export default function ManualEntryPage() {
                                         <Button
                                             type="submit"
                                             className="h-11 rounded-xl px-8 gap-2 shadow-lg shadow-primary/10"
-                                            disabled={isSubmitting}
+                                            disabled={isSubmitting || !selectedEmployeeId}
                                         >
-                                            {isSubmitting ? "Submitting..." : (
+                                            {isSubmitting ? (
+                                                <>
+                                                    <IconLoader className="size-4 animate-spin" />
+                                                    Submitting...
+                                                </>
+                                            ) : (
                                                 <>
                                                     <IconSend className="size-4" />
                                                     Process Entry
@@ -215,20 +371,34 @@ export default function ManualEntryPage() {
 
                         <div className="space-y-3">
                             <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground px-1">Recent Logs</h3>
-                            {[1, 2, 3].map((_, i) => (
-                                <div key={i} className="p-4 bg-background border rounded-2xl flex items-center justify-between hover:bg-muted/30 transition-colors">
-                                    <div className="flex items-center gap-3">
-                                        <div className="size-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                                            <IconCheck className="size-5" />
-                                        </div>
-                                        <div>
-                                            <p className="text-xs font-bold leading-none">EMP0012 - Sarah</p>
-                                            <p className="text-[10px] text-muted-foreground mt-1 tracking-tight">21 Jan • Device Error</p>
-                                        </div>
-                                    </div>
-                                    <Badge variant="success" className="h-5 px-1.5 text-[8px] font-black uppercase">Admined</Badge>
+                            {isLoadingHistory ? (
+                                <div className="flex items-center justify-center py-8">
+                                    <IconLoader className="size-6 animate-spin text-muted-foreground" />
                                 </div>
-                            ))}
+                            ) : history.length === 0 ? (
+                                <div className="p-4 bg-background border rounded-2xl text-center">
+                                    <p className="text-xs text-muted-foreground">No recent entries</p>
+                                </div>
+                            ) : (
+                                history.slice(0, 5).map((entry) => (
+                                    <div key={entry.id} className="p-4 bg-background border rounded-2xl flex items-center justify-between hover:bg-muted/30 transition-colors">
+                                        <div className="flex items-center gap-3">
+                                            <div className="size-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                                                <IconCheck className="size-5" />
+                                            </div>
+                                            <div>
+                                                <p className="text-xs font-bold leading-none">{entry.employeeIdCard} - {entry.employeeName}</p>
+                                                <p className="text-[10px] text-muted-foreground mt-1 tracking-tight">
+                                                    {format(new Date(entry.date), "dd MMM")} • {entry.reason}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <Badge variant="success" className="h-5 px-1.5 text-[8px] font-black uppercase">
+                                            {entry.status}
+                                        </Badge>
+                                    </div>
+                                ))
+                            )}
                         </div>
                     </div>
                 </div>

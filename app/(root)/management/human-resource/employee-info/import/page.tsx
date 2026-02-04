@@ -160,11 +160,11 @@ export default function EmployeeImportPage() {
                                     2
                                 </span>
                                 <span className="text-muted-foreground">
-                                    Fill in employee information including Address, Family, Salary, and Account details.
+                                    Fill in employee information. New fields added: <strong>Employee ID</strong>, <strong>Card ID (Proximity)</strong>, <strong>Gender</strong>, and <strong>Religion</strong>.
                                     <br />
-                                    <span className="text-xs opacity-80 mt-1 block">
-                                        Note: Department, Designation, and Address locations (District, Thana etc.) must match system names exactly.
-                                        Gross Salary will auto-calculate breakdown if other fields are empty.
+                                    <span className="text-xs opacity-80 mt-1 block font-medium text-amber-600 dark:text-amber-400">
+                                        Important: Department, Designation, and Address locations (District, Thana etc.) must match system names exactly.
+                                        Gross Salary will auto-calculate breakdown if other salary fields are left empty.
                                     </span>
                                 </span>
                             </li>

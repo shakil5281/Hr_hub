@@ -79,8 +79,13 @@ export default function ShiftPage() {
     const columns: ColumnDef<Shift>[] = [
         {
             accessorKey: "nameEn",
-            header: "Shift Name",
+            header: "Shift Name (EN)",
             cell: ({ row }) => <span className="font-medium">{row.getValue("nameEn")}</span>
+        },
+        {
+            accessorKey: "nameBn",
+            header: "Shift Name (BN)",
+            cell: ({ row }) => <span className="font-sutonny text-lg">{row.getValue("nameBn")}</span>
         },
         {
             accessorKey: "inTime",
@@ -257,6 +262,7 @@ export default function ShiftPage() {
                                     value={currentShift.nameBn || ""}
                                     onChange={e => setCurrentShift(prev => ({ ...prev, nameBn: e.target.value }))}
                                     placeholder="e.g. সাধারণ শিফট"
+                                    className="font-sutonny text-lg"
                                 />
                             </div>
                             <div className="grid grid-cols-2 gap-4">

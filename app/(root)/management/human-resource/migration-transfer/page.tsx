@@ -2,15 +2,15 @@
 
 import * as React from "react"
 import {
-    IconUserMinus,
+    IconArrowsExchange,
     IconPlus,
     IconTrash,
     IconCheck,
     IconX,
+    IconBuildingSkyscraper,
+    IconLoader,
     IconFilter,
-    IconUser,
-    IconCalendarOff,
-    IconLoader
+    IconUser
 } from "@tabler/icons-react"
 import { ColumnDef } from "@tanstack/react-table"
 import { DataTable } from "@/components/data-table"
@@ -29,81 +29,93 @@ import {
     SheetTitle
 } from "@/components/ui/sheet"
 import { DatePicker } from "@/components/ui/date-picker"
-import { separationService, type Separation } from "@/lib/services/separation"
+import { transferService, type Transfer } from "@/lib/services/transfer"
+import { organogramService } from "@/lib/services/organogram"
 import { employeeService, type Employee } from "@/lib/services/employee"
 import { toast } from "sonner"
-import { format } from "date-fns"
 import { cn } from "@/lib/utils"
+import { format } from "date-fns"
 
-export default function SeparationPage() {
-    const [separations, setSeparations] = React.useState<Separation[]>([])
+export default function MigrationTransferPage() {
+    const [transfers, setTransfers] = React.useState<Transfer[]>([])
     const [isLoading, setIsLoading] = React.useState(true)
     const [isSheetOpen, setIsSheetOpen] = React.useState(false)
 
-    // Filters
-    const [filterStatus, setFilterStatus] = React.useState("")
-    const [filterType, setFilterType] = React.useState("")
-
     // Form Data
     const [employees, setEmployees] = React.useState<Employee[]>([])
+    const [departments, setDepartments] = React.useState<any[]>([])
+    const [designations, setDesignations] = React.useState<any[]>([])
     const [formData, setFormData] = React.useState({
         employeeId: "",
-        lastWorkingDate: format(new Date(), "yyyy-MM-dd"),
-        type: "Resignation",
+        departmentId: "",
+        designationId: "",
+        transferDate: format(new Date(), "yyyy-MM-dd"),
         reason: ""
     })
 
-    const fetchSeparations = React.useCallback(async () => {
+    const fetchTransfers = React.useCallback(async () => {
         setIsLoading(true)
         try {
-            const data = await separationService.getSeparations()
-            setSeparations(data)
+            const data = await transferService.getTransfers()
+            setTransfers(data)
         } catch (error) {
-            toast.error("Failed to load separation requests")
+            toast.error("Failed to load transfers")
         } finally {
             setIsLoading(false)
         }
     }, [])
 
     React.useEffect(() => {
-        fetchSeparations()
+        fetchTransfers()
+        organogramService.getDepartments().then(setDepartments)
         employeeService.getEmployees({ status: 'Active' }).then(setEmployees)
-    }, [fetchSeparations])
+    }, [fetchTransfers])
+
+    // Fetch designations when department changes
+    React.useEffect(() => {
+        if (formData.departmentId) {
+            organogramService.getDesignations(parseInt(formData.departmentId)).then(setDesignations)
+        } else {
+            setDesignations([])
+        }
+    }, [formData.departmentId])
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
-        if (!formData.employeeId || !formData.lastWorkingDate || !formData.reason) {
+        if (!formData.employeeId || !formData.departmentId || !formData.designationId || !formData.transferDate) {
             toast.error("Please fill all required fields")
             return
         }
 
         try {
-            await separationService.createSeparation({
+            await transferService.createTransfer({
                 employeeId: parseInt(formData.employeeId),
-                lastWorkingDate: formData.lastWorkingDate,
-                type: formData.type,
+                toDepartmentId: parseInt(formData.departmentId),
+                toDesignationId: parseInt(formData.designationId),
+                transferDate: formData.transferDate,
                 reason: formData.reason
             })
-            toast.success("Separation request submitted")
+            toast.success("Transfer request submitted")
             setIsSheetOpen(false)
-            fetchSeparations()
+            fetchTransfers()
             setFormData({
                 employeeId: "",
-                lastWorkingDate: format(new Date(), "yyyy-MM-dd"),
-                type: "Resignation",
+                departmentId: "",
+                designationId: "",
+                transferDate: format(new Date(), "yyyy-MM-dd"),
                 reason: ""
             })
-        } catch (error: any) {
-            toast.error(error.response?.data || "Failed to create request")
+        } catch (error) {
+            toast.error("Failed to create request")
         }
     }
 
     const handleStatusUpdate = async (id: number, status: string) => {
-        if (!confirm(`Are you sure you want to ${status} this request? This may maximize/freeze employee access.`)) return
+        if (!confirm(`Are you sure you want to ${status} this transfer?`)) return
         try {
-            await separationService.updateStatus(id, status)
-            toast.success(`Request ${status}`)
-            fetchSeparations()
+            await transferService.updateStatus(id, status)
+            toast.success(`Transfer ${status}`)
+            fetchTransfers()
         } catch (error) {
             toast.error("Update failed")
         }
@@ -112,24 +124,15 @@ export default function SeparationPage() {
     const handleDelete = async (id: number) => {
         if (!confirm("Delete this request?")) return
         try {
-            await separationService.deleteSeparation(id)
+            await transferService.deleteTransfer(id)
             toast.success("Deleted successfully")
-            fetchSeparations()
+            fetchTransfers()
         } catch (error) {
             toast.error("Delete failed")
         }
     }
 
-    // Filter Logic
-    const filteredSeparations = React.useMemo(() => {
-        return separations.filter(item => {
-            const matchesStatus = filterStatus ? item.status === filterStatus : true
-            const matchesType = filterType ? item.type === filterType : true
-            return matchesStatus && matchesType
-        })
-    }, [separations, filterStatus, filterType])
-
-    const columns: ColumnDef<Separation>[] = [
+    const columns: ColumnDef<Transfer>[] = [
         {
             accessorKey: "employeeName",
             header: "Employee",
@@ -141,23 +144,27 @@ export default function SeparationPage() {
             )
         },
         {
-            header: "Department",
+            header: "From",
             cell: ({ row }) => (
                 <div className="text-sm">
-                    <div className="font-medium text-muted-foreground">{row.original.departmentName}</div>
-                    <div className="text-xs text-muted-foreground/70">{row.original.designationName}</div>
+                    <div className="font-medium text-muted-foreground">{row.original.fromDepartmentName}</div>
+                    <div className="text-xs text-muted-foreground/70">{row.original.fromDesignationName}</div>
                 </div>
             )
         },
         {
-            accessorKey: "type",
-            header: "Type",
-            cell: ({ row }) => <Badge variant="outline">{row.original.type}</Badge>
+            header: "To",
+            cell: ({ row }) => (
+                <div className="text-sm">
+                    <div className="font-medium">{row.original.toDepartmentName}</div>
+                    <div className="text-xs text-muted-foreground">{row.original.toDesignationName}</div>
+                </div>
+            )
         },
         {
-            accessorKey: "lastWorkingDate",
-            header: "Last Working Date",
-            cell: ({ row }) => <span>{format(new Date(row.original.lastWorkingDate), "dd MMM yyyy")}</span>
+            accessorKey: "transferDate",
+            header: "Date",
+            cell: ({ row }) => <span>{format(new Date(row.original.transferDate), "dd MMM yyyy")}</span>
         },
         {
             accessorKey: "status",
@@ -198,17 +205,17 @@ export default function SeparationPage() {
         <div className="flex flex-col gap-6 py-6 bg-muted/20 min-h-screen px-4 lg:px-8 w-full">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
-                    <div className="size-12 rounded-2xl bg-red-500/10 flex items-center justify-center text-red-600 shadow-sm border border-red-500/20">
-                        <IconUserMinus className="size-7" />
+                    <div className="size-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-indigo-600 shadow-sm border border-indigo-500/20">
+                        <IconArrowsExchange className="size-7" />
                     </div>
                     <div>
-                        <h1 className="text-2xl font-bold tracking-tight">Separation Management</h1>
-                        <p className="text-sm text-muted-foreground">Manage employee resignations, terminations, and settlements.</p>
+                        <h1 className="text-2xl font-bold tracking-tight">Migration & Transfers</h1>
+                        <p className="text-sm text-muted-foreground">Manage employee internal movements and role changes.</p>
                     </div>
                 </div>
                 <Button className="gap-2 shadow-md rounded-xl" onClick={() => setIsSheetOpen(true)}>
                     <IconPlus className="size-4" />
-                    New Separation
+                    New Transfer
                 </Button>
             </div>
 
@@ -216,66 +223,23 @@ export default function SeparationPage() {
                 <Card className="border-none shadow-sm bg-background/60 backdrop-blur-sm">
                     <CardHeader className="pb-2">
                         <CardDescription>Pending Requests</CardDescription>
-                        <CardTitle className="text-2xl">{separations.filter(t => t.status === "Pending").length}</CardTitle>
+                        <CardTitle className="text-2xl">{transfers.filter(t => t.status === "Pending").length}</CardTitle>
                     </CardHeader>
                 </Card>
                 <Card className="border-none shadow-sm bg-background/60 backdrop-blur-sm">
                     <CardHeader className="pb-2">
-                        <CardDescription>Processed This Month</CardDescription>
-                        <CardTitle className="text-2xl text-primary">
-                            {separations.filter(t => t.status === "Approved" && new Date(t.createdAt).getMonth() === new Date().getMonth()).length}
+                        <CardDescription>Approved This Month</CardDescription>
+                        <CardTitle className="text-2xl text-green-600">
+                            {transfers.filter(t => t.status === "Approved").length}
                         </CardTitle>
                     </CardHeader>
                 </Card>
                 <Card className="border-none shadow-sm bg-background/60 backdrop-blur-sm">
                     <CardHeader className="pb-2">
-                        <CardDescription>Total Separated</CardDescription>
-                        <CardTitle className="text-2xl">{separations.filter(t => t.status === "Approved").length}</CardTitle>
+                        <CardDescription>Total History</CardDescription>
+                        <CardTitle className="text-2xl">{transfers.length}</CardTitle>
                     </CardHeader>
                 </Card>
-            </div>
-
-            {/* Quick Filter Section */}
-            <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-background/60 backdrop-blur-sm p-4 rounded-xl shadow-sm border border-border/50">
-                <div className="flex items-center gap-4 w-full sm:w-auto">
-                    <div className="flex items-center gap-2 text-muted-foreground min-w-fit">
-                        <IconFilter className="size-5" />
-                        <span className="text-sm font-medium">Quick Filters:</span>
-                    </div>
-
-                    <div className="relative w-full sm:w-[200px]">
-                        <select
-                            className="h-10 w-full appearance-none rounded-lg border border-input bg-background pl-3 pr-10 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                            value={filterStatus}
-                            onChange={(e) => setFilterStatus(e.target.value)}
-                        >
-                            <option value="">All Statuses</option>
-                            <option value="Pending">Pending</option>
-                            <option value="Approved">Approved</option>
-                            <option value="Rejected">Rejected</option>
-                        </select>
-                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground">
-                            <IconFilter className="size-4 opacity-50" />
-                        </div>
-                    </div>
-
-                    <div className="relative w-full sm:w-[200px]">
-                        <select
-                            className="h-10 w-full appearance-none rounded-lg border border-input bg-background pl-3 pr-10 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                            value={filterType}
-                            onChange={(e) => setFilterType(e.target.value)}
-                        >
-                            <option value="">All Types</option>
-                            <option value="Resignation">Resignation</option>
-                            <option value="Termination">Termination</option>
-                            <option value="Retirement">Retirement</option>
-                            <option value="Dismissal">Dismissal</option>
-                        </select>
-                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground">
-                            <IconCalendarOff className="size-4 opacity-50" />
-                        </div>
-                    </div>
-                </div>
             </div>
 
             <Card className="border-none shadow-xl rounded-2xl overflow-hidden bg-background">
@@ -283,11 +247,11 @@ export default function SeparationPage() {
                     {isLoading ? (
                         <div className="flex flex-col items-center justify-center py-20 gap-3">
                             <IconLoader className="size-8 animate-spin text-primary" />
-                            <p className="text-sm text-muted-foreground animate-pulse">Loading requests...</p>
+                            <p className="text-sm text-muted-foreground animate-pulse">Loading transfers...</p>
                         </div>
                     ) : (
                         <DataTable
-                            data={filteredSeparations}
+                            data={transfers}
                             columns={columns}
                             showActions={false}
                             showTabs={false}
@@ -300,11 +264,11 @@ export default function SeparationPage() {
             <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
                 <SheetContent className="overflow-y-auto sm:max-w-md">
                     <SheetHeader className="pb-6">
-                        <div className="size-10 rounded-xl bg-destructive/10 flex items-center justify-center text-destructive mb-2">
-                            <IconUserMinus className="size-6" />
+                        <div className="size-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary mb-2">
+                            <IconArrowsExchange className="size-6" />
                         </div>
-                        <SheetTitle>New Separation Request</SheetTitle>
-                        <SheetDescription>Initiate resignation or termination process.</SheetDescription>
+                        <SheetTitle>Initiate Transfer</SheetTitle>
+                        <SheetDescription>Create a new internal transfer request for an employee.</SheetDescription>
                     </SheetHeader>
 
                     <form onSubmit={handleSubmit} className="space-y-5 py-2">
@@ -312,14 +276,14 @@ export default function SeparationPage() {
                             <Label>Employee</Label>
                             <div className="relative">
                                 <select
-                                    className="flex h-11 w-full rounded-md border border-input bg-background pl-3 pr-8 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 appearance-none"
+                                    className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 appearance-none"
                                     value={formData.employeeId}
                                     onChange={e => setFormData(p => ({ ...p, employeeId: e.target.value }))}
                                 >
                                     <option value="" disabled>Select Employee</option>
                                     {employees.map(e => (
                                         <option key={e.id} value={e.id}>
-                                            {e.fullNameEn} ({e.employeeId})
+                                            {e.fullNameEn} ({e.employeeId}) - {e.designationName}
                                         </option>
                                     ))}
                                 </select>
@@ -328,40 +292,58 @@ export default function SeparationPage() {
                         </div>
 
                         <div className="space-y-2">
-                            <Label>Separation Type</Label>
+                            <Label>Target Department</Label>
                             <select
                                 className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                                value={formData.type}
-                                onChange={e => setFormData(p => ({ ...p, type: e.target.value }))}
+                                value={formData.departmentId}
+                                onChange={e => setFormData(p => ({ ...p, departmentId: e.target.value, designationId: "" }))}
                             >
-                                <option value="Resignation">Resignation</option>
-                                <option value="Termination">Termination</option>
-                                <option value="Retirement">Retirement</option>
-                                <option value="Dismissal">Dismissal</option>
-                                <option value="Absconding">Absconding</option>
+                                <option value="" disabled>Select Department</option>
+                                {departments.map(d => (
+                                    <option key={d.id} value={d.id.toString()}>
+                                        {d.nameEn}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label>Target Designation</Label>
+                            <select
+                                className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                value={formData.designationId}
+                                onChange={e => setFormData(p => ({ ...p, designationId: e.target.value }))}
+                                disabled={!formData.departmentId}
+                            >
+                                <option value="" disabled>Select Designation</option>
+                                {designations.map(d => (
+                                    <option key={d.id} value={d.id.toString()}>
+                                        {d.nameEn}
+                                    </option>
+                                ))}
                             </select>
                         </div>
 
                         <div className="space-y-2 flex flex-col">
-                            <Label>Last Working Date</Label>
+                            <Label>Transfer Date</Label>
                             <DatePicker
-                                date={formData.lastWorkingDate ? new Date(formData.lastWorkingDate) : undefined}
-                                setDate={(date) => setFormData(p => ({ ...p, lastWorkingDate: date ? format(date, "yyyy-MM-dd") : "" }))}
+                                date={formData.transferDate ? new Date(formData.transferDate) : undefined}
+                                setDate={(date) => setFormData(p => ({ ...p, transferDate: date ? format(date, "yyyy-MM-dd") : "" }))}
                             />
                         </div>
 
                         <div className="space-y-2">
                             <Label>Reason</Label>
                             <Textarea
-                                placeholder="Detailed reason..."
+                                placeholder="Reason for transfer..."
                                 value={formData.reason}
                                 onChange={e => setFormData(p => ({ ...p, reason: e.target.value }))}
                             />
                         </div>
 
                         <SheetFooter className="pt-6">
-                            <Button type="submit" className="w-full h-11 rounded-xl shadow-lg" variant="destructive">
-                                Submit Request
+                            <Button type="submit" className="w-full h-11 rounded-xl shadow-lg">
+                                Create Transfer Request
                             </Button>
                         </SheetFooter>
                     </form>

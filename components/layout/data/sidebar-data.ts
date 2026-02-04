@@ -71,7 +71,7 @@ export const sidebarData = {
                         { title: "Employee info", url: "/management/human-resource/employee-info" },
                         { title: "Manpower List", url: "/management/human-resource/manpower-list" },
                         { title: "Manpower Summary", url: "/management/human-resource/manpower-summary" },
-                        { title: "Migration", url: "/management/human-resource/migration" },
+                        { title: "Migration & Transfer", url: "/management/human-resource/migration-transfer" },
                         { title: "Roster", url: "/management/human-resource/roster" },
                         { title: "Manpower Requirement", url: "/management/human-resource/manpower-requirement" },
                     ],
@@ -91,6 +91,7 @@ export const sidebarData = {
                     icon: IconFingerprint,
                     roles: ["SuperAdmin", "Admin", "HR", "Management", "HR Officer"],
                     items: [
+                        { title: "Daily Attendance Report", url: "/management/attendance/daily-report" },
                         { title: "Daily Input", url: "/management/attendance/daily-input" },
                         { title: "Daily Summary", url: "/management/attendance/daily-summary" },
                         { title: "Job Card", url: "/management/attendance/job-card" },

@@ -137,7 +137,7 @@ export default function SalarySummaryPage() {
                                 </CardContent>
                             </Card>
 
-                            {/* Additional insights */}
+                            {/* Additional insights or empty placeholder for now */}
                             <Card className="border shadow-sm bg-indigo-600 text-white">
                                 <CardHeader>
                                     <CardTitle className="text-sm font-bold uppercase tracking-widest text-indigo-100 flex items-center gap-2">
@@ -148,10 +148,10 @@ export default function SalarySummaryPage() {
                                 <CardContent className="pt-4 space-y-4">
                                     <div className="p-4 bg-white/10 rounded-2xl border border-white/20">
                                         <p className="text-[10px] font-bold text-indigo-200 uppercase tracking-widest underline decoration-indigo-300">Avg Cost per Employee</p>
-                                        <h3 className="text-4xl font-black mt-2 tracking-tighter tabular-nums">৳{(summary.totalNetPayable / Math.max(1, summary.totalEmployees)).toFixed(0).toLocaleString()}</h3>
+                                        <h3 className="text-4xl font-black mt-2 tracking-tighter tabular-nums">৳{(summary.totalNetPayable / summary.totalEmployees).toFixed(0).toLocaleString()}</h3>
                                     </div>
                                     <p className="text-xs opacity-80 leading-relaxed font-medium">
-                                        This month total disbursement represents the final processed salary for all active business units. Cost efficiency is within the target threshold.
+                                        This month total disbursement represents the final processed salary for all active business units. Cost efficiency is within the 12% target threshold.
                                     </p>
                                 </CardContent>
                             </Card>

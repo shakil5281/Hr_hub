@@ -1,13 +1,16 @@
 "use client"
 
 import * as React from "react"
+import { format } from "date-fns"
 import {
     IconAlertTriangle,
     IconSearch,
     IconUser,
     IconAdjustmentsHorizontal,
     IconRotateClockwise,
-    IconFileSpreadsheet
+    IconFileSpreadsheet,
+    IconLoader,
+    IconEdit
 } from "@tabler/icons-react"
 import { DataTable } from "@/components/data-table"
 import { ColumnDef } from "@tanstack/react-table"
@@ -18,59 +21,83 @@ import { NativeSelect } from "@/components/ui/select"
 import { DateRangePicker } from "@/components/ui/date-range-picker"
 import { DateRange } from "react-day-picker"
 import { Badge } from "@/components/ui/badge"
-import { cn } from "@/lib/utils"
-
-// --- Mock Data ---
-
-const MOCK_MISSING_ENTRIES = [
-    { id: "1", date: "2024-05-20", empId: "EMP001", name: "John Doe", department: "engineering", designation: "swe", shift: "Morning (08-05)", missing: "Out Time", status: "Pending" },
-    { id: "2", date: "2024-05-20", empId: "EMP002", name: "Jane Smith", department: "hr", designation: "mgr", shift: "Evening (02-10)", missing: "In Time", status: "Pending" },
-    { id: "3", date: "2024-05-21", empId: "EMP005", name: "Robert Fox", department: "production", designation: "op", shift: "Day (09-06)", missing: "Both (No Punch)", status: "Critical" },
-    { id: "4", date: "2024-05-22", empId: "EMP010", name: "Alice Brown", department: "quality", designation: "exec", shift: "Day (09-06)", missing: "Out Time", status: "Pending" },
-]
+import { missingEntryService, type MissingEntry, type MissingEntrySummary } from "@/lib/services/missingEntry"
+import { organogramService } from "@/lib/services/organogram"
+import { toast } from "sonner"
+import { useRouter } from "next/navigation"
 
 export default function MissingEntryPage() {
+    const router = useRouter()
     const [empId, setEmpId] = React.useState("")
     const [department, setDepartment] = React.useState("all")
     const [designation, setDesignation] = React.useState("all")
-    const [line, setLine] = React.useState("all")
+    const [section, setSection] = React.useState("all")
     const [dateRange, setDateRange] = React.useState<DateRange | undefined>({
-        from: new Date(2024, 4, 1),
-        to: new Date(2024, 4, 30)
+        from: new Date(2026, 0, 1),
+        to: new Date(2026, 0, 31)
     })
 
     const [isLoading, setIsLoading] = React.useState(false)
-    const [filteredData, setFilteredData] = React.useState<any[]>([])
+    const [filteredData, setFilteredData] = React.useState<MissingEntry[]>([])
+    const [summary, setSummary] = React.useState<MissingEntrySummary | null>(null)
     const [hasSearched, setHasSearched] = React.useState(false)
 
-    const columns: ColumnDef<any>[] = [
+    const [departments, setDepartments] = React.useState<any[]>([])
+    const [designations, setDesignations] = React.useState<any[]>([])
+    const [sections, setSections] = React.useState<any[]>([])
+
+    // Fetch filter options
+    React.useEffect(() => {
+        const fetchFilters = async () => {
+            try {
+                const [depts, desigs, sects] = await Promise.all([
+                    organogramService.getDepartments(),
+                    organogramService.getDesignations(),
+                    organogramService.getSections()
+                ])
+                setDepartments(depts)
+                setDesignations(desigs)
+                setSections(sects)
+            } catch (error) {
+                console.error("Failed to fetch filters", error)
+            }
+        }
+        fetchFilters()
+    }, [])
+
+    const columns: ColumnDef<MissingEntry>[] = [
         {
             accessorKey: "date",
             header: "Date",
-            cell: ({ row }) => <span className="font-bold text-xs">{row.original.date}</span>
+            cell: ({ row }) => <span className="font-bold text-xs">{format(new Date(row.original.date), "dd MMM yyyy")}</span>
         },
         {
-            accessorKey: "empId",
+            accessorKey: "employeeIdCard",
             header: "ID",
-            cell: ({ row }) => <Badge variant="outline" className="text-[10px] font-bold">{row.original.empId}</Badge>
+            cell: ({ row }) => <Badge variant="outline" className="text-[10px] font-bold">{row.original.employeeIdCard}</Badge>
         },
         {
-            accessorKey: "name",
+            accessorKey: "employeeName",
             header: "Employee Name",
-            cell: ({ row }) => <span className="font-bold text-xs">{row.original.name}</span>
+            cell: ({ row }) => <span className="font-bold text-xs">{row.original.employeeName}</span>
+        },
+        {
+            accessorKey: "department",
+            header: "Department",
+            cell: ({ row }) => <span className="text-xs text-muted-foreground">{row.original.department}</span>
         },
         {
             accessorKey: "shift",
             header: "Shift",
-            cell: ({ row }) => <span className="text-xs text-muted-foreground">{row.original.shift}</span>
+            cell: ({ row }) => <span className="text-xs text-muted-foreground">{row.original.shift || "N/A"}</span>
         },
         {
-            accessorKey: "missing",
+            accessorKey: "missingType",
             header: "Missing Punch",
             cell: ({ row }) => (
                 <div className="flex items-center gap-2">
                     <div className="size-2 rounded-full bg-rose-500 animate-pulse" />
-                    <span className="text-rose-600 font-bold text-xs uppercase tracking-tight">{row.original.missing}</span>
+                    <span className="text-rose-600 font-bold text-xs uppercase tracking-tight">{row.original.missingType}</span>
                 </div>
             )
         },
@@ -89,26 +116,54 @@ export default function MissingEntryPage() {
         {
             id: "actions",
             header: "Action",
-            cell: () => (
-                <Button size="sm" variant="outline" className="h-7 rounded-lg text-[10px] font-bold px-3 hover:bg-primary hover:text-white transition-all">
+            cell: ({ row }) => (
+                <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 rounded-lg text-[10px] font-bold px-3 hover:bg-primary hover:text-white transition-all"
+                    onClick={() => router.push(`/management/attendance/manual-entry?employeeId=${row.original.employeeId}&date=${format(new Date(row.original.date), "yyyy-MM-dd")}`)}
+                >
+                    <IconEdit className="size-3 mr-1" />
                     FIX PUNCH
                 </Button>
             )
         }
     ]
 
-    const handleSearch = () => {
-        setIsLoading(true)
-        // Simulate API delay
-        setTimeout(() => {
-            let results = MOCK_MISSING_ENTRIES
-            if (empId) results = results.filter(r => r.empId.includes(empId) || r.name.toLowerCase().includes(empId.toLowerCase()))
-            if (department !== "all") results = results.filter(r => r.department === department)
+    const handleSearch = async () => {
+        if (!dateRange?.from || !dateRange?.to) {
+            toast.error("Please select a date range")
+            return
+        }
 
-            setFilteredData(results)
+        setIsLoading(true)
+        try {
+            const params: any = {
+                fromDate: format(dateRange.from, "yyyy-MM-dd"),
+                toDate: format(dateRange.to, "yyyy-MM-dd")
+            }
+
+            if (department !== "all") params.departmentId = parseInt(department)
+            if (designation !== "all") params.designationId = parseInt(designation)
+            if (section !== "all") params.sectionId = parseInt(section)
+            if (empId.trim()) params.searchTerm = empId.trim()
+
+            const data = await missingEntryService.getMissingEntries(params)
+
+            setFilteredData(data.entries)
+            setSummary(data.summary)
             setHasSearched(true)
+
+            if (data.entries.length === 0) {
+                toast.success("No missing entries found!")
+            } else {
+                toast.info(`Found ${data.entries.length} missing entries`)
+            }
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || "Failed to fetch missing entries")
+        } finally {
             setIsLoading(false)
-        }, 500)
+        }
     }
 
     return (
@@ -127,11 +182,21 @@ export default function MissingEntryPage() {
                             </div>
                         </div>
                         <div className="flex items-center gap-2">
-                            <Button variant="outline" size="sm" className="rounded-full h-8 px-4 text-xs font-bold">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="rounded-full h-8 px-4 text-xs font-bold"
+                                onClick={handleSearch}
+                                disabled={isLoading}
+                            >
                                 <IconRotateClockwise className="mr-2 size-4" />
                                 Sync Real-time
                             </Button>
-                            <Button size="sm" className="rounded-full h-8 px-4 text-xs font-bold bg-slate-900">
+                            <Button
+                                size="sm"
+                                className="rounded-full h-8 px-4 text-xs font-bold bg-slate-900"
+                                disabled={filteredData.length === 0}
+                            >
                                 <IconFileSpreadsheet className="mr-2 size-4" />
                                 Export Missing
                             </Button>
@@ -141,6 +206,42 @@ export default function MissingEntryPage() {
             </div>
 
             <main className="container mx-auto px-4 py-8 lg:px-8 max-w-[1600px] space-y-8">
+                {/* Summary Cards */}
+                {summary && (
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4 animate-in slide-in-from-top duration-500">
+                        <Card className="border-l-4 border-l-rose-500">
+                            <CardContent className="p-4">
+                                <p className="text-xs text-muted-foreground mb-1">Total Missing</p>
+                                <p className="text-2xl font-bold text-rose-600">{summary.totalMissing}</p>
+                            </CardContent>
+                        </Card>
+                        <Card className="border-l-4 border-l-amber-500">
+                            <CardContent className="p-4">
+                                <p className="text-xs text-muted-foreground mb-1">Missing In</p>
+                                <p className="text-2xl font-bold text-amber-600">{summary.missingInTime}</p>
+                            </CardContent>
+                        </Card>
+                        <Card className="border-l-4 border-l-orange-500">
+                            <CardContent className="p-4">
+                                <p className="text-xs text-muted-foreground mb-1">Missing Out</p>
+                                <p className="text-2xl font-bold text-orange-600">{summary.missingOutTime}</p>
+                            </CardContent>
+                        </Card>
+                        <Card className="border-l-4 border-l-red-500">
+                            <CardContent className="p-4">
+                                <p className="text-xs text-muted-foreground mb-1">No Punch</p>
+                                <p className="text-2xl font-bold text-red-600">{summary.missingBoth}</p>
+                            </CardContent>
+                        </Card>
+                        <Card className="border-l-4 border-l-purple-500">
+                            <CardContent className="p-4">
+                                <p className="text-xs text-muted-foreground mb-1">Critical</p>
+                                <p className="text-2xl font-bold text-purple-600">{summary.criticalCount}</p>
+                            </CardContent>
+                        </Card>
+                    </div>
+                )}
+
                 {/* Filters */}
                 <Card className="border">
                     <CardHeader className="pb-4">
@@ -169,9 +270,7 @@ export default function MissingEntryPage() {
                                 <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Department</label>
                                 <NativeSelect value={department} onChange={(e) => setDepartment(e.target.value)} className="h-10 rounded-xl">
                                     <option value="all">All Departments</option>
-                                    <option value="engineering">Engineering</option>
-                                    <option value="hr">HR & Admin</option>
-                                    <option value="production">Production</option>
+                                    {departments.map(d => <option key={d.id} value={d.id}>{d.nameEn}</option>)}
                                 </NativeSelect>
                             </div>
 
@@ -179,17 +278,15 @@ export default function MissingEntryPage() {
                                 <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Designation</label>
                                 <NativeSelect value={designation} onChange={(e) => setDesignation(e.target.value)} className="h-10 rounded-xl">
                                     <option value="all">All Designations</option>
-                                    <option value="swe">Developer</option>
-                                    <option value="mgr">Manager</option>
+                                    {designations.map(d => <option key={d.id} value={d.id}>{d.nameEn}</option>)}
                                 </NativeSelect>
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Line / Section</label>
-                                <NativeSelect value={line} onChange={(e) => setLine(e.target.value)} className="h-10 rounded-xl">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Section</label>
+                                <NativeSelect value={section} onChange={(e) => setSection(e.target.value)} className="h-10 rounded-xl">
                                     <option value="all">All Sections</option>
-                                    <option value="platform">Platform</option>
-                                    <option value="assembly">Assembly</option>
+                                    {sections.map(s => <option key={s.id} value={s.id}>{s.nameEn}</option>)}
                                 </NativeSelect>
                             </div>
 
@@ -206,8 +303,17 @@ export default function MissingEntryPage() {
                                 onClick={handleSearch}
                                 disabled={isLoading}
                             >
-                                <IconSearch className="size-5" />
-                                {isLoading ? "Searching..." : "Search Entry"}
+                                {isLoading ? (
+                                    <>
+                                        <IconLoader className="size-5 animate-spin" />
+                                        Searching...
+                                    </>
+                                ) : (
+                                    <>
+                                        <IconSearch className="size-5" />
+                                        Search Entry
+                                    </>
+                                )}
                             </Button>
                         </div>
                     </CardContent>
@@ -226,6 +332,7 @@ export default function MissingEntryPage() {
                             columns={columns}
                             data={filteredData}
                             showColumnCustomizer={false}
+                            searchKey="employeeName"
                         />
                     </div>
                 ) : (

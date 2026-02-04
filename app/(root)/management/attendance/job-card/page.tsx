@@ -7,107 +7,23 @@ import {
     IconPrinter,
     IconDownload,
     IconSearch,
-    IconCalendar,
     IconUser,
-    IconBriefcase,
-    IconClock,
-    IconCheck,
-    IconX,
-    IconAlertCircle,
-    IconChevronLeft,
-    IconChevronRight,
     IconAdjustmentsHorizontal,
-    IconHierarchy,
-    IconStack,
-    IconLine
+    IconLoader
 } from "@tabler/icons-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
 import { DateRange } from "react-day-picker"
 import { NativeSelect } from "@/components/ui/select"
 import { DateRangePicker } from "@/components/ui/date-range-picker"
 import { cn } from "@/lib/utils"
-import { eachDayOfInterval, isSameMonth, isSameYear } from "date-fns"
-
-// --- Mock Data ---
-
-const MOCK_EMPLOYEE = {
-    id: "EMP1024",
-    name: "Sarah Wilson",
-    department: "Engineering",
-    designation: "Software Engineer",
-    section: "Platform",
-    joiningDate: "Jan 15, 2024",
-    grade: "A2",
-    shift: "Day (09:00 AM - 06:00 PM)"
-}
-
-const generateMockAttendance = (fromDate: Date, toDate: Date) => {
-    const days = eachDayOfInterval({ start: fromDate, end: toDate })
-    const attendance = []
-
-    for (const day of days) {
-        const dateStr = format(day, "dd MMM")
-        const dayName = format(day, "eee")
-
-        const isWeekend = dayName === "Fri" // Assuming Friday weekend
-
-        if (isWeekend) {
-            attendance.push({
-                date: dateStr,
-                day: dayName,
-                status: "Weekend",
-                inTime: "-",
-                outTime: "-",
-                late: 0,
-                early: 0,
-                ot: 0,
-                total: 0,
-                remarks: "Weekly Off"
-            })
-        } else {
-            const isAbsent = Math.random() < 0.05
-            const isLate = Math.random() < 0.2
-
-            if (isAbsent) {
-                attendance.push({
-                    date: dateStr,
-                    day: dayName,
-                    status: "Absent",
-                    inTime: "-",
-                    outTime: "-",
-                    late: 0,
-                    early: 0,
-                    ot: 0,
-                    total: 0,
-                    remarks: "Uninformed"
-                })
-            } else {
-                const inHour = isLate ? 9 : 8
-                const inMin = isLate ? Math.floor(Math.random() * 30) + 1 : Math.floor(Math.random() * 59)
-                const outHour = 18 + Math.floor(Math.random() * 2)
-                const outMin = Math.floor(Math.random() * 59)
-
-                attendance.push({
-                    date: dateStr,
-                    day: dayName,
-                    status: "Present",
-                    inTime: `${inHour.toString().padStart(2, '0')}:${inMin.toString().padStart(2, '0')} AM`,
-                    outTime: `${outHour.toString().padStart(2, '0')}:${outMin.toString().padStart(2, '0')} PM`,
-                    late: isLate ? inMin : 0,
-                    early: 0,
-                    ot: Math.max(0, outHour - 18),
-                    total: 9 + (outHour - 18),
-                    remarks: ""
-                })
-            }
-        }
-    }
-    return attendance
-}
+import { isSameMonth, isSameYear } from "date-fns"
+import { jobCardService, type JobCardResponse } from "@/lib/services/jobcard"
+import { organogramService } from "@/lib/services/organogram"
+import { employeeService } from "@/lib/services/employee"
+import { toast } from "sonner"
 
 export default function JobCardPage() {
     const [empId, setEmpId] = React.useState("")
@@ -115,31 +31,104 @@ export default function JobCardPage() {
         from: new Date(2026, 0, 1),
         to: new Date(2026, 0, 31)
     })
-    const [department, setDepartment] = React.useState("engineering")
-    const [designation, setDesignation] = React.useState("swe")
-    const [line, setLine] = React.useState("line-01")
+    const [department, setDepartment] = React.useState("all")
+    const [designation, setDesignation] = React.useState("all")
+    const [section, setSection] = React.useState("all")
 
     const [showReport, setShowReport] = React.useState(false)
-    const [attendanceData, setAttendanceData] = React.useState<any[]>([])
+    const [jobCardData, setJobCardData] = React.useState<JobCardResponse | null>(null)
+    const [isLoading, setIsLoading] = React.useState(false)
 
-    const handleGenerate = () => {
-        if (!empId && !department) return
-        if (!dateRange?.from || !dateRange?.to) return
-        setAttendanceData(generateMockAttendance(dateRange.from, dateRange.to))
-        setShowReport(true)
-    }
+    const [departments, setDepartments] = React.useState<any[]>([])
+    const [designations, setDesignations] = React.useState<any[]>([])
+    const [sections, setSections] = React.useState<any[]>([])
+    const [employees, setEmployees] = React.useState<any[]>([])
+    const [selectedEmployee, setSelectedEmployee] = React.useState<any>(null)
 
-    const totals = React.useMemo(() => {
-        if (!attendanceData.length) return null
-        return {
-            present: attendanceData.filter(d => d.status === "Present").length,
-            absent: attendanceData.filter(d => d.status === "Absent").length,
-            weekend: attendanceData.filter(d => d.status === "Weekend").length,
-            holiday: attendanceData.filter(d => d.status === "Holiday").length,
-            totalOT: attendanceData.reduce((acc, curr) => acc + curr.ot, 0),
-            totalLate: attendanceData.reduce((acc, curr) => acc + curr.late, 0),
+    // Fetch filter options
+    React.useEffect(() => {
+        const fetchFilters = async () => {
+            try {
+                const [depts, desigs, sects] = await Promise.all([
+                    organogramService.getDepartments(),
+                    organogramService.getDesignations(),
+                    organogramService.getSections()
+                ])
+                setDepartments(depts)
+                setDesignations(desigs)
+                setSections(sects)
+            } catch (error) {
+                console.error("Failed to fetch filters", error)
+            }
         }
-    }, [attendanceData])
+        fetchFilters()
+    }, [])
+
+    // Fetch employees based on filters
+    React.useEffect(() => {
+        const fetchEmployees = async () => {
+            try {
+                const params: any = {}
+                if (department !== "all") params.departmentId = parseInt(department)
+                if (designation !== "all") params.designationId = parseInt(designation)
+                if (section !== "all") params.sectionId = parseInt(section)
+
+                const emps = await employeeService.getEmployees(params)
+                setEmployees(emps)
+            } catch (error) {
+                console.error("Failed to fetch employees", error)
+            }
+        }
+        fetchEmployees()
+    }, [department, designation, section])
+
+    const handleGenerate = async () => {
+        if (!empId && !selectedEmployee) {
+            toast.error("Please enter an Employee ID or select from filters")
+            return
+        }
+        if (!dateRange?.from || !dateRange?.to) {
+            toast.error("Please select a date range")
+            return
+        }
+
+        setIsLoading(true)
+        try {
+            let employeeIdToUse = selectedEmployee?.id
+
+            // If empId is entered, find employee by employee ID card
+            if (empId) {
+                const emp = employees.find(e => e.employeeId === empId)
+                if (emp) {
+                    employeeIdToUse = emp.id
+                } else {
+                    toast.error("Employee not found with ID: " + empId)
+                    setIsLoading(false)
+                    return
+                }
+            }
+
+            if (!employeeIdToUse) {
+                toast.error("Please select an employee")
+                setIsLoading(false)
+                return
+            }
+
+            const data = await jobCardService.getJobCard({
+                employeeId: employeeIdToUse,
+                fromDate: format(dateRange.from, "yyyy-MM-dd"),
+                toDate: format(dateRange.to, "yyyy-MM-dd")
+            })
+
+            setJobCardData(data)
+            setShowReport(true)
+            toast.success("Job card generated successfully")
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || "Failed to generate job card")
+        } finally {
+            setIsLoading(false)
+        }
+    }
 
     return (
         <div className="flex flex-col min-h-screen bg-background/50 animate-in fade-in duration-700">
@@ -182,7 +171,7 @@ export default function JobCardPage() {
                             <IconAdjustmentsHorizontal className="size-4 sm:size-5 text-primary" />
                             Report Configuration
                         </CardTitle>
-                        <CardDescription className="text-xs sm:text-sm">Select employee and month to generate the attendance job card.</CardDescription>
+                        <CardDescription className="text-xs sm:text-sm">Select employee and date range to generate the attendance job card.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4">
@@ -202,31 +191,24 @@ export default function JobCardPage() {
                             <div className="space-y-2">
                                 <label className="text-[10px] font-semibold uppercase text-muted-foreground">Department</label>
                                 <NativeSelect value={department} onChange={(e) => setDepartment(e.target.value)} className="h-9 sm:h-10">
-                                    <option value="engineering">Engineering</option>
-                                    <option value="hr">HR & Admin</option>
-                                    <option value="sales">Sales & Marketing</option>
-                                    <option value="production">Production</option>
-                                    <option value="quality">Quality Control</option>
+                                    <option value="all">All Departments</option>
+                                    {departments.map(d => <option key={d.id} value={d.id}>{d.nameEn}</option>)}
                                 </NativeSelect>
                             </div>
 
                             <div className="space-y-2">
                                 <label className="text-[10px] font-semibold uppercase text-muted-foreground">Designation</label>
                                 <NativeSelect value={designation} onChange={(e) => setDesignation(e.target.value)} className="h-9 sm:h-10">
-                                    <option value="swe">Software Engineer</option>
-                                    <option value="mgr">Manager</option>
-                                    <option value="op">Operator</option>
-                                    <option value="exec">Executive</option>
+                                    <option value="all">All Designations</option>
+                                    {designations.map(d => <option key={d.id} value={d.id}>{d.nameEn}</option>)}
                                 </NativeSelect>
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-[10px] font-semibold uppercase text-muted-foreground">Line / Section</label>
-                                <NativeSelect value={line} onChange={(e) => setLine(e.target.value)} className="h-9 sm:h-10">
-                                    <option value="line-01">Line 01</option>
-                                    <option value="line-02">Line 02</option>
-                                    <option value="platform">Platform</option>
-                                    <option value="core">Core Teams</option>
+                                <label className="text-[10px] font-semibold uppercase text-muted-foreground">Section</label>
+                                <NativeSelect value={section} onChange={(e) => setSection(e.target.value)} className="h-9 sm:h-10">
+                                    <option value="all">All Sections</option>
+                                    {sections.map(s => <option key={s.id} value={s.id}>{s.nameEn}</option>)}
                                 </NativeSelect>
                             </div>
 
@@ -238,13 +220,44 @@ export default function JobCardPage() {
                                 />
                             </div>
 
+                            {employees.length > 0 && !empId && (
+                                <div className="space-y-2 sm:col-span-2 lg:col-span-3 xl:col-span-5">
+                                    <label className="text-[10px] font-semibold uppercase text-muted-foreground">Select Employee</label>
+                                    <NativeSelect
+                                        value={selectedEmployee?.id || ""}
+                                        onChange={(e) => {
+                                            const emp = employees.find(emp => emp.id === parseInt(e.target.value))
+                                            setSelectedEmployee(emp)
+                                        }}
+                                        className="h-9 sm:h-10"
+                                    >
+                                        <option value="">Choose an employee...</option>
+                                        {employees.map(emp => (
+                                            <option key={emp.id} value={emp.id}>
+                                                {emp.employeeId} - {emp.fullNameEn} ({emp.department?.nameEn})
+                                            </option>
+                                        ))}
+                                    </NativeSelect>
+                                </div>
+                            )}
+
                             <div className="sm:col-span-2 lg:col-span-3 xl:col-span-5">
                                 <Button
                                     className="h-9 sm:h-10 gap-2 w-full"
                                     onClick={handleGenerate}
+                                    disabled={isLoading}
                                 >
-                                    <IconSearch className="size-4 sm:size-5" />
-                                    Generate Report
+                                    {isLoading ? (
+                                        <>
+                                            <IconLoader className="size-4 sm:size-5 animate-spin" />
+                                            Generating...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <IconSearch className="size-4 sm:size-5" />
+                                            Generate Report
+                                        </>
+                                    )}
                                 </Button>
                             </div>
                         </div>
@@ -259,10 +272,10 @@ export default function JobCardPage() {
                             Select filters above to generate report
                         </p>
                     </div>
-                ) : (
+                ) : jobCardData ? (
                     <div className="space-y-4 animate-in fade-in duration-500">
-                        {/* Report Content - Simple Job Card */}
-                        <Card className="border">
+                        {/* Report Content - Job Card */}
+                        <Card className="border print-report">
                             {/* Header */}
                             <div className="p-6 border-b">
                                 <div className="flex items-start justify-between mb-4">
@@ -285,19 +298,35 @@ export default function JobCardPage() {
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t">
                                     <div>
                                         <p className="text-[10px] text-muted-foreground uppercase mb-1">Name</p>
-                                        <p className="text-sm font-semibold">{MOCK_EMPLOYEE.name}</p>
+                                        <p className="text-sm font-semibold">{jobCardData.employee.employeeName}</p>
                                     </div>
                                     <div>
                                         <p className="text-[10px] text-muted-foreground uppercase mb-1">Employee ID</p>
-                                        <p className="text-sm font-semibold">{MOCK_EMPLOYEE.id}</p>
+                                        <p className="text-sm font-semibold">{jobCardData.employee.employeeIdCard}</p>
                                     </div>
                                     <div>
                                         <p className="text-[10px] text-muted-foreground uppercase mb-1">Department</p>
-                                        <p className="text-sm font-semibold">{MOCK_EMPLOYEE.department}</p>
+                                        <p className="text-sm font-semibold">{jobCardData.employee.department}</p>
                                     </div>
                                     <div>
                                         <p className="text-[10px] text-muted-foreground uppercase mb-1">Designation</p>
-                                        <p className="text-sm font-semibold">{MOCK_EMPLOYEE.designation}</p>
+                                        <p className="text-sm font-semibold">{jobCardData.employee.designation}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] text-muted-foreground uppercase mb-1">Section</p>
+                                        <p className="text-sm font-semibold">{jobCardData.employee.section}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] text-muted-foreground uppercase mb-1">Joining Date</p>
+                                        <p className="text-sm font-semibold">{jobCardData.employee.joiningDate || "N/A"}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] text-muted-foreground uppercase mb-1">Grade</p>
+                                        <p className="text-sm font-semibold">{jobCardData.employee.grade || "N/A"}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] text-muted-foreground uppercase mb-1">Shift</p>
+                                        <p className="text-sm font-semibold">{jobCardData.employee.shift}</p>
                                     </div>
                                 </div>
                             </div>
@@ -307,27 +336,27 @@ export default function JobCardPage() {
                                 <div className="grid grid-cols-3 md:grid-cols-6 gap-3 mb-6">
                                     <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950 border border-emerald-200 dark:border-emerald-800">
                                         <p className="text-xs text-emerald-600 dark:text-emerald-400 mb-1">Present</p>
-                                        <p className="text-xl font-bold text-emerald-700 dark:text-emerald-300">{totals?.present}</p>
+                                        <p className="text-xl font-bold text-emerald-700 dark:text-emerald-300">{jobCardData.summary.presentDays}</p>
                                     </div>
                                     <div className="p-3 rounded-lg bg-rose-50 dark:bg-rose-950 border border-rose-200 dark:border-rose-800">
                                         <p className="text-xs text-rose-600 dark:text-rose-400 mb-1">Absent</p>
-                                        <p className="text-xl font-bold text-rose-700 dark:text-rose-300">{totals?.absent}</p>
+                                        <p className="text-xl font-bold text-rose-700 dark:text-rose-300">{jobCardData.summary.absentDays}</p>
                                     </div>
                                     <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-900 border">
                                         <p className="text-xs text-muted-foreground mb-1">Weekend</p>
-                                        <p className="text-xl font-bold">{totals?.weekend}</p>
+                                        <p className="text-xl font-bold">{jobCardData.summary.weekendDays}</p>
                                     </div>
                                     <div className="p-3 rounded-lg bg-indigo-50 dark:bg-indigo-950 border border-indigo-200 dark:border-indigo-800">
                                         <p className="text-xs text-indigo-600 dark:text-indigo-400 mb-1">Holiday</p>
-                                        <p className="text-xl font-bold text-indigo-700 dark:text-indigo-300">{totals?.holiday}</p>
+                                        <p className="text-xl font-bold text-indigo-700 dark:text-indigo-300">{jobCardData.summary.holidayDays}</p>
                                     </div>
                                     <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800">
                                         <p className="text-xs text-amber-600 dark:text-amber-400 mb-1">Total OT</p>
-                                        <p className="text-xl font-bold text-amber-700 dark:text-amber-300">{totals?.totalOT}h</p>
+                                        <p className="text-xl font-bold text-amber-700 dark:text-amber-300">{jobCardData.summary.totalOTHours}h</p>
                                     </div>
                                     <div className="p-3 rounded-lg bg-orange-50 dark:bg-orange-950 border border-orange-200 dark:border-orange-800">
                                         <p className="text-xs text-orange-600 dark:text-orange-400 mb-1">Late</p>
-                                        <p className="text-xl font-bold text-orange-700 dark:text-orange-300">{totals?.totalLate}m</p>
+                                        <p className="text-xl font-bold text-orange-700 dark:text-orange-300">{jobCardData.summary.totalLateMinutes}m</p>
                                     </div>
                                 </div>
 
@@ -348,7 +377,7 @@ export default function JobCardPage() {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {attendanceData.map((row, idx) => (
+                                            {jobCardData.attendanceRecords.map((row, idx) => (
                                                 <tr
                                                     key={idx}
                                                     className={cn(
@@ -374,20 +403,20 @@ export default function JobCardPage() {
                                                     <td className="px-3 py-2 text-center text-xs">{row.inTime}</td>
                                                     <td className="px-3 py-2 text-center text-xs">{row.outTime}</td>
                                                     <td className="px-3 py-2 text-center">
-                                                        {row.late > 0 ? (
-                                                            <span className="text-xs font-semibold text-rose-600">{row.late}m</span>
+                                                        {row.lateMinutes > 0 ? (
+                                                            <span className="text-xs font-semibold text-rose-600">{row.lateMinutes}m</span>
                                                         ) : (
                                                             <span className="text-xs text-muted-foreground">-</span>
                                                         )}
                                                     </td>
                                                     <td className="px-3 py-2 text-center">
-                                                        {row.ot > 0 ? (
-                                                            <span className="text-xs font-semibold text-emerald-600">+{row.ot}h</span>
+                                                        {row.otHours > 0 ? (
+                                                            <span className="text-xs font-semibold text-emerald-600">+{row.otHours}h</span>
                                                         ) : (
                                                             <span className="text-xs text-muted-foreground">-</span>
                                                         )}
                                                     </td>
-                                                    <td className="px-3 py-2 text-center text-xs font-medium">{row.total > 0 ? `${row.total}h` : "-"}</td>
+                                                    <td className="px-3 py-2 text-center text-xs font-medium">{row.totalHours > 0 ? `${row.totalHours}h` : "-"}</td>
                                                     <td className="px-3 py-2 text-[10px] text-muted-foreground">{row.remarks}</td>
                                                 </tr>
                                             ))}
@@ -412,7 +441,7 @@ export default function JobCardPage() {
                             </div>
                         </Card>
                     </div>
-                )}
+                ) : null}
             </main>
 
             {/* Print Friendly Styles */}
@@ -429,4 +458,3 @@ export default function JobCardPage() {
         </div>
     )
 }
-

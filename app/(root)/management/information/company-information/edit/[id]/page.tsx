@@ -5,6 +5,7 @@ import { useRouter, useParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { NativeSelect } from "@/components/ui/select"
 import { IconBuilding, IconChevronLeft, IconCircleCheckFilled, IconLoader, IconPhoto } from "@tabler/icons-react"
@@ -117,7 +118,7 @@ export default function EditCompanyPage() {
 
                         <div className="space-y-2">
                             <Label htmlFor="address">Company Address</Label>
-                            <Input
+                            <Textarea
                                 id="address"
                                 name="address"
                                 placeholder="e.g. 123 Business Road, Dhaka"

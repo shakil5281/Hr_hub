@@ -44,7 +44,7 @@ const MONTHS = [
 
 const YEARS = [2024, 2025, 2026]
 
-export default function SalarySheetPage() {
+export default function MonthlySalarySheetPage() {
     const [year, setYear] = React.useState(new Date().getFullYear())
     const [month, setMonth] = React.useState(new Date().getMonth() + 1)
     const [departmentId, setDepartmentId] = React.useState("all")
@@ -143,7 +143,7 @@ export default function SalarySheetPage() {
             header: "Action",
             cell: ({ row }) => (
                 <div className="flex items-center gap-1">
-                    <Link href={`/management/payroll/pay-slip/${row.original.id}`}>
+                    <Link href={`/management/payroll/payslip/${row.original.id}`}>
                         <Button size="icon" variant="ghost" className="size-8 text-blue-600 hover:bg-blue-50">
                             <IconEye className="size-4" />
                         </Button>
@@ -207,8 +207,8 @@ export default function SalarySheetPage() {
                                 <IconCash className="size-5" />
                             </div>
                             <div>
-                                <h1 className="text-xl font-bold tracking-tight text-emerald-950 dark:text-emerald-50">Salary Sheet</h1>
-                                <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest">Master Payroll Audit</p>
+                                <h1 className="text-xl font-bold tracking-tight text-emerald-950 dark:text-emerald-50">Monthly Salary Sheet</h1>
+                                <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest">Payroll Processing & Audit</p>
                             </div>
                         </div>
                         <div className="flex items-center gap-2">

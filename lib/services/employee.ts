@@ -157,6 +157,24 @@ export interface CreateEmployeeDto {
     isOTEnabled?: boolean;
 }
 
+export interface ManpowerSummary {
+    totalEmployees: number;
+    activeEmployees: number;
+    onLeaveEmployees: number;
+    inactiveEmployees: number;
+    departmentSummary: SummaryItem[];
+    designationSummary: SummaryItem[];
+    genderSummary: SummaryItem[];
+    statusSummary: SummaryItem[];
+}
+
+export interface SummaryItem {
+    id: string | number;
+    name: string;
+    count: number;
+    percentage: number;
+}
+
 export interface UpdateEmployeeDto extends CreateEmployeeDto {
     isActive: boolean;
     isOTEnabled: boolean;
@@ -165,9 +183,15 @@ export interface UpdateEmployeeDto extends CreateEmployeeDto {
 export const employeeService = {
     getEmployees: async (params?: {
         departmentId?: number;
+        sectionId?: number;
         designationId?: number;
+        lineId?: number;
+        shiftId?: number;
+        groupId?: number;
+        floorId?: number;
         status?: string;
         isActive?: boolean;
+        searchTerm?: string;
     }) => {
         const response = await api.get<Employee[]>('/employee', { params });
         return response.data;
@@ -249,6 +273,26 @@ export const employeeService = {
                 'Content-Type': 'multipart/form-data'
             }
         });
+        return response.data;
+    },
+
+    getManpower: async (params?: {
+        departmentId?: number;
+        sectionId?: number;
+        designationId?: number;
+        lineId?: number;
+        shiftId?: number;
+        groupId?: number;
+        floorId?: number;
+        status?: string;
+        searchTerm?: string;
+    }) => {
+        const response = await api.get<Employee[]>('/manpower', { params });
+        return response.data;
+    },
+
+    getManpowerSummary: async () => {
+        const response = await api.get<ManpowerSummary>('/manpower/summary');
         return response.data;
     },
 };

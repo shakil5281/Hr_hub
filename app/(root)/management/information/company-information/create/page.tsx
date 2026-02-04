@@ -6,6 +6,7 @@ import { IconArrowLeft, IconBuilding, IconCheck } from "@tabler/icons-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { NativeSelect } from "@/components/ui/select"
 import { toast } from "sonner"
@@ -68,7 +69,7 @@ export default function CreateCompanyPage() {
 
                         <div className="grid gap-2">
                             <Label htmlFor="address">Company Address</Label>
-                            <Input id="address" name="address" placeholder="e.g. 123 Business Road, Dhaka" required />
+                            <Textarea id="address" name="address" placeholder="e.g. 123 Business Road, Dhaka" required />
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

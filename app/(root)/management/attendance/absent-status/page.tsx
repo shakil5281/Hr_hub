@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { format } from "date-fns"
 import {
     IconUserX,
     IconSearch,
@@ -8,10 +9,7 @@ import {
     IconAdjustmentsHorizontal,
     IconDownload,
     IconFileSpreadsheet,
-    IconPhone,
-    IconMail,
-    IconArrowUpRight,
-    IconArrowDownRight
+    IconLoader
 } from "@tabler/icons-react"
 import { DataTable } from "@/components/data-table"
 import { ColumnDef } from "@tanstack/react-table"
@@ -22,47 +20,60 @@ import { NativeSelect } from "@/components/ui/select"
 import { DateRangePicker } from "@/components/ui/date-range-picker"
 import { DateRange } from "react-day-picker"
 import { Badge } from "@/components/ui/badge"
-import { cn } from "@/lib/utils"
-import { format } from "date-fns"
-
-// --- Mock Data ---
-
-const MOCK_ABSENT_DATA = [
-    { id: "1", date: "2026-01-30", empId: "EMP501", name: "David Miller", department: "production", designation: "Operator", shift: "Day (09-06)", supervisor: "James Bond", contact: "+880 1711-223344", status: "Uninformed" },
-    { id: "2", date: "2026-01-30", empId: "EMP502", name: "Linda Gray", department: "hr", designation: "Executive", shift: "Day (09-06)", supervisor: "Sarah Connor", contact: "+880 1711-556677", status: "On Leave" },
-    { id: "3", date: "2026-01-30", empId: "EMP505", name: "Paul Walker", department: "engineering", designation: "Lead Engineer", shift: "Day (09-06)", supervisor: "Tony Stark", contact: "+880 1711-889900", status: "Uninformed" },
-    { id: "4", date: "2026-01-30", empId: "EMP510", name: "Emma Watson", department: "quality", designation: "QC Inspector", shift: "Night (08-05)", supervisor: "Bruce Wayne", contact: "+880 1711-112233", status: "Medical Leave" },
-]
+import { absenteeismService, type AbsenteeismRecord, type AbsenteeismSummary } from "@/lib/services/absenteeism"
+import { organogramService } from "@/lib/services/organogram"
+import { toast } from "sonner"
 
 export default function AbsentStatusPage() {
     const [empId, setEmpId] = React.useState("")
     const [department, setDepartment] = React.useState("all")
+    const [designation, setDesignation] = React.useState("all")
     const [dateRange, setDateRange] = React.useState<DateRange | undefined>({
-        from: new Date(),
-        to: new Date()
+        from: new Date(2026, 0, 1),
+        to: new Date(2026, 0, 31)
     })
 
     const [isLoading, setIsLoading] = React.useState(false)
-    const [filteredData, setFilteredData] = React.useState<any[]>([])
+    const [filteredData, setFilteredData] = React.useState<AbsenteeismRecord[]>([])
+    const [summary, setSummary] = React.useState<AbsenteeismSummary | null>(null)
     const [hasSearched, setHasSearched] = React.useState(false)
 
-    const columns: ColumnDef<any>[] = [
+    const [departments, setDepartments] = React.useState<any[]>([])
+    const [designations, setDesignations] = React.useState<any[]>([])
+
+    React.useEffect(() => {
+        const fetchFilters = async () => {
+            try {
+                const [depts, desigs] = await Promise.all([
+                    organogramService.getDepartments(),
+                    organogramService.getDesignations()
+                ])
+                setDepartments(depts)
+                setDesignations(desigs)
+            } catch (error) {
+                console.error("Failed to fetch filters", error)
+            }
+        }
+        fetchFilters()
+    }, [])
+
+    const columns: ColumnDef<AbsenteeismRecord>[] = [
         {
             accessorKey: "date",
             header: "Absent Date",
-            cell: ({ row }) => <span className="font-bold text-xs">{row.original.date}</span>
+            cell: ({ row }) => <span className="font-bold text-xs">{format(new Date(row.original.date), "dd MMM yyyy")}</span>
         },
         {
-            accessorKey: "empId",
+            accessorKey: "employeeIdCard",
             header: "UID",
-            cell: ({ row }) => <Badge variant="outline" className="text-[10px] font-bold">{row.original.empId}</Badge>
+            cell: ({ row }) => <Badge variant="outline" className="text-[10px] font-bold">{row.original.employeeIdCard}</Badge>
         },
         {
-            accessorKey: "name",
+            accessorKey: "employeeName",
             header: "Employee",
             cell: ({ row }) => (
                 <div className="flex flex-col">
-                    <span className="font-bold text-xs leading-none">{row.original.name}</span>
+                    <span className="font-bold text-xs leading-none">{row.original.employeeName}</span>
                     <span className="text-[10px] text-muted-foreground uppercase mt-1 tracking-tighter">{row.original.designation}</span>
                 </div>
             )
@@ -73,11 +84,23 @@ export default function AbsentStatusPage() {
             cell: ({ row }) => <span className="text-xs uppercase font-medium">{row.original.department}</span>
         },
         {
+            accessorKey: "consecutiveDays",
+            header: "Consecutive Days",
+            cell: ({ row }) => (
+                <Badge
+                    variant={row.original.consecutiveDays >= 3 ? "destructive" : "secondary"}
+                    className="text-[10px] font-black uppercase px-2 h-5"
+                >
+                    {row.original.consecutiveDays} {row.original.consecutiveDays === 1 ? "Day" : "Days"}
+                </Badge>
+            )
+        },
+        {
             accessorKey: "status",
             header: "Type",
             cell: ({ row }) => (
                 <Badge
-                    variant={row.original.status === "Uninformed" ? "destructive" : "secondary"}
+                    variant={row.original.status === "Absent" ? "destructive" : "secondary"}
                     className="text-[10px] font-black uppercase px-2 h-5"
                 >
                     {row.original.status}
@@ -85,38 +108,48 @@ export default function AbsentStatusPage() {
             )
         },
         {
-            accessorKey: "supervisor",
-            header: "Reporting To",
-            cell: ({ row }) => <span className="text-xs font-medium text-muted-foreground">{row.original.supervisor}</span>
-        },
-        {
-            id: "actions",
-            header: "Contact",
-            cell: ({ row }) => (
-                <div className="flex items-center gap-1">
-                    <Button size="icon" variant="ghost" className="size-8 rounded-full text-emerald-600 hover:bg-emerald-50">
-                        <IconPhone className="size-4" />
-                    </Button>
-                    <Button size="icon" variant="ghost" className="size-8 rounded-full text-blue-600 hover:bg-blue-50">
-                        <IconMail className="size-4" />
-                    </Button>
-                </div>
-            )
+            accessorKey: "remarks",
+            header: "Remarks",
+            cell: ({ row }) => <span className="text-xs text-muted-foreground">{row.original.remarks || "N/A"}</span>
         }
     ]
 
-    const handleSearch = () => {
-        setIsLoading(true)
-        setTimeout(() => {
-            let results = MOCK_ABSENT_DATA
-            if (empId) results = results.filter(r => r.empId.includes(empId) || r.name.toLowerCase().includes(empId.toLowerCase()))
-            if (department !== "all") results = results.filter(r => r.department === department)
+    const handleSearch = async () => {
+        if (!dateRange?.from || !dateRange?.to) {
+            toast.error("Please select a date range")
+            return
+        }
 
-            setFilteredData(results)
+        setIsLoading(true)
+        try {
+            const params: any = {
+                fromDate: format(dateRange.from, "yyyy-MM-dd"),
+                toDate: format(dateRange.to, "yyyy-MM-dd")
+            }
+
+            if (department !== "all") params.departmentId = parseInt(department)
+            if (designation !== "all") params.designationId = parseInt(designation)
+            if (empId.trim()) params.searchTerm = empId.trim()
+
+            const data = await absenteeismService.getAbsenteeismRecords(params)
+
+            setFilteredData(data.records)
+            setSummary(data.summary)
             setHasSearched(true)
+
+            if (data.records.length === 0) {
+                toast.success("No absenteeism records found!")
+            } else {
+                toast.info(`Found ${data.records.length} absence records`)
+            }
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || "Failed to fetch absenteeism records")
+        } finally {
             setIsLoading(false)
-        }, 600)
+        }
     }
+
+    const availability = summary ? ((1 - (summary.totalAbsent / 100)) * 100).toFixed(1) : "0.0"
 
     return (
         <div className="flex flex-col min-h-screen bg-background/50 animate-in fade-in duration-700">
@@ -136,9 +169,9 @@ export default function AbsentStatusPage() {
                         <div className="flex items-center gap-2">
                             <Button variant="outline" size="sm" className="rounded-full h-8 px-4 text-xs font-bold">
                                 <IconDownload className="mr-2 size-4" />
-                                Export PDF
+                                Export  PDF
                             </Button>
-                            <Button size="sm" className="rounded-full h-8 px-4 text-xs font-bold bg-slate-900">
+                            <Button size="sm" className="rounded-full h-8 px-4 text-xs font-bold bg-slate-900" disabled={filteredData.length === 0}>
                                 <IconFileSpreadsheet className="mr-2 size-4" />
                                 Download CSV
                             </Button>
@@ -148,12 +181,35 @@ export default function AbsentStatusPage() {
             </div>
 
             <main className="container mx-auto px-4 py-8 lg:px-8 max-w-[1600px] space-y-8">
-                {/* Insights Row */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <InsightCard title="Total Absent" value="12" subValue="+2 from yesterday" trend="up" />
-                    <InsightCard title="Uninformed" value="08" subValue="Wait list active" trend="up" />
-                    <InsightCard title="Availability" value="94.2%" subValue="Target: 98%" trend="down" />
-                </div>
+                {/* Summary Cards */}
+                {summary && (
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                        <Card className="border-l-4 border-l-orange-500">
+                            <CardContent className="pt-6">
+                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Total Absent</p>
+                                <h3 className="text-3xl font-black tracking-tighter mt-2 text-orange-600">{summary.totalAbsent}</h3>
+                            </CardContent>
+                        </Card>
+                        <Card className="border-l-4 border-l-red-500">
+                            <CardContent className="pt-6">
+                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Absent (No Leave)</p>
+                                <h3 className="text-3xl font-black tracking-tighter mt-2 text-red-600">{summary.absentWithoutLeave}</h3>
+                            </CardContent>
+                        </Card>
+                        <Card className="border-l-4 border-l-blue-500">
+                            <CardContent className="pt-6">
+                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">On Leave</p>
+                                <h3 className="text-3xl font-black tracking-tighter mt-2 text-blue-600">{summary.onLeave}</h3>
+                            </CardContent>
+                        </Card>
+                        <Card className="border-l-4 border-l-purple-500">
+                            <CardContent className="pt-6">
+                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Critical (3+ Days)</p>
+                                <h3 className="text-3xl font-black tracking-tighter mt-2 text-purple-600">{summary.criticalCases}</h3>
+                            </CardContent>
+                        </Card>
+                    </div>
+                )}
 
                 {/* Filters */}
                 <Card className="border">
@@ -165,8 +221,8 @@ export default function AbsentStatusPage() {
                         <CardDescription>Retrieve absenteeism data by department or date range.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
-                            <div className="space-y-2 lg:col-span-1">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+                            <div className="space-y-2">
                                 <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Search Personnel</label>
                                 <div className="relative">
                                     <IconUser className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
@@ -180,12 +236,18 @@ export default function AbsentStatusPage() {
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Unit / Dept</label>
+                                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Department</label>
                                 <NativeSelect value={department} onChange={(e) => setDepartment(e.target.value)} className="h-10 rounded-xl">
-                                    <option value="all">Everywhere</option>
-                                    <option value="engineering">Engineering</option>
-                                    <option value="hr">HR & Admin</option>
-                                    <option value="production">Production</option>
+                                    <option value="all">All Departments</option>
+                                    {departments.map(d => <option key={d.id} value={d.id}>{d.nameEn}</option>)}
+                                </NativeSelect>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Designation</label>
+                                <NativeSelect value={designation} onChange={(e) => setDesignation(e.target.value)} className="h-10 rounded-xl">
+                                    <option value="all">All Designations</option>
+                                    {designations.map(d => <option key={d.id} value={d.id}>{d.nameEn}</option>)}
                                 </NativeSelect>
                             </div>
 
@@ -203,8 +265,17 @@ export default function AbsentStatusPage() {
                                 onClick={handleSearch}
                                 disabled={isLoading}
                             >
-                                <IconSearch className="size-5" />
-                                {isLoading ? "Fetching..." : "View Report"}
+                                {isLoading ? (
+                                    <>
+                                        <IconLoader className="size-5 animate-spin" />
+                                        Fetching...
+                                    </>
+                                ) : (
+                                    <>
+                                        <IconSearch className="size-5" />
+                                        View Report
+                                    </>
+                                )}
                             </Button>
                         </div>
                     </CardContent>
@@ -223,6 +294,7 @@ export default function AbsentStatusPage() {
                             columns={columns}
                             data={filteredData}
                             showColumnCustomizer={false}
+                            searchKey="employeeName"
                         />
                     </div>
                 ) : (
@@ -232,31 +304,11 @@ export default function AbsentStatusPage() {
                         </div>
                         <h3 className="text-xl font-bold text-muted-foreground">Absent Data Analysis</h3>
                         <p className="text-sm text-muted-foreground/60 max-w-xs text-center mt-2 font-medium">
-                            Configure the Unit and Date Range to generate the absenteeism and availability report for your workforce.
+                            Configure the Department and Date Range to generate the absenteeism and availability report for your workforce.
                         </p>
                     </div>
                 )}
             </main>
         </div>
-    )
-}
-
-function InsightCard({ title, value, subValue, trend }: any) {
-    return (
-        <Card className="border shadow-none">
-            <CardContent className="pt-6">
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">{title}</p>
-                <div className="mt-2 flex items-baseline justify-between">
-                    <h3 className="text-3xl font-black tracking-tighter">{value}</h3>
-                    <div className={cn(
-                        "flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full",
-                        trend === "up" ? "bg-rose-50 text-rose-600" : "bg-emerald-50 text-emerald-600"
-                    )}>
-                        {trend === "up" ? <IconArrowUpRight className="size-3" /> : <IconArrowDownRight className="size-3" />}
-                        {subValue}
-                    </div>
-                </div>
-            </CardContent>
-        </Card>
     )
 }

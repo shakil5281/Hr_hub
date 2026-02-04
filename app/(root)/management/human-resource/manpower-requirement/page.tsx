@@ -1,342 +1,365 @@
 "use client"
 
 import * as React from "react"
-import { IconClipboardList, IconPlus, IconUsers, IconUserCheck, IconUserOff } from "@tabler/icons-react"
-import { DataTable } from "@/components/data-table"
+import {
+    IconUsersPlus,
+    IconPlus,
+    IconTrash,
+    IconPencil,
+    IconChartBar,
+    IconAlertTriangle,
+    IconCircleCheck,
+    IconBuildingSkyscraper,
+    IconLoader,
+    IconFilter
+} from "@tabler/icons-react"
 import { ColumnDef } from "@tanstack/react-table"
+import { DataTable } from "@/components/data-table"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { SummaryCard } from "@/components/summary-card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import {
     Sheet,
     SheetContent,
     SheetDescription,
-    SheetHeader,
-    SheetTitle,
-    SheetTrigger,
     SheetFooter,
-    SheetClose,
+    SheetHeader,
+    SheetTitle
 } from "@/components/ui/sheet"
-import { Label } from "@/components/ui/label"
-import { Input } from "@/components/ui/input"
-import { NativeSelect } from "@/components/ui/select"
+import { requirementService, type ManpowerRequirement } from "@/lib/services/requirement"
+import { organogramService } from "@/lib/services/organogram"
 import { toast } from "sonner"
-
-// Types
-type ManpowerReq = {
-    id: string
-    position: string
-    department: string
-    required: number
-    filled: number
-    vacant: number
-    priority: "High" | "Medium" | "Low"
-    status: "Open" | "In Progress" | "Closed"
-}
-
-// Mock Data
-const initialData: ManpowerReq[] = [
-    // Sewing
-    { id: "1", position: "Senior Operator", department: "Sewing", required: 50, filled: 45, vacant: 5, priority: "High", status: "Open" },
-    { id: "2", position: "Helper", department: "Sewing", required: 30, filled: 30, vacant: 0, priority: "Low", status: "Closed" },
-    // Finishing
-    { id: "3", position: "Iron Man", department: "Finishing", required: 10, filled: 8, vacant: 2, priority: "Medium", status: "Open" },
-    { id: "4", position: "Folder", department: "Finishing", required: 15, filled: 12, vacant: 3, priority: "High", status: "Open" },
-    // Cutting
-    { id: "5", position: "Cutter", department: "Cutting", required: 5, filled: 5, vacant: 0, priority: "Medium", status: "Closed" },
-    { id: "6", position: "Spreader", department: "Cutting", required: 8, filled: 6, vacant: 2, priority: "High", status: "Open" },
-    // Quality
-    { id: "7", position: "Quality Inspector", department: "Quality", required: 20, filled: 18, vacant: 2, priority: "High", status: "Open" },
-    { id: "8", position: "QA Manager", department: "Quality", required: 1, filled: 0, vacant: 1, priority: "High", status: "Open" },
-]
-
-const chartData = [
-    { value: 10 }, { value: 25 }, { value: 15 }, { value: 35 },
-    { value: 25 }, { value: 45 }, { value: 30 }, { value: 55 }
-]
+import { cn } from "@/lib/utils"
 
 export default function ManpowerRequirementPage() {
-    const [data, setData] = React.useState<ManpowerReq[]>(initialData)
+    const [requirements, setRequirements] = React.useState<ManpowerRequirement[]>([])
+    const [isLoading, setIsLoading] = React.useState(true)
     const [isSheetOpen, setIsSheetOpen] = React.useState(false)
-    const [editingId, setEditingId] = React.useState<string | null>(null)
-    const [formData, setFormData] = React.useState<Partial<ManpowerReq>>({
-        department: "Sewing",
-        priority: "Medium",
-        status: "Open",
-        required: 0,
-        filled: 0,
+    const [isEditing, setIsEditing] = React.useState(false)
+    const [currentId, setCurrentId] = React.useState<number | null>(null)
+
+    // Filter state
+    const [filterDepartment, setFilterDepartment] = React.useState("")
+
+    // Form data
+    const [departments, setDepartments] = React.useState<any[]>([])
+    const [designations, setDesignations] = React.useState<any[]>([])
+    const [formData, setFormData] = React.useState({
+        departmentId: "",
+        designationId: "",
+        requiredCount: 0,
+        note: ""
     })
 
-    // Columns
-    const columns: ColumnDef<ManpowerReq>[] = [
-        { accessorKey: "position", header: "Position" },
-        { accessorKey: "department", header: "Department" },
-        { accessorKey: "required", header: "Required" },
-        { accessorKey: "filled", header: "Filled" },
-        {
-            accessorKey: "vacant",
-            header: "Vacant",
-            cell: ({ row }) => <span className={row.original.vacant > 0 ? "text-red-600 font-bold" : "text-green-600 font-bold"}>{row.original.vacant}</span>
-        },
-        {
-            accessorKey: "priority",
-            header: "Priority",
-            cell: ({ row }) => (
-                <Badge variant={row.original.priority === "High" ? "destructive" : row.original.priority === "Medium" ? "default" : "secondary"}>
-                    {row.original.priority}
-                </Badge>
-            )
-        },
-        { accessorKey: "status", header: "Status" },
-    ]
+    const fetchRequirements = React.useCallback(async () => {
+        setIsLoading(true)
+        try {
+            const data = await requirementService.getRequirements()
+            setRequirements(data)
+        } catch (error) {
+            toast.error("Failed to load requirements")
+        } finally {
+            setIsLoading(false)
+        }
+    }, [])
 
-    // Derived Data
-    const summaryStats = [
-        { title: "Total Required", value: data.reduce((acc, curr) => acc + curr.required, 0) },
-        { title: "Total Filled", value: data.reduce((acc, curr) => acc + curr.filled, 0) },
-        { title: "Total Vacant", value: data.reduce((acc, curr) => acc + curr.vacant, 0), className: "text-red-600" },
-    ]
+    React.useEffect(() => {
+        fetchRequirements()
+        organogramService.getDepartments().then(setDepartments)
+    }, [fetchRequirements])
 
-    const handleEdit = (record: ManpowerReq) => {
-        setEditingId(record.id)
-        setFormData(record)
-        setIsSheetOpen(true)
-    }
+    React.useEffect(() => {
+        if (formData.departmentId) {
+            organogramService.getDesignations(parseInt(formData.departmentId)).then(setDesignations)
+        } else {
+            setDesignations([])
+        }
+    }, [formData.departmentId])
 
-    const handleDelete = (record: ManpowerReq) => {
-        setData(prev => prev.filter(item => item.id !== record.id))
-        toast.success("Requisition deleted successfully")
-    }
-
-    const handleSubmit = () => {
-        if (!formData.position || !formData.department) {
-            toast.error("Please fill in required fields")
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault()
+        if (!formData.departmentId || !formData.designationId || formData.requiredCount <= 0) {
+            toast.error("Please fill all required fields correctly")
             return
         }
 
-        const required = Number(formData.required) || 0
-        const filled = Number(formData.filled) || 0
-        const vacant = required - filled
-
-        if (editingId) {
-            setData(prev => prev.map(item => item.id === editingId ? { ...item, ...formData, required, filled, vacant } as ManpowerReq : item))
-            toast.success("Requisition updated")
-        } else {
-            const newItem: ManpowerReq = {
-                id: Math.random().toString(36).substr(2, 9),
-                position: formData.position!,
-                department: formData.department!,
-                required,
-                filled,
-                vacant,
-                priority: (formData.priority as any) || "Medium",
-                status: (formData.status as any) || "Open",
+        try {
+            const data = {
+                departmentId: parseInt(formData.departmentId),
+                designationId: parseInt(formData.designationId),
+                requiredCount: formData.requiredCount,
+                note: formData.note
             }
-            setData(prev => [...prev, newItem])
-            toast.success("Requisition created")
+
+            if (isEditing && currentId) {
+                await requirementService.updateRequirement(currentId, data)
+                toast.success("Requirement updated")
+            } else {
+                await requirementService.createRequirement(data)
+                toast.success("Requirement created")
+            }
+            setIsSheetOpen(false)
+            fetchRequirements()
+        } catch (error) {
+            toast.error("Process failed")
         }
-        setIsSheetOpen(false)
-        resetForm()
     }
 
-    const resetForm = () => {
-        setEditingId(null)
+    const handleEdit = (r: ManpowerRequirement) => {
         setFormData({
-            department: "Sewing",
-            priority: "Medium",
-            status: "Open",
-            required: 0,
-            filled: 0,
+            departmentId: r.departmentId.toString(),
+            designationId: r.designationId.toString(),
+            requiredCount: r.requiredCount,
+            note: r.note || ""
         })
-    }
-
-    const openCreateSheet = (dept?: string) => {
-        resetForm()
-        if (dept) {
-            setFormData(prev => ({ ...prev, department: dept }))
-        }
+        setCurrentId(r.id)
+        setIsEditing(true)
         setIsSheetOpen(true)
     }
 
-    const FormSheet = () => (
-        <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-            <SheetContent>
-                <SheetHeader>
-                    <SheetTitle>{editingId ? "Edit Requisition" : "New Requisition"}</SheetTitle>
-                    <SheetDescription>
-                        {editingId ? "Update existing manpower requirement details." : "Create a new manpower requirement for a department."}
-                    </SheetDescription>
-                </SheetHeader>
-                <div className="grid gap-4 py-4">
-                    <div className="grid gap-2">
-                        <Label>Position</Label>
-                        <Input
-                            value={formData.position || ""}
-                            onChange={(e) => setFormData(prev => ({ ...prev, position: e.target.value }))}
-                            placeholder="e.g. Senior Operator"
-                        />
-                    </div>
-                    <div className="grid gap-2">
-                        <Label>Department</Label>
-                        <NativeSelect
-                            value={formData.department}
-                            onChange={(e) => setFormData(prev => ({ ...prev, department: e.target.value }))}
-                        >
-                            <option value="Sewing">Sewing</option>
-                            <option value="Finishing">Finishing</option>
-                            <option value="Cutting">Cutting</option>
-                            <option value="Quality">Quality</option>
-                        </NativeSelect>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="grid gap-2">
-                            <Label>Required</Label>
-                            <Input
-                                type="number"
-                                value={formData.required}
-                                onChange={(e) => setFormData(prev => ({ ...prev, required: Number(e.target.value) }))}
-                            />
-                        </div>
-                        <div className="grid gap-2">
-                            <Label>Filled</Label>
-                            <Input
-                                type="number"
-                                value={formData.filled}
-                                onChange={(e) => setFormData(prev => ({ ...prev, filled: Number(e.target.value) }))}
-                            />
-                        </div>
-                    </div>
-                    <div className="grid gap-2">
-                        <Label>Priority</Label>
-                        <NativeSelect
-                            value={formData.priority}
-                            onChange={(e) => setFormData(prev => ({ ...prev, priority: e.target.value as any }))}
-                        >
-                            <option value="High">High</option>
-                            <option value="Medium">Medium</option>
-                            <option value="Low">Low</option>
-                        </NativeSelect>
-                    </div>
-                    <div className="grid gap-2">
-                        <Label>Status</Label>
-                        <NativeSelect
-                            value={formData.status}
-                            onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value as any }))}
-                        >
-                            <option value="Open">Open</option>
-                            <option value="In Progress">In Progress</option>
-                            <option value="Closed">Closed</option>
-                        </NativeSelect>
-                    </div>
+    const handleDelete = async (r: ManpowerRequirement) => {
+        if (confirm("Delete this requirement?")) {
+            try {
+                await requirementService.deleteRequirement(r.id)
+                toast.success("Requirement deleted")
+                fetchRequirements()
+            } catch (error) {
+                toast.error("Delete failed")
+            }
+        }
+    }
+
+    // Computed filtered requirements
+    const filteredRequirements = React.useMemo(() => {
+        if (!filterDepartment) return requirements
+        return requirements.filter(r => r.departmentId.toString() === filterDepartment)
+    }, [requirements, filterDepartment])
+
+    const columns: ColumnDef<ManpowerRequirement>[] = [
+        {
+            id: "sl",
+            header: "SL",
+            cell: ({ row }) => <span className="text-xs text-muted-foreground">{row.index + 1}</span>,
+        },
+        {
+            accessorKey: "departmentName",
+            header: "Department",
+            cell: ({ row }) => <span className="font-semibold">{row.original.departmentName}</span>
+        },
+        {
+            accessorKey: "designationName",
+            header: "Designation",
+            cell: ({ row }) => <span className="text-sm font-medium text-muted-foreground">{row.original.designationName}</span>
+        },
+        {
+            accessorKey: "requiredCount",
+            header: "Required",
+            cell: ({ row }) => <Badge variant="secondary" className="px-3">{row.original.requiredCount}</Badge>
+        },
+        {
+            accessorKey: "currentCount",
+            header: "Current",
+            cell: ({ row }) => <span className="text-sm font-mono">{row.original.currentCount}</span>
+        },
+        {
+            accessorKey: "gap",
+            header: "Gap",
+            cell: ({ row }) => (
+                <div className="flex items-center gap-2">
+                    <span className={cn(
+                        "font-bold",
+                        row.original.gap > 0 ? "text-red-500" : "text-green-500"
+                    )}>
+                        {row.original.gap > 0 ? `+${row.original.gap}` : row.original.gap}
+                    </span>
+                    {row.original.gap > 0 ? <IconAlertTriangle className="size-4 text-red-500" /> : <IconCircleCheck className="size-4 text-green-500" />}
                 </div>
-                <SheetFooter>
-                    <SheetClose asChild>
-                        <Button variant="outline">Cancel</Button>
-                    </SheetClose>
-                    <Button onClick={handleSubmit}>{editingId ? "Update" : "Create"}</Button>
-                </SheetFooter>
-            </SheetContent>
-        </Sheet>
-    )
+            )
+        },
+        {
+            id: "actions",
+            header: "Actions",
+            cell: ({ row }) => (
+                <div className="flex items-center gap-1">
+                    <Button variant="ghost" size="icon" className="size-8" onClick={() => handleEdit(row.original)}>
+                        <IconPencil className="size-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="size-8 text-destructive" onClick={() => handleDelete(row.original)}>
+                        <IconTrash className="size-4" />
+                    </Button>
+                </div>
+            )
+        }
+    ]
 
     return (
-        <div className="p-6 space-y-6 w-full">
-            <FormSheet />
-            <div className="flex items-center gap-4 px-4 py-4 lg:px-6 mb-6 border-b border-muted/40 bg-muted/5">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 border border-primary/20">
-                    <IconClipboardList className="size-6 text-primary" />
+        <div className="flex flex-col gap-6 py-6 bg-muted/20 min-h-screen px-4 lg:px-8 w-full">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                    <div className="size-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-sm border border-primary/20">
+                        <IconChartBar className="size-7" />
+                    </div>
+                    <div>
+                        <h1 className="text-2xl font-bold tracking-tight">Manpower Requirements</h1>
+                        <p className="text-sm text-muted-foreground">Monitor workforce gaps and target hiring needs.</p>
+                    </div>
                 </div>
-                <div className="flex flex-col flex-1">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <h1 className="text-2xl font-bold tracking-tight">Manpower Requirement</h1>
-                            <p className="text-sm text-muted-foreground">Manage and track manpower requisitions across departments.</p>
+                <Button className="gap-2 shadow-md rounded-xl" onClick={() => {
+                    setIsEditing(false)
+                    setFormData({ departmentId: "", designationId: "", requiredCount: 0, note: "" })
+                    setIsSheetOpen(true)
+                }}>
+                    <IconPlus className="size-4" />
+                    Add Requirement
+                </Button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card className="border-none shadow-sm bg-background/60 backdrop-blur-sm">
+                    <CardHeader className="pb-2">
+                        <CardDescription>Total Required</CardDescription>
+                        <CardTitle className="text-2xl">{requirements.reduce((acc, r) => acc + r.requiredCount, 0)}</CardTitle>
+                    </CardHeader>
+                </Card>
+                <Card className="border-none shadow-sm bg-background/60 backdrop-blur-sm">
+                    <CardHeader className="pb-2">
+                        <CardDescription>Current Active</CardDescription>
+                        <CardTitle className="text-2xl">{requirements.reduce((acc, r) => acc + r.currentCount, 0)}</CardTitle>
+                    </CardHeader>
+                </Card>
+                <Card className="border-none shadow-sm bg-background/60 backdrop-blur-sm">
+                    <CardHeader className="pb-2">
+                        <CardDescription>Total Workforce Gap</CardDescription>
+                        <CardTitle className={cn(
+                            "text-2xl",
+                            requirements.reduce((acc, r) => acc + r.gap, 0) > 0 ? "text-red-500" : "text-green-500"
+                        )}>
+                            {requirements.reduce((acc, r) => acc + r.gap, 0)}
+                        </CardTitle>
+                    </CardHeader>
+                </Card>
+            </div>
+
+            {/* Quick Filter Section */}
+            <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-background/60 backdrop-blur-sm p-4 rounded-xl shadow-sm border border-border/50">
+                <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                        <IconFilter className="size-5" />
+                        <span className="text-sm font-medium">Quick Filters:</span>
+                    </div>
+                    <div className="relative">
+                        <select
+                            className="h-10 w-[240px] appearance-none rounded-lg border border-input bg-background pl-3 pr-10 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                            value={filterDepartment}
+                            onChange={(e) => setFilterDepartment(e.target.value)}
+                        >
+                            <option value="">All Departments</option>
+                            {departments.map((d) => (
+                                <option key={d.id} value={d.id.toString()}>
+                                    {d.nameEn}
+                                </option>
+                            ))}
+                        </select>
+                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground">
+                            <IconBuildingSkyscraper className="size-4 opactiy-50" />
                         </div>
-                        <Button onClick={() => openCreateSheet()} className="gap-2">
-                            <IconPlus className="size-4" /> New Requisition
-                        </Button>
                     </div>
                 </div>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-3">
-                <SummaryCard
-                    title="Total Required"
-                    value={data.reduce((acc, curr) => acc + curr.required, 0)}
-                    icon={IconUsers}
-                    status="primary"
-                    chartData={chartData}
-                />
-                <SummaryCard
-                    title="Total Filled"
-                    value={data.reduce((acc, curr) => acc + curr.filled, 0)}
-                    icon={IconUserCheck}
-                    status="success"
-                    chartData={chartData.map(d => ({ value: d.value * 0.9 }))}
-                />
-                <SummaryCard
-                    title="Total Vacant"
-                    value={data.reduce((acc, curr) => acc + curr.vacant, 0)}
-                    icon={IconUserOff}
-                    status="error"
-                    chartData={chartData.map(d => ({ value: (d.value * 0.1) + Math.random() * 5 }))}
-                />
-            </div>
+            <Card className="border-none shadow-xl rounded-2xl overflow-hidden bg-background">
+                <CardContent className="p-0">
+                    {isLoading ? (
+                        <div className="flex flex-col items-center justify-center py-20 gap-3">
+                            <IconLoader className="size-8 animate-spin text-primary" />
+                            <p className="text-sm text-muted-foreground animate-pulse">Analyzing workforce requirements...</p>
+                        </div>
+                    ) : (
+                        <DataTable
+                            data={filteredRequirements}
+                            columns={columns}
+                            showActions={false}
+                            showTabs={false}
+                            searchKey="departmentName"
+                        />
+                    )}
+                </CardContent>
+            </Card>
 
-            <Tabs defaultValue="summary" className="space-y-4">
-                <TabsList>
-                    <TabsTrigger value="summary">Summary</TabsTrigger>
-                    <TabsTrigger value="sewing">Sewing</TabsTrigger>
-                    <TabsTrigger value="finishing">Finishing</TabsTrigger>
-                    <TabsTrigger value="cutting">Cutting</TabsTrigger>
-                    <TabsTrigger value="quality">Quality</TabsTrigger>
-                </TabsList>
+            <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+                <SheetContent className="overflow-y-auto sm:max-w-md">
+                    <SheetHeader className="pb-6">
+                        <div className="size-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary mb-2">
+                            <IconUsersPlus className="size-6" />
+                        </div>
+                        <SheetTitle>{isEditing ? "Edit Requirement" : "Add Manpower Requirement"}</SheetTitle>
+                        <SheetDescription>Set target headcount for specific department and role.</SheetDescription>
+                    </SheetHeader>
 
-                <TabsContent value="summary">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>All Requirements Overview</CardTitle>
-                            <CardDescription>Consolidated list of all pending and open requirements.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="p-0">
-                            <DataTable
-                                columns={columns}
-                                data={data}
-                                showColumnCustomizer={false}
-                                onEditClick={handleEdit}
-                                onDelete={handleDelete}
+                    <form onSubmit={handleSubmit} className="space-y-5 py-2">
+                        <div className="space-y-2">
+                            <Label>Department</Label>
+                            <select
+                                className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                value={formData.departmentId}
+                                onChange={e => setFormData(p => ({ ...p, departmentId: e.target.value, designationId: "" }))}
+                            >
+                                <option value="" disabled>Select Department</option>
+                                {departments.map(d => (
+                                    <option key={d.id} value={d.id.toString()}>
+                                        {d.nameEn}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label>Designation</Label>
+                            <select
+                                className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                value={formData.designationId}
+                                onChange={e => setFormData(p => ({ ...p, designationId: e.target.value }))}
+                                disabled={!formData.departmentId}
+                            >
+                                <option value="" disabled>Select Designation</option>
+                                {designations.map(d => (
+                                    <option key={d.id} value={d.id.toString()}>
+                                        {d.nameEn}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label>Required Manpower (Count)</Label>
+                            <Input
+                                type="number"
+                                className="h-11"
+                                value={formData.requiredCount}
+                                onChange={e => setFormData(p => ({ ...p, requiredCount: parseInt(e.target.value) || 0 }))}
                             />
-                        </CardContent>
-                    </Card>
-                </TabsContent>
+                        </div>
 
-                {["Sewing", "Finishing", "Cutting", "Quality"].map((dept) => (
-                    <TabsContent key={dept} value={dept.toLowerCase()}>
-                        <Card>
-                            <CardHeader>
-                                <div className="flex justify-between items-center">
-                                    <div>
-                                        <CardTitle>{dept} Department</CardTitle>
-                                        <CardDescription>Manpower needs for {dept.toLowerCase()} lines.</CardDescription>
-                                    </div>
-                                    <Button size="sm" onClick={() => openCreateSheet(dept)}>Add Requisition</Button>
-                                </div>
-                            </CardHeader>
-                            <CardContent className="p-0">
-                                <DataTable
-                                    columns={columns}
-                                    data={data.filter(d => d.department === dept)}
-                                    showColumnCustomizer={false}
-                                    onEditClick={handleEdit}
-                                    onDelete={handleDelete}
-                                />
-                            </CardContent>
-                        </Card>
-                    </TabsContent>
-                ))}
-            </Tabs>
+                        <div className="space-y-2">
+                            <Label>Justification / Note</Label>
+                            <Textarea
+                                placeholder="Reason for requirement..."
+                                value={formData.note}
+                                onChange={e => setFormData(p => ({ ...p, note: e.target.value }))}
+                            />
+                        </div>
+
+                        <SheetFooter className="pt-6">
+                            <Button type="submit" className="w-full h-11 rounded-xl shadow-lg">
+                                {isEditing ? "Update Requirement" : "Create Requirement"}
+                            </Button>
+                        </SheetFooter>
+                    </form>
+                </SheetContent>
+            </Sheet>
         </div>
     )
 }

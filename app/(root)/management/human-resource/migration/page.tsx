@@ -71,6 +71,11 @@ const migrationData: MigrationRecord[] = [
 
 const columns: ColumnDef<MigrationRecord>[] = [
     {
+        id: "sl",
+        header: "SL",
+        cell: ({ row }) => <span className="text-xs text-muted-foreground">{row.index + 1}</span>,
+    },
+    {
         accessorKey: "employee",
         header: "Employee",
         cell: ({ row }) => (

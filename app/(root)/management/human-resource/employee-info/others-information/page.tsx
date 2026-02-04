@@ -453,11 +453,11 @@ export default function OthersInformationPage() {
                                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                                         <div className="grid gap-2 sm:col-span-2 lg:col-span-3">
                                             <Label htmlFor="presentAddress">Address Line (English)</Label>
-                                            <Input id="presentAddress" name="presentAddress" defaultValue={employee?.presentAddress} placeholder="House/Road/Village etc." />
+                                            <Textarea id="presentAddress" name="presentAddress" defaultValue={employee?.presentAddress} placeholder="House/Road/Village etc." />
                                         </div>
                                         <div className="grid gap-2 sm:col-span-2 lg:col-span-3">
                                             <Label htmlFor="presentAddressBn">Address Line (Bangla)</Label>
-                                            <Input id="presentAddressBn" name="presentAddressBn" defaultValue={employee?.presentAddressBn} placeholder="বাড়ি/সড়ক/গ্রাম ইত্যাদি" className="font-sutonny" />
+                                            <Textarea id="presentAddressBn" name="presentAddressBn" defaultValue={employee?.presentAddressBn} placeholder="বাড়ি/সড়ক/গ্রাম ইত্যাদি" className="font-sutonny" />
                                         </div>
 
                                         <div className="grid gap-2">
@@ -551,11 +551,11 @@ export default function OthersInformationPage() {
                                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                                         <div className="grid gap-2 sm:col-span-2 lg:col-span-3">
                                             <Label htmlFor="permanentAddress">Address Line (English)</Label>
-                                            <Input id="permanentAddress" name="permanentAddress" defaultValue={employee?.permanentAddress} placeholder="House/Road/Village etc." />
+                                            <Textarea id="permanentAddress" name="permanentAddress" defaultValue={employee?.permanentAddress} placeholder="House/Road/Village etc." />
                                         </div>
                                         <div className="grid gap-2 sm:col-span-2 lg:col-span-3">
                                             <Label htmlFor="permanentAddressBn">Address Line (Bangla)</Label>
-                                            <Input id="permanentAddressBn" name="permanentAddressBn" defaultValue={employee?.permanentAddressBn} placeholder="বাড়ি/সড়ক/গ্রাম ইত্যাদি" className="font-sutonny" />
+                                            <Textarea id="permanentAddressBn" name="permanentAddressBn" defaultValue={employee?.permanentAddressBn} placeholder="বাড়ি/সড়ক/গ্রাম ইত্যাদি" className="font-sutonny" />
                                         </div>
 
                                         <div className="grid gap-2">
@@ -785,7 +785,7 @@ export default function OthersInformationPage() {
                                     </div>
                                     <div className="grid gap-2">
                                         <Label htmlFor="emergencyContactAddress">Address</Label>
-                                        <Input id="emergencyContactAddress" name="emergencyContactAddress" defaultValue={employee?.emergencyContactAddress} />
+                                        <Textarea id="emergencyContactAddress" name="emergencyContactAddress" defaultValue={employee?.emergencyContactAddress} />
                                     </div>
                                 </div>
                             </CardContent>

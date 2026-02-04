@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { IconCalendarEvent, IconPlus, IconCheck, IconX, IconEye, IconFilter } from "@tabler/icons-react"
+import { IconCalendarEvent, IconPlus, IconCheck, IconX, IconEye, IconFilter, IconLoader, IconHistory } from "@tabler/icons-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { DataTable } from "@/components/data-table"
@@ -20,56 +20,123 @@ import { Label } from "@/components/ui/label"
 import { NativeSelect } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { toast } from "sonner"
-
-// --- Types ---
-type LeaveApplication = {
-    id: string
-    employeeName: string
-    type: string
-    startDate: string
-    endDate: string
-    days: number
-    reason: string
-    status: "Approved" | "Rejected" | "Pending"
-}
-
-// --- Mock Data ---
-const mockApplications: LeaveApplication[] = [
-    { id: "1", employeeName: "Alice Wonderland", type: "Sick Leave", startDate: "2024-05-20", endDate: "2024-05-22", days: 3, reason: "Viral fever", status: "Pending" },
-    { id: "2", employeeName: "Bob Builder", type: "Casual Leave", startDate: "2024-05-25", endDate: "2024-05-25", days: 1, reason: "Family event", status: "Approved" },
-    { id: "3", employeeName: "Charlie Chaplin", type: "Earned Leave", startDate: "2024-06-01", endDate: "2024-06-10", days: 10, reason: "Europe trip", status: "Rejected" },
-]
+import { leaveService, type LeaveApplication, type LeaveType } from "@/lib/services/leave"
+import { format } from "date-fns"
 
 export default function LeaveManagementPage() {
-    const [data, setData] = React.useState<LeaveApplication[]>(mockApplications)
+    const [isLoading, setIsLoading] = React.useState(false)
+    const [isActionLoading, setIsActionLoading] = React.useState<number | null>(null)
+    const [applications, setApplications] = React.useState<LeaveApplication[]>([])
+    const [leaveTypes, setLeaveTypes] = React.useState<LeaveType[]>([])
 
-    const handleStatusChange = (id: string, newStatus: "Approved" | "Rejected") => {
-        setData(prev => prev.map(app => app.id === id ? { ...app, status: newStatus } : app))
-        toast.success(`Leave request ${newStatus.toLowerCase()}.`)
+    // Form state
+    const [isApplying, setIsApplying] = React.useState(false)
+    const [formData, setFormData] = React.useState({
+        employeeId: 1, // Mock current user for now
+        leaveTypeId: "",
+        startDate: "",
+        endDate: "",
+        reason: ""
+    })
+
+    React.useEffect(() => {
+        loadData()
+        leaveService.getLeaveTypes().then(setLeaveTypes)
+    }, [])
+
+    const loadData = async () => {
+        setIsLoading(true)
+        try {
+            const data = await leaveService.getApplications()
+            setApplications(data)
+        } catch (error) {
+            toast.error("Failed to load leave applications")
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    const handleAction = async (id: number, status: "Approved" | "Rejected") => {
+        setIsActionLoading(id)
+        try {
+            await leaveService.actionLeave({ id, status })
+            toast.success(`Leave request ${status.toLowerCase()} successfully`)
+            loadData()
+        } catch (error) {
+            toast.error("Failed to process leave action")
+        } finally {
+            setIsActionLoading(null)
+        }
+    }
+
+    const handleSubmit = async () => {
+        if (!formData.leaveTypeId || !formData.startDate || !formData.endDate || !formData.reason) {
+            toast.error("Please fill all required fields")
+            return
+        }
+
+        setIsApplying(true)
+        try {
+            await leaveService.applyLeave({
+                ...formData,
+                leaveTypeId: parseInt(formData.leaveTypeId)
+            })
+            toast.success("Leave application submitted successfully")
+            loadData()
+            // Reset form and close sheet (if possible via state)
+            setFormData({
+                employeeId: 1,
+                leaveTypeId: "",
+                startDate: "",
+                endDate: "",
+                reason: ""
+            })
+        } catch (error) {
+            toast.error("Failed to submit leave application")
+        } finally {
+            setIsApplying(false)
+        }
     }
 
     const columns: ColumnDef<LeaveApplication>[] = [
-        { accessorKey: "employeeName", header: "Employee" },
-        { accessorKey: "type", header: "Type" },
+        {
+            accessorKey: "employeeIdCard",
+            header: "ID",
+            cell: ({ row }) => <Badge variant="outline" className="text-[10px] font-bold">{row.original.employeeIdCard}</Badge>
+        },
+        {
+            accessorKey: "employeeName",
+            header: "Employee",
+            cell: ({ row }) => (
+                <div className="flex flex-col">
+                    <span className="font-bold text-xs">{row.original.employeeName}</span>
+                    <span className="text-[10px] text-muted-foreground uppercase">{row.original.department}</span>
+                </div>
+            )
+        },
+        {
+            accessorKey: "leaveTypeName",
+            header: "Leave Type",
+            cell: ({ row }) => <Badge className="bg-blue-50 text-blue-600 border-blue-100">{row.original.leaveTypeName}</Badge>
+        },
         {
             accessorKey: "startDate",
             header: "Duration",
             cell: ({ row }) => (
-                <div className="text-sm">
-                    <div>{row.original.startDate} <span className="text-muted-foreground">to</span> {row.original.endDate}</div>
-                    <div className="text-xs text-muted-foreground">{row.original.days} day(s)</div>
+                <div className="text-[10px] font-medium">
+                    <div>{format(new Date(row.original.startDate), "dd MMM")} - {format(new Date(row.original.endDate), "dd MMM yyyy")}</div>
+                    <div className="text-emerald-600">{row.original.totalDays} day(s)</div>
                 </div>
             )
         },
-        { accessorKey: "reason", header: "Reason", cell: ({ row }) => <div className="truncate max-w-[200px]">{row.original.reason}</div> },
         {
             accessorKey: "status",
             header: "Status",
-            cell: ({ row }) => (
-                <Badge variant={row.original.status === "Approved" ? "default" : row.original.status === "Rejected" ? "destructive" : "secondary"}>
-                    {row.original.status}
-                </Badge>
-            )
+            cell: ({ row }) => {
+                const status = row.original.status
+                const variant = status === "Approved" ? "default" : status === "Rejected" ? "destructive" : "secondary"
+                return <Badge variant={variant} className="text-[10px] font-black uppercase">{status}</Badge>
+            }
         },
         {
             id: "actions",
@@ -78,11 +145,23 @@ export default function LeaveManagementPage() {
                 <div className="flex gap-1 justify-end">
                     {row.original.status === "Pending" && (
                         <>
-                            <Button size="icon" variant="ghost" className="size-8 text-green-600 hover:text-green-700 hover:bg-green-50" onClick={() => handleStatusChange(row.original.id, "Approved")}>
-                                <IconCheck className="size-4" />
+                            <Button
+                                size="icon"
+                                variant="ghost"
+                                className="size-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                                onClick={() => handleAction(row.original.id, "Approved")}
+                                disabled={isActionLoading === row.original.id}
+                            >
+                                {isActionLoading === row.original.id ? <IconLoader className="size-4 animate-spin" /> : <IconCheck className="size-4" />}
                             </Button>
-                            <Button size="icon" variant="ghost" className="size-8 text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => handleStatusChange(row.original.id, "Rejected")}>
-                                <IconX className="size-4" />
+                            <Button
+                                size="icon"
+                                variant="ghost"
+                                className="size-8 text-rose-600 hover:text-rose-700 hover:bg-rose-50"
+                                onClick={() => handleAction(row.original.id, "Rejected")}
+                                disabled={isActionLoading === row.original.id}
+                            >
+                                {isActionLoading === row.original.id ? <IconLoader className="size-4 animate-spin" /> : <IconX className="size-4" />}
                             </Button>
                         </>
                     )}
@@ -92,99 +171,122 @@ export default function LeaveManagementPage() {
     ]
 
     return (
-        <div className="p-6 space-y-6 w-full">
+        <div className="p-6 space-y-6 w-full animate-in fade-in duration-700">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <div className="flex items-center gap-2 mb-1">
-                        <IconCalendarEvent className="size-6 text-primary" />
-                        <h1 className="text-2xl font-bold tracking-tight">Leave Management</h1>
+                <div className="flex items-center gap-3">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary shadow-sm">
+                        <IconCalendarEvent className="size-6" />
                     </div>
-                    <p className="text-muted-foreground">Manage ongoing leave applications and approvals.</p>
+                    <div>
+                        <h1 className="text-2xl font-black tracking-tighter">Leave Management</h1>
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">Application Approval & Tracking</p>
+                    </div>
                 </div>
 
                 <Sheet>
                     <SheetTrigger asChild>
-                        <Button className="gap-2">
-                            <IconPlus className="size-4" /> Apply for Leave
+                        <Button className="rounded-full h-10 px-6 gap-2 font-bold shadow-lg shadow-primary/20">
+                            <IconPlus className="size-4" /> New Leave Application
                         </Button>
                     </SheetTrigger>
                     <SheetContent className="w-full sm:max-w-md">
-                        <SheetHeader>
-                            <SheetTitle>New Leave Application</SheetTitle>
-                            <SheetDescription>Submit a new leave request for approval.</SheetDescription>
+                        <SheetHeader className="pb-6 border-b">
+                            <SheetTitle className="text-xl font-black tracking-tight">Apply for Leave</SheetTitle>
+                            <SheetDescription>Submit a formal leave request to the management.</SheetDescription>
                         </SheetHeader>
-                        <div className="grid gap-4 py-4">
-                            <div className="grid gap-2">
-                                <Label>Leave Type</Label>
-                                <NativeSelect>
-                                    <option>Sick Leave</option>
-                                    <option>Casual Leave</option>
-                                    <option>Earned Leave</option>
-                                    <option>Maternity/Paternity Leave</option>
+                        <div className="grid gap-6 py-8">
+                            <div className="space-y-2">
+                                <Label className="text-[10px] font-black uppercase tracking-widest p-1">Leave Type</Label>
+                                <NativeSelect
+                                    value={formData.leaveTypeId}
+                                    onChange={(e) => setFormData(prev => ({ ...prev, leaveTypeId: e.target.value }))}
+                                    className="h-12 rounded-2xl border-2"
+                                >
+                                    <option value="">Select Type</option>
+                                    {leaveTypes.map(t => <option key={t.id} value={t.id}>{t.name} ({t.code})</option>)}
                                 </NativeSelect>
                             </div>
-                            <div className="grid gap-2">
-                                <Label>Start Date</Label>
-                                <Input type="date" />
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label className="text-[10px] font-black uppercase tracking-widest p-1">Start Date</Label>
+                                    <Input
+                                        type="date"
+                                        className="h-12 rounded-2xl border-2"
+                                        value={formData.startDate}
+                                        onChange={(e) => setFormData(prev => ({ ...prev, startDate: e.target.value }))}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label className="text-[10px] font-black uppercase tracking-widest p-1">End Date</Label>
+                                    <Input
+                                        type="date"
+                                        className="h-12 rounded-2xl border-2"
+                                        value={formData.endDate}
+                                        onChange={(e) => setFormData(prev => ({ ...prev, endDate: e.target.value }))}
+                                    />
+                                </div>
                             </div>
-                            <div className="grid gap-2">
-                                <Label>End Date</Label>
-                                <Input type="date" />
+                            <div className="space-y-2">
+                                <Label className="text-[10px] font-black uppercase tracking-widest p-1">Reason</Label>
+                                <Textarea
+                                    placeholder="Briefly describe why you need this leave..."
+                                    className="min-h-[120px] rounded-2xl border-2 p-4"
+                                    value={formData.reason}
+                                    onChange={(e) => setFormData(prev => ({ ...prev, reason: e.target.value }))}
+                                />
                             </div>
-                            <div className="grid gap-2">
-                                <Label>Reason</Label>
-                                <Textarea placeholder="Briefly describe why you need this leave..." />
-                            </div>
-                            <Button onClick={() => toast.success("Application submitted successfully!")}>Submit Request</Button>
+                            <Button
+                                className="h-12 rounded-2xl font-black text-base mt-2"
+                                onClick={handleSubmit}
+                                disabled={isApplying}
+                            >
+                                {isApplying ? <IconLoader className="mr-2 animate-spin" /> : <IconCheck className="mr-2" />}
+                                Submit Application
+                            </Button>
                         </div>
                     </SheetContent>
                 </Sheet>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-3">
-                <Card>
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium">Pending Requests</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{data.filter(d => d.status === "Pending").length}</div>
-                        <p className="text-xs text-muted-foreground">Needs attention</p>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium">On Leave Today</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">5</div>
-                        <p className="text-xs text-muted-foreground">Employees absent</p>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium">Approved (This Month)</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">24</div>
-                        <p className="text-xs text-muted-foreground">Total applications processed</p>
-                    </CardContent>
-                </Card>
+            <div className="grid gap-6 md:grid-cols-3">
+                <KPICard title="Pending Requests" value={applications.filter(a => a.status === "Pending").length.toString()} icon={IconHistory} color="text-amber-600" bg="bg-amber-50" />
+                <KPICard title="On Leave Today" value="-" icon={IconCalendarEvent} color="text-blue-600" bg="bg-blue-50" />
+                <KPICard title="Approved" value={applications.filter(a => a.status === "Approved").length.toString()} icon={IconCheck} color="text-emerald-600" bg="bg-emerald-50" />
             </div>
 
-            <Card>
-                <CardHeader>
-                    <CardTitle>Recent Applications</CardTitle>
-                    <CardDescription>A list of recent leave requests from all employees.</CardDescription>
+            <Card className="border-none shadow-2xl shadow-slate-200/50 rounded-3xl overflow-hidden">
+                <CardHeader className="bg-slate-50 border-b pb-4">
+                    <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
+                        <IconFilter className="size-4" />
+                        Application Repository
+                    </CardTitle>
                 </CardHeader>
                 <CardContent className="p-0">
                     <DataTable
                         columns={columns}
-                        data={data}
+                        data={applications}
                         showColumnCustomizer={false}
                         searchKey="employeeName"
+                        isLoading={isLoading}
                     />
                 </CardContent>
             </Card>
         </div>
+    )
+}
+
+function KPICard({ title, value, icon: Icon, color, bg }: any) {
+    return (
+        <Card className="border-none shadow-xl shadow-slate-100/50 hover:scale-[1.02] transition-transform duration-300">
+            <CardContent className="p-6 flex items-center gap-4">
+                <div className={`size-12 rounded-2xl flex items-center justify-center ${bg} ${color} shadow-inner`}>
+                    <Icon className="size-6" />
+                </div>
+                <div>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{title}</p>
+                    <h3 className="text-2xl font-black tabular-nums tracking-tighter mt-0.5">{value}</h3>
+                </div>
+            </CardContent>
+        </Card>
     )
 }
