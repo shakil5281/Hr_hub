@@ -75,89 +75,89 @@ export default function SalaryProcessPage() {
     }
 
     return (
-        <div className="p-6 w-full max-w-4xl mx-auto space-y-8 animate-in fade-in duration-700">
-            <div className="space-y-1">
-                <h2 className="text-3xl font-black tracking-tighter italic bg-gradient-to-r from-emerald-600 to-emerald-400 bg-clip-text text-transparent">Salary Processing</h2>
-                <p className="text-muted-foreground font-medium">Execute the master payroll engine for the selected criteria.</p>
+        <div className="container max-w-2xl mx-auto py-10 animate-in fade-in duration-500">
+            <div className="space-y-1 mb-8">
+                <h1 className="text-2xl font-bold tracking-tight">Salary Processing</h1>
+                <p className="text-muted-foreground text-sm">Execute payroll generation for the selected period</p>
             </div>
 
-            <Card className="border-2 shadow-2xl shadow-emerald-500/5">
-                <CardHeader className="border-b bg-muted/20">
-                    <CardTitle className="text-sm font-black uppercase tracking-widest text-emerald-700">Process Configuration</CardTitle>
-                    <CardDescription>Configure parameters for salary generation.</CardDescription>
+            <Card>
+                <CardHeader>
+                    <CardTitle className="text-lg">Process Configuration</CardTitle>
+                    <CardDescription>Select period and scope for salary calculation</CardDescription>
                 </CardHeader>
-                <CardContent className="p-8 space-y-8">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <CardContent className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                            <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground p-1">Target Month</Label>
-                            <NativeSelect value={month} onChange={(e) => setMonth(parseInt(e.target.value))} className="h-12 rounded-2xl border-2 font-bold">
+                            <Label>Month</Label>
+                            <NativeSelect value={month} onChange={(e) => setMonth(parseInt(e.target.value))}>
                                 {MONTHS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
                             </NativeSelect>
                         </div>
                         <div className="space-y-2">
-                            <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground p-1">Fiscal Year</Label>
-                            <NativeSelect value={year} onChange={(e) => setYear(parseInt(e.target.value))} className="h-12 rounded-2xl border-2 font-bold">
+                            <Label>Year</Label>
+                            <NativeSelect value={year} onChange={(e) => setYear(parseInt(e.target.value))}>
                                 <option value={2024}>2024</option>
                                 <option value={2025}>2025</option>
                                 <option value={2026}>2026</option>
                             </NativeSelect>
                         </div>
-                        <div className="space-y-2">
-                            <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground p-1">Scope (Department)</Label>
-                            <NativeSelect value={departmentId} onChange={(e) => setDepartmentId(e.target.value)} className="h-12 rounded-2xl border-2 font-bold">
+                        <div className="space-y-2 md:col-span-2">
+                            <Label>Department Scope</Label>
+                            <NativeSelect value={departmentId} onChange={(e) => setDepartmentId(e.target.value)}>
                                 <option value="all">Entire Organization</option>
                                 {departments.map(d => <option key={d.id} value={d.id}>{d.nameEn}</option>)}
                             </NativeSelect>
                         </div>
                     </div>
 
-                    <div className="p-6 bg-emerald-50 dark:bg-emerald-950/20 rounded-3xl border border-emerald-100 dark:border-emerald-900/50 flex items-start gap-4">
-                        <div className="size-10 rounded-full bg-emerald-100 dark:bg-emerald-900 flex items-center justify-center text-emerald-600">
-                            <IconSettings className="size-5 animate-spin-slow" />
+                    <div className="bg-muted/50 p-4 rounded-lg flex gap-4">
+                        <div className="h-10 w-10 flex-shrink-0 rounded-full bg-background border flex items-center justify-center text-muted-foreground">
+                            <IconSettings className="size-5" />
                         </div>
                         <div className="space-y-1">
-                            <h4 className="text-xs font-black uppercase tracking-widest text-emerald-900 dark:text-emerald-100">Ready for Execution</h4>
-                            <p className="text-[11px] text-emerald-700 dark:text-emerald-400 font-medium leading-relaxed">
-                                The engine will calculate basic, OT, bonuses and deductions for <strong>{MONTHS.find(m => m.value === month)?.label} {year}</strong>. This process may take a few seconds depending on the headcount.
+                            <h4 className="text-sm font-semibold">Ready to Process</h4>
+                            <p className="text-xs text-muted-foreground">
+                                This will calculate salaries for <strong>{MONTHS.find(m => m.value === month)?.label} {year}</strong>. Existing draft calculations will be overwritten.
                             </p>
                         </div>
                     </div>
 
                     {status === "idle" && (
                         <Button
-                            className="w-full h-14 rounded-2xl text-base font-black shadow-xl shadow-emerald-500/20 bg-emerald-600 hover:bg-emerald-700 text-white transition-all transform hover:scale-[1.01]"
+                            className="w-full gap-2"
+                            size="lg"
                             onClick={handleProcess}
                         >
-                            <IconPlayerPlay className="mr-2 size-5 fill-current" />
-                            Run Payroll Engine
+                            <IconPlayerPlay className="size-4" />
+                            Run Processing
                         </Button>
                     )}
 
                     {status === "processing" && (
                         <div className="space-y-4 py-4">
-                            <div className="flex justify-between items-end">
-                                <span className="text-sm font-black text-emerald-700 animate-pulse">{message}</span>
-                                <span className="text-2xl font-black tabular-nums">{progress}%</span>
+                            <div className="flex justify-between items-center text-sm">
+                                <span className="font-medium animate-pulse">{message}</span>
+                                <span className="font-bold">{progress}%</span>
                             </div>
-                            <Progress value={progress} className="h-4 bg-emerald-100 rounded-full" />
+                            <Progress value={progress} className="h-2" />
                         </div>
                     )}
 
                     {status === "success" && (
-                        <div className="flex flex-col items-center gap-4 py-8 animate-in zoom-in-95 duration-500">
-                            <div className="size-20 rounded-full bg-emerald-600 flex items-center justify-center shadow-2xl shadow-emerald-500/40">
-                                <IconCheck className="size-10 text-white" />
+                        <div className="flex flex-col items-center gap-4 py-6">
+                            <div className="size-12 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
+                                <IconCheck className="size-6" />
                             </div>
-                            <div className="text-center">
-                                <h3 className="text-xl font-black text-emerald-950 dark:text-emerald-50">Operation Successful</h3>
-                                <p className="text-sm font-medium text-muted-foreground mt-1">{message}</p>
+                            <div className="text-center space-y-1">
+                                <h3 className="font-semibold text-lg">Processing Complete</h3>
+                                <p className="text-sm text-muted-foreground">{message}</p>
                             </div>
                             <Button
                                 variant="outline"
-                                className="h-12 px-8 rounded-full border-2 font-bold hover:bg-muted"
                                 onClick={() => setStatus("idle")}
                             >
-                                Process Another Scope
+                                Process Another
                             </Button>
                         </div>
                     )}

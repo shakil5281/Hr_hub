@@ -138,11 +138,20 @@ export const attendanceService = {
     },
 
     processDailyData: async (data: {
-        fromDate: string;
-        toDate?: string;
-        departmentId?: number;
+        date?: string;
+        startDate?: string;
+        endDate?: string;
     }) => {
-        const response = await api.post<{ message: string }>('/attendance/process', data);
+        const response = await api.post<{ message: string }>('/attendanceSync/process-daily', data);
+        return response.data;
+    },
+
+    syncData: async (params: {
+        dbPath?: string;
+        startDate?: string;
+        endDate?: string;
+    }) => {
+        const response = await api.post<{ message: string; count: number }>('/attendanceSync/sync', params);
         return response.data;
     },
 
@@ -216,5 +225,48 @@ export const attendanceService = {
         document.body.appendChild(link);
         link.click();
         link.remove();
+    },
+
+    bulkManualEntry: async (data: {
+        employeeIds: number[];
+        date: string | Date;
+        inTime?: string;
+        outTime?: string;
+        reason: string;
+        status: string;
+    }) => {
+        const response = await api.post('/attendance/bulk-manual-entry', data);
+        return response.data;
+    },
+
+    createManualEntry: async (data: {
+        employeeId: number;
+        date: string | Date;
+        inTime?: string;
+        outTime?: string;
+        reason: string;
+        status: string;
+    }) => {
+        // We can reuse bulk-manual-entry with single ID
+        const response = await api.post('/attendance/bulk-manual-entry', {
+            employeeIds: [data.employeeId],
+            date: data.date,
+            inTime: data.inTime,
+            outTime: data.outTime,
+            reason: data.reason,
+            status: data.status
+        });
+        return response.data;
+    },
+
+    deleteAttendance: async (data: {
+        employeeIds?: number[];
+        fromDate: string;
+        toDate: string;
+        departmentId?: number;
+        sectionId?: number;
+    }) => {
+        const response = await api.post('/attendance/delete-attendance', data);
+        return response.data;
     }
 };

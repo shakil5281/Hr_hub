@@ -5,32 +5,37 @@ import { format } from "date-fns"
 import {
     IconUserX,
     IconSearch,
-    IconUser,
-    IconAdjustmentsHorizontal,
     IconDownload,
-    IconFileSpreadsheet,
-    IconLoader
+    IconRefresh,
+    IconAlertTriangle,
+    IconCalendarOff,
+    IconActivity,
+    IconArrowLeft
 } from "@tabler/icons-react"
 import { DataTable } from "@/components/data-table"
 import { ColumnDef } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { NativeSelect } from "@/components/ui/select"
 import { DateRangePicker } from "@/components/ui/date-range-picker"
 import { DateRange } from "react-day-picker"
 import { Badge } from "@/components/ui/badge"
 import { absenteeismService, type AbsenteeismRecord, type AbsenteeismSummary } from "@/lib/services/absenteeism"
 import { organogramService } from "@/lib/services/organogram"
+import { useRouter } from "next/navigation"
 import { toast } from "sonner"
+import { cn } from "@/lib/utils"
+import { Label } from "@/components/ui/label"
 
 export default function AbsentStatusPage() {
+    const router = useRouter()
     const [empId, setEmpId] = React.useState("")
     const [department, setDepartment] = React.useState("all")
     const [designation, setDesignation] = React.useState("all")
     const [dateRange, setDateRange] = React.useState<DateRange | undefined>({
-        from: new Date(2026, 0, 1),
-        to: new Date(2026, 0, 31)
+        from: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+        to: new Date()
     })
 
     const [isLoading, setIsLoading] = React.useState(false)
@@ -51,7 +56,7 @@ export default function AbsentStatusPage() {
                 setDepartments(depts)
                 setDesignations(desigs)
             } catch (error) {
-                console.error("Failed to fetch filters", error)
+                console.error("Filter sync failed")
             }
         }
         fetchFilters()
@@ -59,50 +64,50 @@ export default function AbsentStatusPage() {
 
     const columns: ColumnDef<AbsenteeismRecord>[] = [
         {
-            accessorKey: "date",
-            header: "Absent Date",
-            cell: ({ row }) => <span className="font-bold text-xs">{format(new Date(row.original.date), "dd MMM yyyy")}</span>
+            id: "sl",
+            header: "SL",
+            cell: ({ row }) => <div className="text-left font-medium">{row.index + 1}</div>,
         },
         {
-            accessorKey: "employeeIdCard",
-            header: "UID",
-            cell: ({ row }) => <Badge variant="outline" className="text-[10px] font-bold">{row.original.employeeIdCard}</Badge>
+            accessorKey: "date",
+            header: "Date",
+            cell: ({ row }) => <span className="text-sm">{format(new Date(row.original.date), "dd MMM yyyy")}</span>
         },
         {
             accessorKey: "employeeName",
-            header: "Employee",
+            header: "Employee Name",
             cell: ({ row }) => (
                 <div className="flex flex-col">
-                    <span className="font-bold text-xs leading-none">{row.original.employeeName}</span>
-                    <span className="text-[10px] text-muted-foreground uppercase mt-1 tracking-tighter">{row.original.designation}</span>
+                    <span className="font-semibold text-gray-900">{row.original.employeeName}</span>
+                    <span className="text-xs text-gray-500">{row.original.employeeIdCard}</span>
                 </div>
             )
         },
         {
             accessorKey: "department",
-            header: "Unit",
-            cell: ({ row }) => <span className="text-xs uppercase font-medium">{row.original.department}</span>
+            header: "Department",
+            cell: ({ row }) => <span className="text-xs">{row.original.department}</span>
         },
         {
             accessorKey: "consecutiveDays",
             header: "Consecutive Days",
             cell: ({ row }) => (
-                <Badge
-                    variant={row.original.consecutiveDays >= 3 ? "destructive" : "secondary"}
-                    className="text-[10px] font-black uppercase px-2 h-5"
-                >
-                    {row.original.consecutiveDays} {row.original.consecutiveDays === 1 ? "Day" : "Days"}
+                <Badge variant="outline" className={cn(
+                    "font-medium",
+                    row.original.consecutiveDays >= 3 ? "bg-red-50 text-red-600 border-red-200" : "bg-gray-50 text-gray-600"
+                )}>
+                    {row.original.consecutiveDays} Days
                 </Badge>
             )
         },
         {
             accessorKey: "status",
-            header: "Type",
+            header: "Status",
             cell: ({ row }) => (
-                <Badge
-                    variant={row.original.status === "Absent" ? "destructive" : "secondary"}
-                    className="text-[10px] font-black uppercase px-2 h-5"
-                >
+                <Badge variant="outline" className={cn(
+                    "font-medium",
+                    row.original.status === "Absent" ? "bg-red-50 text-red-600 border-red-200" : "bg-blue-50 text-blue-600 border-blue-200"
+                )}>
                     {row.original.status}
                 </Badge>
             )
@@ -110,13 +115,13 @@ export default function AbsentStatusPage() {
         {
             accessorKey: "remarks",
             header: "Remarks",
-            cell: ({ row }) => <span className="text-xs text-muted-foreground">{row.original.remarks || "N/A"}</span>
+            cell: ({ row }) => <span className="text-xs text-gray-500 truncate max-w-[200px]">{row.original.remarks || "-"}</span>
         }
     ]
 
     const handleSearch = async () => {
         if (!dateRange?.from || !dateRange?.to) {
-            toast.error("Please select a date range")
+            toast.error("Date range required")
             return
         }
 
@@ -126,189 +131,128 @@ export default function AbsentStatusPage() {
                 fromDate: format(dateRange.from, "yyyy-MM-dd"),
                 toDate: format(dateRange.to, "yyyy-MM-dd")
             }
-
             if (department !== "all") params.departmentId = parseInt(department)
             if (designation !== "all") params.designationId = parseInt(designation)
             if (empId.trim()) params.searchTerm = empId.trim()
 
             const data = await absenteeismService.getAbsenteeismRecords(params)
-
             setFilteredData(data.records)
             setSummary(data.summary)
             setHasSearched(true)
-
-            if (data.records.length === 0) {
-                toast.success("No absenteeism records found!")
-            } else {
-                toast.info(`Found ${data.records.length} absence records`)
-            }
         } catch (error: any) {
-            toast.error(error.response?.data?.message || "Failed to fetch absenteeism records")
+            toast.error("Analysis failed")
         } finally {
             setIsLoading(false)
         }
     }
 
-    const availability = summary ? ((1 - (summary.totalAbsent / 100)) * 100).toFixed(1) : "0.0"
-
     return (
-        <div className="flex flex-col min-h-screen bg-background/50 animate-in fade-in duration-700">
-            {/* Header */}
-            <div className="border-b bg-background/80 backdrop-blur-md sticky top-0 z-20">
-                <div className="container mx-auto px-4 py-4 lg:px-8 max-w-[1600px]">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500 text-white shadow-lg shadow-orange-100 dark:shadow-none">
-                                <IconUserX className="size-5" />
-                            </div>
-                            <div>
-                                <h1 className="text-xl font-bold tracking-tight">Absenteeism Record</h1>
-                                <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest">Workforce Availability Audit</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <Button variant="outline" size="sm" className="rounded-full h-8 px-4 text-xs font-bold">
-                                <IconDownload className="mr-2 size-4" />
-                                Export  PDF
-                            </Button>
-                            <Button size="sm" className="rounded-full h-8 px-4 text-xs font-bold bg-slate-900" disabled={filteredData.length === 0}>
-                                <IconFileSpreadsheet className="mr-2 size-4" />
-                                Download CSV
-                            </Button>
-                        </div>
+        <div className="flex flex-col gap-6 p-6 font-sans">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b pb-6">
+                <div className="flex items-center gap-4">
+                    <Button variant="outline" size="icon" onClick={() => router.back()} className="rounded-md">
+                        <IconArrowLeft size={18} />
+                    </Button>
+                    <div>
+                        <h1 className="text-2xl font-bold">Absenteeism Records</h1>
+                        <p className="text-sm text-gray-500">Monitor and audit employee absences and leave trends</p>
                     </div>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                    <Button variant="outline" size="sm" onClick={() => handleSearch()}>
+                        <IconRefresh size={18} className={cn("mr-2", isLoading && "animate-spin")} /> Refresh
+                    </Button>
+                    <Button variant="outline" size="sm" disabled={filteredData.length === 0}>
+                        <IconDownload className="mr-2 h-4 w-4" /> Export
+                    </Button>
                 </div>
             </div>
 
-            <main className="container mx-auto px-4 py-8 lg:px-8 max-w-[1600px] space-y-8">
-                {/* Summary Cards */}
+            <div className="space-y-6">
                 {summary && (
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                        <Card className="border-l-4 border-l-orange-500">
-                            <CardContent className="pt-6">
-                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Total Absent</p>
-                                <h3 className="text-3xl font-black tracking-tighter mt-2 text-orange-600">{summary.totalAbsent}</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <Card className="border shadow-none">
+                            <CardContent className="p-6">
+                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Total Absent</p>
+                                <h3 className="text-2xl font-bold mt-1 text-red-600">{summary.totalAbsent}</h3>
                             </CardContent>
                         </Card>
-                        <Card className="border-l-4 border-l-red-500">
-                            <CardContent className="pt-6">
-                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Absent (No Leave)</p>
-                                <h3 className="text-3xl font-black tracking-tighter mt-2 text-red-600">{summary.absentWithoutLeave}</h3>
+                        <Card className="border shadow-none">
+                            <CardContent className="p-6">
+                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Without Leave</p>
+                                <h3 className="text-2xl font-bold mt-1 text-red-600">{summary.absentWithoutLeave}</h3>
                             </CardContent>
                         </Card>
-                        <Card className="border-l-4 border-l-blue-500">
-                            <CardContent className="pt-6">
-                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">On Leave</p>
-                                <h3 className="text-3xl font-black tracking-tighter mt-2 text-blue-600">{summary.onLeave}</h3>
+                        <Card className="border shadow-none">
+                            <CardContent className="p-6">
+                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">On Leave</p>
+                                <h3 className="text-2xl font-bold mt-1 text-blue-600">{summary.onLeave}</h3>
                             </CardContent>
                         </Card>
-                        <Card className="border-l-4 border-l-purple-500">
-                            <CardContent className="pt-6">
-                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Critical (3+ Days)</p>
-                                <h3 className="text-3xl font-black tracking-tighter mt-2 text-purple-600">{summary.criticalCases}</h3>
+                        <Card className="border shadow-none">
+                            <CardContent className="p-6">
+                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Critical Cases</p>
+                                <h3 className="text-2xl font-bold mt-1 text-orange-600">{summary.criticalCases}</h3>
                             </CardContent>
                         </Card>
                     </div>
                 )}
 
-                {/* Filters */}
-                <Card className="border">
-                    <CardHeader className="pb-4">
-                        <CardTitle className="text-base flex items-center gap-2">
-                            <IconAdjustmentsHorizontal className="size-5 text-orange-500" />
-                            Report Filter
-                        </CardTitle>
-                        <CardDescription>Retrieve absenteeism data by department or date range.</CardDescription>
+                <Card className="border shadow-none">
+                    <CardHeader className="bg-gray-50 border-b py-4">
+                        <div className="flex items-center gap-2 text-sm font-semibold">
+                            <IconSearch size={18} />
+                            Search Filters
+                        </div>
                     </CardHeader>
-                    <CardContent>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Search Personnel</label>
-                                <div className="relative">
-                                    <IconUser className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                                    <Input
-                                        placeholder="Name or ID"
-                                        className="pl-10 h-10 rounded-xl"
-                                        value={empId}
-                                        onChange={(e) => setEmpId(e.target.value)}
-                                    />
-                                </div>
+                    <CardContent className="p-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+                            <div className="space-y-1">
+                                <Label className="text-xs uppercase font-bold text-gray-400">Employee ID / Name</Label>
+                                <Input placeholder="Type to search..." value={empId} onChange={(e) => setEmpId(e.target.value)} />
                             </div>
-
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Department</label>
-                                <NativeSelect value={department} onChange={(e) => setDepartment(e.target.value)} className="h-10 rounded-xl">
+                            <div className="space-y-1">
+                                <Label className="text-xs uppercase font-bold text-gray-400">Department</Label>
+                                <NativeSelect value={department} onChange={(e) => setDepartment(e.target.value)}>
                                     <option value="all">All Departments</option>
                                     {departments.map(d => <option key={d.id} value={d.id}>{d.nameEn}</option>)}
                                 </NativeSelect>
                             </div>
-
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Designation</label>
-                                <NativeSelect value={designation} onChange={(e) => setDesignation(e.target.value)} className="h-10 rounded-xl">
+                            <div className="space-y-1">
+                                <Label className="text-xs uppercase font-bold text-gray-400">Designation</Label>
+                                <NativeSelect value={designation} onChange={(e) => setDesignation(e.target.value)}>
                                     <option value="all">All Designations</option>
                                     {designations.map(d => <option key={d.id} value={d.id}>{d.nameEn}</option>)}
                                 </NativeSelect>
                             </div>
-
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Period Selection</label>
-                                <DateRangePicker
-                                    date={dateRange}
-                                    setDate={setDateRange}
-                                    className="h-10 rounded-xl"
-                                />
+                            <div className="space-y-1">
+                                <Label className="text-xs uppercase font-bold text-gray-400">Date Range</Label>
+                                <DateRangePicker date={dateRange} setDate={setDateRange} />
                             </div>
-
-                            <Button
-                                className="h-10 rounded-xl gap-2 w-full bg-orange-600 hover:bg-orange-700 text-white"
-                                onClick={handleSearch}
-                                disabled={isLoading}
-                            >
-                                {isLoading ? (
-                                    <>
-                                        <IconLoader className="size-5 animate-spin" />
-                                        Fetching...
-                                    </>
-                                ) : (
-                                    <>
-                                        <IconSearch className="size-5" />
-                                        View Report
-                                    </>
-                                )}
+                            <Button onClick={handleSearch} disabled={isLoading} className="gap-2">
+                                {isLoading ? <IconRefresh size={18} className="animate-spin" /> : <IconActivity size={18} />}
+                                Generate Records
                             </Button>
                         </div>
                     </CardContent>
                 </Card>
 
-                {/* Main Table Content */}
-                {hasSearched ? (
-                    <div className="bg-card border rounded-3xl overflow-hidden shadow-sm animate-in slide-in-from-bottom-4 duration-500">
-                        <div className="p-6 border-b bg-muted/20 flex items-center justify-between">
-                            <h2 className="text-sm font-bold flex items-center gap-2 uppercase tracking-tighter">
-                                Absenteeism Log
-                                <Badge className="bg-orange-500/10 text-orange-600 border-orange-200 hover:bg-orange-500/20">{filteredData.length} Personnel</Badge>
-                            </h2>
+                <Card className="border shadow-none overflow-hidden">
+                    <CardHeader className="bg-gray-50 border-b py-4">
+                        <div className="flex items-center justify-between">
+                            <CardTitle className="text-base font-semibold">Absenteeism List</CardTitle>
+                            {hasSearched && (
+                                <Badge variant="outline" className="bg-white font-medium">
+                                    {filteredData.length} Records Found
+                                </Badge>
+                            )}
                         </div>
-                        <DataTable
-                            columns={columns}
-                            data={filteredData}
-                            showColumnCustomizer={false}
-                            searchKey="employeeName"
-                        />
-                    </div>
-                ) : (
-                    <div className="flex flex-col items-center justify-center py-24 bg-accent/5 rounded-3xl border-2 border-dashed border-muted/50">
-                        <div className="size-20 bg-background rounded-full flex items-center justify-center border-2 border-muted/20 mb-6 text-orange-200">
-                            <IconUserX className="size-10" />
-                        </div>
-                        <h3 className="text-xl font-bold text-muted-foreground">Absent Data Analysis</h3>
-                        <p className="text-sm text-muted-foreground/60 max-w-xs text-center mt-2 font-medium">
-                            Configure the Department and Date Range to generate the absenteeism and availability report for your workforce.
-                        </p>
-                    </div>
-                )}
-            </main>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                        <DataTable columns={columns} data={filteredData} showColumnCustomizer={false} searchKey="employeeName" showActions={false} showTabs={false} />
+                    </CardContent>
+                </Card>
+            </div>
         </div>
     )
 }

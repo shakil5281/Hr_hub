@@ -8,13 +8,11 @@ import { Button } from "@/components/ui/button"
 import {
     IconPlus,
     IconTrendingUp,
-    IconSearch,
-    IconLoader,
     IconArrowRight
 } from "@tabler/icons-react"
 import { payrollService, type SalaryIncrement } from "@/lib/services/payroll"
 import { toast } from "sonner"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardHeader, CardTitle } from "@/components/ui/card"
 import { format } from "date-fns"
 
 export default function IncrementSheetPage() {
@@ -41,17 +39,17 @@ export default function IncrementSheetPage() {
         {
             accessorKey: "employeeIdCard",
             header: "ID",
-            cell: ({ row }) => <Badge variant="outline" className="font-bold">{row.original.employeeIdCard}</Badge>
+            cell: ({ row }) => <span className="font-medium">{row.original.employeeIdCard}</span>
         },
         {
             accessorKey: "employeeName",
             header: "Employee",
-            cell: ({ row }) => <span className="font-medium text-xs">{row.original.employeeName}</span>
+            cell: ({ row }) => <span className="font-medium">{row.original.employeeName}</span>
         },
         {
             accessorKey: "previousGrossSalary",
             header: "Old Salary",
-            cell: ({ row }) => <span className="text-muted-foreground text-xs">৳{row.original.previousGrossSalary.toLocaleString()}</span>
+            cell: ({ row }) => <span className="text-muted-foreground">৳{row.original.previousGrossSalary.toLocaleString()}</span>
         },
         {
             accessorKey: "incrementAmount",
@@ -69,7 +67,7 @@ export default function IncrementSheetPage() {
             cell: ({ row }) => (
                 <div className="flex items-center gap-2">
                     <IconArrowRight className="size-3 text-muted-foreground" />
-                    <span className="font-black text-xs">৳{row.original.newGrossSalary.toLocaleString()}</span>
+                    <span className="font-bold">৳{row.original.newGrossSalary.toLocaleString()}</span>
                 </div>
             )
         },
@@ -81,37 +79,37 @@ export default function IncrementSheetPage() {
         {
             accessorKey: "incrementType",
             header: "Type",
-            cell: ({ row }) => <Badge variant="secondary" className="text-[10px]">{row.original.incrementType}</Badge>
+            cell: ({ row }) => <Badge variant="secondary" className="font-normal text-xs">{row.original.incrementType}</Badge>
         }
     ]
 
     return (
-        <div className="flex flex-col min-h-screen bg-background/50 animate-in fade-in duration-700">
+        <div className="flex flex-col gap-6 py-6 animate-in fade-in duration-500">
             {/* Header */}
-            <div className="border-b bg-background/80 backdrop-blur-md sticky top-0 z-20">
-                <div className="container mx-auto px-4 py-4 lg:px-8 max-w-[1400px]">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-lg shadow-indigo-100">
-                                <IconTrendingUp className="size-5" />
-                            </div>
-                            <div>
-                                <h1 className="text-xl font-bold tracking-tight">Salary Increments</h1>
-                                <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest">History & Adjustments</p>
-                            </div>
-                        </div>
-                        <Button className="rounded-full bg-indigo-600 hover:bg-indigo-700">
-                            <IconPlus className="mr-2 size-4" /> Add Increment
-                        </Button>
-                    </div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-6">
+                <div>
+                    <h1 className="text-2xl font-bold tracking-tight">Salary Increments</h1>
+                    <p className="text-muted-foreground text-sm">View and manage salary increment history</p>
                 </div>
+                <Button className="gap-2">
+                    <IconPlus className="size-4" />
+                    Add Increment
+                </Button>
             </div>
 
-            <main className="container mx-auto px-4 py-8 lg:px-8 max-w-[1400px] space-y-8">
-                <div className="bg-card border rounded-3xl overflow-hidden shadow-sm">
-                    <DataTable columns={columns} data={records} showColumnCustomizer={false} searchKey="employeeName" />
-                </div>
-            </main>
+            <div className="px-6">
+                <Card>
+                    <CardHeader className="pb-4 border-b">
+                        <CardTitle className="text-base font-semibold">Increment Records</CardTitle>
+                    </CardHeader>
+                    <DataTable
+                        columns={columns}
+                        data={records}
+                        showColumnCustomizer={false}
+                        searchKey="employeeName"
+                    />
+                </Card>
+            </div>
         </div>
     )
 }

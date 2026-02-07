@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button"
 import { payrollService, type SalarySummary } from "@/lib/services/payroll"
 import { toast } from "sonner"
 import { Progress } from "@/components/ui/progress"
+import { Label } from "@/components/ui/label"
 
 const MONTHS = [
     { label: "January", value: 1 },
@@ -55,123 +56,146 @@ export default function SalarySummaryPage() {
     }
 
     return (
-        <div className="flex flex-col min-h-screen bg-background/50 animate-in fade-in duration-700">
+        <div className="flex flex-col gap-6 py-6 animate-in fade-in duration-500">
             {/* Header */}
-            <div className="border-b bg-background/80 backdrop-blur-md sticky top-0 z-20">
-                <div className="container mx-auto px-4 py-4 lg:px-8 max-w-[1200px]">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-lg shadow-indigo-100">
-                                <IconChartBar className="size-5" />
-                            </div>
-                            <div>
-                                <h1 className="text-xl font-bold tracking-tight">Financial Summary</h1>
-                                <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest">Payroll Analytics & Trends</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <div className="flex flex-col gap-1 px-6">
+                <h1 className="text-2xl font-bold tracking-tight">Financial Summary</h1>
+                <p className="text-muted-foreground text-sm">Overview of payroll expenses and statistics</p>
             </div>
 
-            <main className="container mx-auto px-4 py-8 lg:px-8 max-w-[1200px] space-y-8">
-                {/* Filters */}
-                <Card className="border shadow-none">
-                    <CardContent className="pt-6">
+            {/* Filters */}
+            <div className="px-6">
+                <Card className="border-none shadow-sm bg-muted/30">
+                    <CardHeader className="pb-4">
+                        <CardTitle className="text-base font-semibold flex items-center gap-2">
+                            <IconSearch className="size-4 opacity-70" />
+                            Filter Criteria
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
                         <div className="flex flex-wrap items-end gap-4">
-                            <div className="space-y-2 min-w-[150px]">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Month</label>
-                                <NativeSelect value={month} onChange={(e) => setMonth(parseInt(e.target.value))} className="h-10 rounded-xl">
+                            <div className="space-y-1.5 min-w-[150px]">
+                                <Label className="text-xs font-semibold text-muted-foreground">Month</Label>
+                                <NativeSelect value={month} onChange={(e) => setMonth(parseInt(e.target.value))} className="h-9">
                                     {MONTHS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
                                 </NativeSelect>
                             </div>
-                            <div className="space-y-2 min-w-[120px]">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Year</label>
-                                <NativeSelect value={year} onChange={(e) => setYear(parseInt(e.target.value))} className="h-10 rounded-xl">
-                                    <option value={2024}>2024</option>
-                                    <option value={2025}>2025</option>
+                            <div className="space-y-1.5 min-w-[120px]">
+                                <Label className="text-xs font-semibold text-muted-foreground">Year</Label>
+                                <NativeSelect value={year} onChange={(e) => setYear(parseInt(e.target.value))} className="h-9">
                                     <option value={2026}>2026</option>
+                                    <option value={2025}>2025</option>
+                                    <option value={2024}>2024</option>
                                 </NativeSelect>
                             </div>
                             <Button
-                                className="h-10 rounded-xl gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold"
+                                className="h-9 gap-2"
                                 onClick={handleSearch}
                                 disabled={isLoading}
                             >
-                                {isLoading ? <IconLoader className="size-5 animate-spin" /> : <IconSearch className="size-5" />}
-                                Refresh Analytics
+                                {isLoading ? <IconLoader className="size-4 animate-spin" /> : <IconSearch className="size-4" />}
+                                Update View
                             </Button>
                         </div>
                     </CardContent>
                 </Card>
+            </div>
 
-                {summary && (
-                    <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500">
-                        {/* High Level Metrics */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <MetricCard title="Total Disbursement" value={`৳${summary.totalNetPayable.toLocaleString()}`} icon={IconReportMoney} color="text-indigo-600" />
-                            <MetricCard title="Total OT Pay" value={`৳${summary.totalOTAmount.toLocaleString()}`} icon={IconTrendingUp} color="text-blue-600" />
-                            <MetricCard title="Headcount" value={summary.totalEmployees.toString()} icon={IconUsers} color="text-emerald-600" />
-                        </div>
-
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                            {/* Department Breakdown */}
-                            <Card className="border shadow-sm">
-                                <CardHeader>
-                                    <CardTitle className="text-sm font-bold uppercase tracking-tighter">Department Disbursement</CardTitle>
-                                    <CardDescription>Visual breakdown of payroll costs per unit.</CardDescription>
-                                </CardHeader>
-                                <CardContent className="space-y-6">
-                                    {summary.departmentSummaries.map((dept, i) => (
-                                        <div key={i} className="space-y-2">
-                                            <div className="flex items-center justify-between text-xs font-bold">
-                                                <span>{dept.departmentName}</span>
-                                                <span className="tabular-nums">৳{dept.totalAmount.toLocaleString()}</span>
-                                            </div>
-                                            <Progress
-                                                value={(dept.totalAmount / summary.totalNetPayable) * 100}
-                                                className="h-2 bg-indigo-50"
-                                            />
-                                            <div className="text-[10px] text-muted-foreground text-right">{dept.employeeCount} Employees</div>
-                                        </div>
-                                    ))}
-                                </CardContent>
-                            </Card>
-
-                            {/* Additional insights or empty placeholder for now */}
-                            <Card className="border shadow-sm bg-indigo-600 text-white">
-                                <CardHeader>
-                                    <CardTitle className="text-sm font-bold uppercase tracking-widest text-indigo-100 flex items-center gap-2">
-                                        <IconFileAnalytics className="size-5" />
-                                        Profit Impact
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent className="pt-4 space-y-4">
-                                    <div className="p-4 bg-white/10 rounded-2xl border border-white/20">
-                                        <p className="text-[10px] font-bold text-indigo-200 uppercase tracking-widest underline decoration-indigo-300">Avg Cost per Employee</p>
-                                        <h3 className="text-4xl font-black mt-2 tracking-tighter tabular-nums">৳{(summary.totalNetPayable / summary.totalEmployees).toFixed(0).toLocaleString()}</h3>
-                                    </div>
-                                    <p className="text-xs opacity-80 leading-relaxed font-medium">
-                                        This month total disbursement represents the final processed salary for all active business units. Cost efficiency is within the 12% target threshold.
-                                    </p>
-                                </CardContent>
-                            </Card>
-                        </div>
+            {summary && (
+                <div className="px-6 space-y-6">
+                    {/* High Level Metrics */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <MetricCard
+                            title="Total Disbursement"
+                            value={`৳${summary.totalNetPayable.toLocaleString()}`}
+                            icon={IconReportMoney}
+                        />
+                        <MetricCard
+                            title="Total OT Amount"
+                            value={`৳${summary.totalOTAmount.toLocaleString()}`}
+                            icon={IconTrendingUp}
+                        />
+                        <MetricCard
+                            title="Employee Count"
+                            value={summary.totalEmployees.toString()}
+                            icon={IconUsers}
+                        />
                     </div>
-                )}
-            </main>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {/* Department Breakdown */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="text-base font-semibold">Department Breakdown</CardTitle>
+                                <CardDescription>Payroll distribution by department</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-6">
+                                {summary.departmentSummaries.map((dept, i) => (
+                                    <div key={i} className="space-y-2">
+                                        <div className="flex items-center justify-between text-sm">
+                                            <span className="font-medium">{dept.departmentName}</span>
+                                            <span className="font-bold">৳{dept.totalAmount.toLocaleString()}</span>
+                                        </div>
+                                        <Progress
+                                            value={(dept.totalAmount / (summary.totalNetPayable || 1)) * 100}
+                                            className="h-2"
+                                        />
+                                        <div className="text-xs text-muted-foreground text-right">{dept.employeeCount} Employees</div>
+                                    </div>
+                                ))}
+                                {summary.departmentSummaries.length === 0 && (
+                                    <p className="text-sm text-muted-foreground text-center py-4">No department data available.</p>
+                                )}
+                            </CardContent>
+                        </Card>
+
+                        {/* Analysis Card */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="text-base font-semibold flex items-center gap-2">
+                                    <IconFileAnalytics className="size-4 text-muted-foreground" />
+                                    Cost Analysis
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-6">
+                                <div className="p-4 bg-muted/30 rounded-lg border">
+                                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Average Cost per Employee</p>
+                                    <h3 className="text-2xl font-bold">
+                                        ৳{(summary.totalEmployees > 0 ? summary.totalNetPayable / summary.totalEmployees : 0).toFixed(0).toLocaleString()}
+                                    </h3>
+                                </div>
+                                <div className="space-y-4">
+                                    <div className="flex justify-between text-sm border-b pb-2">
+                                        <span className="text-muted-foreground">Total Gross Salary</span>
+                                        <span className="font-medium">৳{summary.totalGrossSalary.toLocaleString()}</span>
+                                    </div>
+                                    <div className="flex justify-between text-sm border-b pb-2">
+                                        <span className="text-muted-foreground">Total Deductions</span>
+                                        <span className="font-medium text-rose-600">-৳{summary.totalDeductions.toLocaleString()}</span>
+                                    </div>
+                                    <div className="flex justify-between text-sm pt-2">
+                                        <span className="font-semibold">Net Payable</span>
+                                        <span className="font-bold">৳{summary.totalNetPayable.toLocaleString()}</span>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
 
-function MetricCard({ title, value, icon: Icon, color }: any) {
+function MetricCard({ title, value, icon: Icon }: any) {
     return (
-        <Card className="border shadow-none">
+        <Card>
             <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-2">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{title}</p>
-                    <Icon className={`size-5 ${color}`} />
+                <div className="flex items-center justify-between space-y-0 pb-2">
+                    <p className="text-sm font-medium text-muted-foreground">{title}</p>
+                    <Icon className="size-4 text-muted-foreground" />
                 </div>
-                <h3 className={`text-3xl font-black tabular-nums tracking-tighter ${color}`}>{value}</h3>
+                <div className="text-2xl font-bold">{value}</div>
             </CardContent>
         </Card>
     )

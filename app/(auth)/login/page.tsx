@@ -1,3 +1,4 @@
+import Image from "next/image"
 import { LoginForm } from "@/components/login-form"
 import { IconCommand } from "@tabler/icons-react"
 
@@ -5,9 +6,11 @@ export default function Page() {
   return (
     <div className="grid min-h-svh lg:grid-cols-2">
       <div className="relative hidden bg-muted lg:block">
-        <img
+        <Image
           src="https://images.unsplash.com/photo-1590069261209-f8e9b8642343?ixlib=rb-4.0.3&auto=format&fit=crop&w=1376&q=80"
-          alt="Image"
+          alt="Login background"
+          fill
+          priority
           className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-background/90 to-background/0" />

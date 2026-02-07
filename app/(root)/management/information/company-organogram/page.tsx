@@ -10,11 +10,7 @@ import {
     IconIdBadge2,
     IconGitCommit,
     IconPlus,
-    IconLoader,
-    IconEdit,
-    IconTrash,
-    IconCircleCheck,
-    IconX,
+    IconRefresh,
     IconUpload,
     IconFileSpreadsheet
 } from "@tabler/icons-react"
@@ -26,14 +22,7 @@ import { ColumnDef } from "@tanstack/react-table"
 import { organogramService, Department, Section, Designation, Line } from "@/lib/services/organogram"
 import { companyService, Company } from "@/lib/services/company"
 import { toast } from "sonner"
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-    NativeSelect
-} from "@/components/ui/select"
+import { NativeSelect } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import {
     Dialog,
@@ -94,8 +83,6 @@ export default function CompanyOrganogramPage() {
             ])
             setCompanies(companiesData)
             setDepartments(depsData)
-
-            // If we have sections/etc, they will be loaded by the useEffect
         } catch (error) {
             console.error(error)
             toast.error("Failed to load organogram data")
@@ -111,28 +98,30 @@ export default function CompanyOrganogramPage() {
     // Fetch related data when selections change
     React.useEffect(() => {
         const fetchRelated = async () => {
-            if (activeTab === "department") {
-                const compId = selectedCompanyId === "all" ? undefined : parseInt(selectedCompanyId)
-                const data = await organogramService.getDepartments(compId)
-                setDepartments(data)
-            } else if (activeTab === "section") {
-                const deptId = selectedDeptId === "all" ? undefined : parseInt(selectedDeptId)
-                const data = await organogramService.getSections(deptId)
-                setSections(data)
-            } else if (activeTab === "designation") {
-                const sectId = selectedSectionId === "all" ? undefined : parseInt(selectedSectionId)
-                const data = await organogramService.getDesignations(sectId)
-                setDesignations(data)
-            } else if (activeTab === "line") {
-                const sectId = selectedSectionId === "all" ? undefined : parseInt(selectedSectionId)
-                const data = await organogramService.getLines(sectId)
-                setLines(data)
+            try {
+                if (activeTab === "department") {
+                    const compId = selectedCompanyId === "all" ? undefined : parseInt(selectedCompanyId)
+                    const data = await organogramService.getDepartments(compId)
+                    setDepartments(data)
+                } else if (activeTab === "section") {
+                    const deptId = selectedDeptId === "all" ? undefined : parseInt(selectedDeptId)
+                    const data = await organogramService.getSections(deptId)
+                    setSections(data)
+                } else if (activeTab === "designation") {
+                    const sectId = selectedSectionId === "all" ? undefined : parseInt(selectedSectionId)
+                    const data = await organogramService.getDesignations(sectId)
+                    setDesignations(data)
+                } else if (activeTab === "line") {
+                    const sectId = selectedSectionId === "all" ? undefined : parseInt(selectedSectionId)
+                    const data = await organogramService.getLines(sectId)
+                    setLines(data)
+                }
+            } catch (error) {
+                console.error(error)
             }
         }
         fetchRelated()
     }, [activeTab, selectedCompanyId, selectedDeptId, selectedSectionId])
-
-    // --- CRUD Handlers ---
 
     const handleSaveDepartment = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault()
@@ -176,7 +165,6 @@ export default function CompanyOrganogramPage() {
                 toast.success("Section created")
             }
             setIsSectModalOpen(false)
-            // Force reload current view
             const data = await organogramService.getSections(selectedDeptId === "all" ? undefined : parseInt(selectedDeptId))
             setSections(data)
         } catch (error) {
@@ -251,23 +239,21 @@ export default function CompanyOrganogramPage() {
             else if (type === "line") await organogramService.deleteLine(id)
 
             toast.success(`${type.charAt(0).toUpperCase() + type.slice(1)} deleted`)
-            fetchData() // Simple reload all for now
+            fetchData()
             setDeleteItem(null)
         } catch (error) {
             toast.error("Failed to delete item")
         }
     }
 
-    // --- Columns ---
     const companyColumns: ColumnDef<Company>[] = [
         {
             id: "sl",
             header: "SL",
-            cell: ({ row }) => <div className="text-center font-medium">{row.index + 1}</div>,
-            size: 40,
+            cell: ({ row }) => <div className="text-left font-medium">{row.index + 1}</div>,
         },
-        { accessorKey: "companyNameEn", header: "Company Name (English)" },
-        { accessorKey: "companyNameBn", header: "Company Name (Bangla)", cell: ({ row }) => <span className="font-sutonny text-lg">{row.original.companyNameBn}</span> },
+        { accessorKey: "companyNameEn", header: "Company Name (EN)" },
+        { accessorKey: "companyNameBn", header: "Company Name (BN)" },
         { accessorKey: "registrationNo", header: "Reg No" },
         { accessorKey: "industry", header: "Industry" },
         { accessorKey: "email", header: "Email" },
@@ -277,11 +263,10 @@ export default function CompanyOrganogramPage() {
         {
             id: "sl",
             header: "SL",
-            cell: ({ row }) => <div className="text-center font-medium">{row.index + 1}</div>,
-            size: 40,
+            cell: ({ row }) => <div className="text-left font-medium">{row.index + 1}</div>,
         },
-        { accessorKey: "nameEn", header: "Department Name (English)" },
-        { accessorKey: "nameBn", header: "Department Name (Bangla)", cell: ({ row }) => <span className="font-sutonny text-lg">{row.original.nameBn}</span> },
+        { accessorKey: "nameEn", header: "Department Name (EN)" },
+        { accessorKey: "nameBn", header: "Department Name (BN)" },
         { accessorKey: "companyName", header: "Company" },
     ]
 
@@ -289,11 +274,10 @@ export default function CompanyOrganogramPage() {
         {
             id: "sl",
             header: "SL",
-            cell: ({ row }) => <div className="text-center font-medium">{row.index + 1}</div>,
-            size: 40,
+            cell: ({ row }) => <div className="text-left font-medium">{row.index + 1}</div>,
         },
-        { accessorKey: "nameEn", header: "Section Name (English)" },
-        { accessorKey: "nameBn", header: "Section Name (Bangla)", cell: ({ row }) => <span className="font-sutonny text-lg">{row.original.nameBn}</span> },
+        { accessorKey: "nameEn", header: "Section Name (EN)" },
+        { accessorKey: "nameBn", header: "Section Name (BN)" },
         { accessorKey: "departmentName", header: "Department" },
     ]
 
@@ -301,11 +285,10 @@ export default function CompanyOrganogramPage() {
         {
             id: "sl",
             header: "SL",
-            cell: ({ row }) => <div className="text-center font-medium">{row.index + 1}</div>,
-            size: 40,
+            cell: ({ row }) => <div className="text-left font-medium">{row.index + 1}</div>,
         },
-        { accessorKey: "nameEn", header: "Designation Title (English)" },
-        { accessorKey: "nameBn", header: "Designation Title (Bangla)", cell: ({ row }) => <span className="font-sutonny text-lg">{row.original.nameBn}</span> },
+        { accessorKey: "nameEn", header: "Title (EN)" },
+        { accessorKey: "nameBn", header: "Title (BN)" },
         { accessorKey: "sectionName", header: "Section" },
         { accessorKey: "nightBill", header: "Night Bill" },
         { accessorKey: "holidayBill", header: "Holiday Bill" },
@@ -316,258 +299,195 @@ export default function CompanyOrganogramPage() {
         {
             id: "sl",
             header: "SL",
-            cell: ({ row }) => <div className="text-center font-medium">{row.index + 1}</div>,
-            size: 40,
+            cell: ({ row }) => <div className="text-left font-medium">{row.index + 1}</div>,
         },
-        { accessorKey: "nameEn", header: "Line Name (English)" },
-        { accessorKey: "nameBn", header: "Line Name (Bangla)", cell: ({ row }) => <span className="font-sutonny text-lg">{row.original.nameBn}</span> },
+        { accessorKey: "nameEn", header: "Line Name (EN)" },
+        { accessorKey: "nameBn", header: "Line Name (BN)" },
         { accessorKey: "sectionName", header: "Section" },
     ]
 
     return (
-        <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6 bg-muted/20 min-h-screen">
-            <div className="flex items-center justify-between px-4 lg:px-8">
-                <div className="flex items-center gap-3">
-                    <div className="size-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shadow-sm border border-primary/20">
-                        <IconHierarchy2 className="size-6" />
-                    </div>
-                    <div>
-                        <h1 className="text-2xl font-bold tracking-tight">Company Organogram</h1>
-                        <p className="text-sm text-muted-foreground">Manage organizational structure and departments.</p>
-                    </div>
+        <div className="flex flex-col gap-6 p-6 font-sans">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b pb-6">
+                <div>
+                    <h1 className="text-2xl font-bold">Company Organogram</h1>
+                    <p className="text-sm text-gray-500">Manage organizational hierarchy and structure</p>
                 </div>
-                <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" onClick={() => fetchData()}>
-                        <IconLoader className={cn("size-4 mr-2", isLoading && "animate-spin")} />
-                        Refresh
-                    </Button>
-                    <Button variant="secondary" size="sm" className="gap-2" onClick={() => router.push('/management/information/company-organogram/import')}>
-                        <IconUpload className="size-4" />
-                        <span>Import</span>
+                <div className="flex flex-wrap gap-2">
+                    <Button variant="outline" size="sm" onClick={() => router.push('/management/information/company-organogram/import')}>
+                        <IconUpload className="mr-2 h-4 w-4" /> Import
                     </Button>
                     <Button
                         variant="outline"
                         size="sm"
-                        className="gap-2 border-green-200 bg-green-50/50 hover:bg-green-50 text-green-700"
                         onClick={async () => {
                             try {
                                 await organogramService.downloadTemplate()
-                                toast.success("Excel template downloaded successfully!")
-                            } catch (error) {
-                                console.error(error)
-                                toast.error("Failed to download template")
+                                toast.success("Template downloaded")
+                            } catch (e) {
+                                toast.error("Failed to download")
                             }
                         }}
                     >
-                        <IconFileSpreadsheet className="size-4" />
-                        <span>Excel Demo</span>
+                        <IconFileSpreadsheet className="mr-2 h-4 w-4" /> Excel Demo
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => fetchData()}>
+                        <IconRefresh className={cn("mr-2 h-4 w-4", isLoading && "animate-spin")} /> Refresh
                     </Button>
                 </div>
             </div>
 
-            <div className="px-4 lg:px-8">
-                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-6">
-                    <div className="flex justify-center flex-col items-center">
-                        <div className="bg-white dark:bg-zinc-900 p-0 rounded-full border shadow-sm sticky top-4 z-20 w-full max-w-5xl mx-auto flex items-center h-[44px] overflow-hidden">
-                            <TabsList className="flex w-full h-full p-0 bg-transparent gap-0">
-                                {[
-                                    { val: "company", icon: IconBuilding, label: "Company" },
-                                    { val: "department", icon: IconBuildingSkyscraper, label: "Department" },
-                                    { val: "section", icon: IconLayoutGrid, label: "Section" },
-                                    { val: "designation", icon: IconIdBadge2, label: "Designation" },
-                                    { val: "line", icon: IconGitCommit, label: "Line" },
-                                ].map((t) => (
-                                    <TabsTrigger
-                                        key={t.val}
-                                        value={t.val}
-                                        className="flex-1 h-full rounded-full data-[state=active]:bg-[#108545] data-[state=active]:text-white transition-all duration-300 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 font-medium p-0"
-                                    >
-                                        <div className="flex items-center justify-center gap-2">
-                                            <t.icon className="size-4.5" />
-                                            <span className="text-sm leading-none">{t.label}</span>
-                                        </div>
-                                    </TabsTrigger>
-                                ))}
-                            </TabsList>
-                        </div>
-                    </div>
-
-                    <Card className="border-muted/40 shadow-xl overflow-hidden rounded-3xl bg-background/50 backdrop-blur-sm">
-                        <CardHeader className="bg-muted/30 border-b pb-6">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <CardTitle>Organization Data</CardTitle>
-                                    <CardDescription>View and manage {activeTab} information.</CardDescription>
-                                </div>
-                                {activeTab !== "company" && (
-                                    <Button
-                                        size="sm"
-                                        className="rounded-full bg-[#108545] hover:bg-[#0d6e39] text-white shadow-md gap-2 px-4 h-9"
-                                        onClick={() => {
-                                            setEditingItem(null)
-                                            if (activeTab === "department") setIsDeptModalOpen(true)
-                                            else if (activeTab === "section") setIsSectModalOpen(true)
-                                            else if (activeTab === "designation") setIsDesigModalOpen(true)
-                                            else if (activeTab === "line") setIsLineModalOpen(true)
-                                        }}
-                                    >
-                                        <IconPlus className="size-4" />
-                                        <span>Add {activeTab === "designation" ? "Title" : activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}</span>
-                                    </Button>
-                                )}
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <TabsList className="bg-transparent border-b rounded-none h-auto p-0 mb-6 flex justify-start gap-4">
+                    {[
+                        { val: "company", icon: IconBuilding, label: "Company" },
+                        { val: "department", icon: IconBuildingSkyscraper, label: "Department" },
+                        { val: "section", icon: IconLayoutGrid, label: "Section" },
+                        { val: "designation", icon: IconIdBadge2, label: "Designation" },
+                        { val: "line", icon: IconGitCommit, label: "Line" },
+                    ].map((tab) => (
+                        <TabsTrigger
+                            key={tab.val}
+                            value={tab.val}
+                            className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 py-3 font-semibold text-gray-500 data-[state=active]:text-primary hover:text-gray-700 h-full"
+                        >
+                            <div className="flex items-center gap-2">
+                                <tab.icon size={18} />
+                                <span>{tab.label}</span>
                             </div>
-                        </CardHeader>
-                        <CardContent className="p-0">
-                            {/* Filter Bar */}
-                            {(activeTab !== "company") && (
-                                <div className="p-4 border-b bg-muted/10 flex flex-wrap gap-4 items-end">
-                                    {activeTab === "department" && (
-                                        <div className="flex flex-col gap-2 min-w-[200px]">
-                                            <Label className="text-xs font-medium text-muted-foreground">Company Filter</Label>
-                                            <NativeSelect
-                                                value={selectedCompanyId}
-                                                onChange={(e) => setSelectedCompanyId(e.target.value)}
-                                            >
-                                                <option value="all">All Companies</option>
-                                                {companies.map(c => (
-                                                    <option key={c.id} value={c.id.toString()}>{c.companyNameEn}</option>
-                                                ))}
-                                            </NativeSelect>
-                                        </div>
-                                    )}
-                                    {activeTab === "section" && (
-                                        <div className="flex flex-col gap-2 min-w-[200px]">
-                                            <Label className="text-xs font-medium text-muted-foreground">Department Filter</Label>
-                                            <NativeSelect
-                                                value={selectedDeptId}
-                                                onChange={(e) => setSelectedDeptId(e.target.value)}
-                                            >
-                                                <option value="all">All Departments</option>
-                                                {departments.map(d => (
-                                                    <option key={d.id} value={d.id.toString()}>{d.nameEn}</option>
-                                                ))}
-                                            </NativeSelect>
-                                        </div>
-                                    )}
-                                    {(activeTab === "designation" || activeTab === "line") && (
-                                        <div className="flex flex-col gap-2 min-w-[200px]">
-                                            <Label className="text-xs font-medium text-muted-foreground">Section Filter</Label>
-                                            <NativeSelect
-                                                value={selectedSectionId}
-                                                onChange={(e) => setSelectedSectionId(e.target.value)}
-                                            >
-                                                <option value="all">All Sections</option>
-                                                {sections.map(s => (
-                                                    <option key={s.id} value={s.id.toString()}>{s.nameEn}</option>
-                                                ))}
-                                            </NativeSelect>
-                                        </div>
-                                    )}
+                        </TabsTrigger>
+                    ))}
+                </TabsList>
+
+                <div className="space-y-6">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
+                        <div className="flex flex-wrap gap-4">
+                            {activeTab === "department" && (
+                                <div className="space-y-1">
+                                    <Label className="text-xs uppercase font-bold text-gray-400">Company Filter</Label>
+                                    <NativeSelect value={selectedCompanyId} onChange={(e) => setSelectedCompanyId(e.target.value)} className="w-[180px]">
+                                        <option value="all">All Companies</option>
+                                        {companies.map(c => <option key={c.id} value={c.id.toString()}>{c.companyNameEn}</option>)}
+                                    </NativeSelect>
                                 </div>
                             )}
+                            {activeTab === "section" && (
+                                <div className="space-y-1">
+                                    <Label className="text-xs uppercase font-bold text-gray-400">Department Filter</Label>
+                                    <NativeSelect value={selectedDeptId} onChange={(e) => setSelectedDeptId(e.target.value)} className="w-[180px]">
+                                        <option value="all">All Departments</option>
+                                        {departments.map(d => <option key={d.id} value={d.id.toString()}>{d.nameEn}</option>)}
+                                    </NativeSelect>
+                                </div>
+                            )}
+                            {(activeTab === "designation" || activeTab === "line") && (
+                                <div className="space-y-1">
+                                    <Label className="text-xs uppercase font-bold text-gray-400">Section Filter</Label>
+                                    <NativeSelect value={selectedSectionId} onChange={(e) => setSelectedSectionId(e.target.value)} className="w-[180px]">
+                                        <option value="all">All Sections</option>
+                                        {sections.map(s => <option key={s.id} value={s.id.toString()}>{s.nameEn}</option>)}
+                                    </NativeSelect>
+                                </div>
+                            )}
+                        </div>
+                        {activeTab !== "company" && (
+                            <Button
+                                onClick={() => {
+                                    setEditingItem(null)
+                                    if (activeTab === "department") setIsDeptModalOpen(true)
+                                    else if (activeTab === "section") setIsSectModalOpen(true)
+                                    else if (activeTab === "designation") setIsDesigModalOpen(true)
+                                    else if (activeTab === "line") setIsLineModalOpen(true)
+                                }}
+                                className="gap-2"
+                            >
+                                <IconPlus size={18} /> Add {activeTab === "designation" ? "Title" : activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}
+                            </Button>
+                        )}
+                    </div>
 
-                            <div className="px-1">
-                                <TabsContent value="company" className="m-0">
-                                    <DataTable
-                                        data={companies}
-                                        columns={companyColumns}
-                                        showTabs={false}
-                                        isLoading={isLoading}
-                                        enableSelection={true}
-                                        enableDrag={true}
-                                        onEditClick={(item) => router.push(`/management/information/company-information/edit/${item.id}`)}
-                                    />
-                                </TabsContent>
-                                <TabsContent value="department" className="m-0">
-                                    <DataTable
-                                        data={departments}
-                                        columns={deptColumns}
-                                        showTabs={false}
-                                        isLoading={isLoading}
-                                        enableSelection={true}
-                                        enableDrag={true}
-                                        onEditClick={(item) => { setEditingItem(item); setIsDeptModalOpen(true); }}
-                                        onDelete={(item: any) => setDeleteItem({ id: item.id, type: "dept" })}
-                                    />
-                                </TabsContent>
-                                <TabsContent value="section" className="m-0">
-                                    <DataTable
-                                        data={sections}
-                                        columns={sectionColumns}
-                                        showTabs={false}
-                                        isLoading={isLoading}
-                                        enableSelection={true}
-                                        enableDrag={true}
-                                        onEditClick={(item) => { setEditingItem(item); setIsSectModalOpen(true); }}
-                                        onDelete={(item: any) => setDeleteItem({ id: item.id, type: "sect" })}
-                                    />
-                                </TabsContent>
-                                <TabsContent value="designation" className="m-0">
-                                    <DataTable
-                                        data={designations}
-                                        columns={designationColumns}
-                                        showTabs={false}
-                                        isLoading={isLoading}
-                                        enableSelection={true}
-                                        enableDrag={true}
-                                        onEditClick={(item) => { setEditingItem(item); setIsDesigModalOpen(true); }}
-                                        onDelete={(item: any) => setDeleteItem({ id: item.id, type: "desig" })}
-                                    />
-                                </TabsContent>
-                                <TabsContent value="line" className="m-0">
-                                    <DataTable
-                                        data={lines}
-                                        columns={lineColumns}
-                                        showTabs={false}
-                                        isLoading={isLoading}
-                                        enableSelection={true}
-                                        enableDrag={true}
-                                        onEditClick={(item) => { setEditingItem(item); setIsLineModalOpen(true); }}
-                                        onDelete={(item: any) => setDeleteItem({ id: item.id, type: "line" })}
-                                    />
-                                </TabsContent>
-                            </div>
-                        </CardContent>
+                    <Card className="border shadow-none overflow-hidden">
+                        <TabsContent value="company" className="m-0 border-none shadow-none">
+                            <DataTable
+                                data={companies}
+                                columns={companyColumns}
+                                showTabs={false}
+                                isLoading={isLoading}
+                                onEditClick={(item) => router.push(`/management/information/company-information/edit/${item.id}`)}
+                            />
+                        </TabsContent>
+                        <TabsContent value="department" className="m-0 border-none shadow-none">
+                            <DataTable
+                                data={departments}
+                                columns={deptColumns}
+                                showTabs={false}
+                                isLoading={isLoading}
+                                onEditClick={(item) => { setEditingItem(item); setIsDeptModalOpen(true); }}
+                                onDelete={(item: any) => setDeleteItem({ id: item.id, type: "dept" })}
+                            />
+                        </TabsContent>
+                        <TabsContent value="section" className="m-0 border-none shadow-none">
+                            <DataTable
+                                data={sections}
+                                columns={sectionColumns}
+                                showTabs={false}
+                                isLoading={isLoading}
+                                onEditClick={(item) => { setEditingItem(item); setIsSectModalOpen(true); }}
+                                onDelete={(item: any) => setDeleteItem({ id: item.id, type: "sect" })}
+                            />
+                        </TabsContent>
+                        <TabsContent value="designation" className="m-0 border-none shadow-none">
+                            <DataTable
+                                data={designations}
+                                columns={designationColumns}
+                                showTabs={false}
+                                isLoading={isLoading}
+                                onEditClick={(item) => { setEditingItem(item); setIsDesigModalOpen(true); }}
+                                onDelete={(item: any) => setDeleteItem({ id: item.id, type: "desig" })}
+                            />
+                        </TabsContent>
+                        <TabsContent value="line" className="m-0 border-none shadow-none">
+                            <DataTable
+                                data={lines}
+                                columns={lineColumns}
+                                showTabs={false}
+                                isLoading={isLoading}
+                                onEditClick={(item) => { setEditingItem(item); setIsLineModalOpen(true); }}
+                                onDelete={(item: any) => setDeleteItem({ id: item.id, type: "line" })}
+                            />
+                        </TabsContent>
                     </Card>
-                </Tabs>
-            </div>
+                </div>
+            </Tabs>
 
-            {/* --- Modals --- */}
-
+            {/* Modals */}
             {/* Department Modal */}
             <Dialog open={isDeptModalOpen} onOpenChange={setIsDeptModalOpen}>
                 <DialogContent>
                     <form onSubmit={handleSaveDepartment}>
                         <DialogHeader>
                             <DialogTitle>{editingItem ? "Edit Department" : "New Department"}</DialogTitle>
-                            <DialogDescription>Add a department to your organization.</DialogDescription>
                         </DialogHeader>
                         <div className="py-4 space-y-4">
                             <div className="grid gap-2">
-                                <Label htmlFor="dept-company">Company</Label>
-                                <NativeSelect id="dept-company" name="companyId" defaultValue={editingItem?.companyId} required>
+                                <Label>Company</Label>
+                                <NativeSelect name="companyId" defaultValue={editingItem?.companyId} required>
                                     <option value="">Select Company</option>
                                     {companies.map(c => <option key={c.id} value={c.id}>{c.companyNameEn}</option>)}
                                 </NativeSelect>
                             </div>
                             <div className="grid gap-2">
-                                <Label htmlFor="dept-name">Department Name (English)</Label>
-                                <Input id="dept-name" name="nameEn" defaultValue={editingItem?.nameEn} placeholder="e.g. Human Resources" required />
+                                <Label>Name (English)</Label>
+                                <Input name="nameEn" defaultValue={editingItem?.nameEn} required />
                             </div>
                             <div className="grid gap-2">
-                                <Label htmlFor="dept-name-bn">Department Name (Bangla)</Label>
-                                <Input
-                                    id="dept-name-bn"
-                                    name="nameBn"
-                                    defaultValue={editingItem?.nameBn}
-                                    placeholder="e.g. মানব সম্পদ"
-                                    className="font-sutonny text-lg"
-                                />
+                                <Label>Name (Bangla)</Label>
+                                <Input name="nameBn" defaultValue={editingItem?.nameBn} />
                             </div>
                         </div>
                         <DialogFooter>
                             <Button variant="outline" type="button" onClick={() => setIsDeptModalOpen(false)}>Cancel</Button>
-                            <Button type="submit" disabled={isSaving}>{isSaving ? "Saving..." : "Save Department"}</Button>
+                            <Button type="submit" disabled={isSaving}>{isSaving ? "Saving..." : "Save"}</Button>
                         </DialogFooter>
                     </form>
                 </DialogContent>
@@ -579,34 +499,27 @@ export default function CompanyOrganogramPage() {
                     <form onSubmit={handleSaveSection}>
                         <DialogHeader>
                             <DialogTitle>{editingItem ? "Edit Section" : "New Section"}</DialogTitle>
-                            <DialogDescription>Create a section under a department.</DialogDescription>
                         </DialogHeader>
                         <div className="py-4 space-y-4">
                             <div className="grid gap-2">
-                                <Label htmlFor="sect-dept">Department</Label>
-                                <NativeSelect id="sect-dept" name="departmentId" defaultValue={editingItem?.departmentId} required>
+                                <Label>Department</Label>
+                                <NativeSelect name="departmentId" defaultValue={editingItem?.departmentId} required>
                                     <option value="">Select Department</option>
                                     {departments.map(d => <option key={d.id} value={d.id}>{d.nameEn}</option>)}
                                 </NativeSelect>
                             </div>
                             <div className="grid gap-2">
-                                <Label htmlFor="sect-name">Section Name (English)</Label>
-                                <Input id="sect-name" name="nameEn" defaultValue={editingItem?.nameEn} placeholder="e.g. Administration" required />
+                                <Label>Name (English)</Label>
+                                <Input name="nameEn" defaultValue={editingItem?.nameEn} required />
                             </div>
                             <div className="grid gap-2">
-                                <Label htmlFor="sect-name-bn">Section Name (Bangla)</Label>
-                                <Input
-                                    id="sect-name-bn"
-                                    name="nameBn"
-                                    defaultValue={editingItem?.nameBn}
-                                    placeholder="e.g. প্রশাসন"
-                                    className="font-sutonny text-lg"
-                                />
+                                <Label>Name (Bangla)</Label>
+                                <Input name="nameBn" defaultValue={editingItem?.nameBn} />
                             </div>
                         </div>
                         <DialogFooter>
                             <Button variant="outline" type="button" onClick={() => setIsSectModalOpen(false)}>Cancel</Button>
-                            <Button type="submit" disabled={isSaving}>{isSaving ? "Saving..." : "Save Section"}</Button>
+                            <Button type="submit" disabled={isSaving}>{isSaving ? "Saving..." : "Save"}</Button>
                         </DialogFooter>
                     </form>
                 </DialogContent>
@@ -618,48 +531,41 @@ export default function CompanyOrganogramPage() {
                     <form onSubmit={handleSaveDesignation}>
                         <DialogHeader>
                             <DialogTitle>{editingItem ? "Edit Designation" : "New Designation"}</DialogTitle>
-                            <DialogDescription>Specify a job title for a section.</DialogDescription>
                         </DialogHeader>
                         <div className="py-4 space-y-4">
                             <div className="grid gap-2">
-                                <Label htmlFor="desig-sect">Section</Label>
-                                <NativeSelect id="desig-sect" name="sectionId" defaultValue={editingItem?.sectionId} required>
+                                <Label>Section</Label>
+                                <NativeSelect name="sectionId" defaultValue={editingItem?.sectionId} required>
                                     <option value="">Select Section</option>
                                     {sections.map(s => <option key={s.id} value={s.id}>{s.nameEn}</option>)}
                                 </NativeSelect>
                             </div>
                             <div className="grid gap-2">
-                                <Label htmlFor="desig-name">Designation Title (English)</Label>
-                                <Input id="desig-name" name="nameEn" defaultValue={editingItem?.nameEn} placeholder="e.g. Senior Manager" required />
+                                <Label>Title (English)</Label>
+                                <Input name="nameEn" defaultValue={editingItem?.nameEn} required />
                             </div>
                             <div className="grid gap-2">
-                                <Label htmlFor="desig-name-bn">Designation Title (Bangla)</Label>
-                                <Input
-                                    id="desig-name-bn"
-                                    name="nameBn"
-                                    defaultValue={editingItem?.nameBn}
-                                    placeholder="e.g. সিনিয়র ম্যানেজার"
-                                    className="font-sutonny text-lg"
-                                />
+                                <Label>Title (Bangla)</Label>
+                                <Input name="nameBn" defaultValue={editingItem?.nameBn} />
                             </div>
                             <div className="grid grid-cols-3 gap-4">
                                 <div className="grid gap-2">
-                                    <Label htmlFor="desig-night">Night Bill</Label>
-                                    <Input id="desig-night" name="nightBill" type="number" step="0.01" defaultValue={editingItem?.nightBill || 0} />
+                                    <Label>Night Bill</Label>
+                                    <Input name="nightBill" type="number" step="0.01" defaultValue={editingItem?.nightBill || 0} />
                                 </div>
                                 <div className="grid gap-2">
-                                    <Label htmlFor="desig-holiday">Holiday Bill</Label>
-                                    <Input id="desig-holiday" name="holidayBill" type="number" step="0.01" defaultValue={editingItem?.holidayBill || 0} />
+                                    <Label>Holiday Bill</Label>
+                                    <Input name="holidayBill" type="number" step="0.01" defaultValue={editingItem?.holidayBill || 0} />
                                 </div>
                                 <div className="grid gap-2">
-                                    <Label htmlFor="desig-bonus">Attn Bonus</Label>
-                                    <Input id="desig-bonus" name="attendanceBonus" type="number" step="0.01" defaultValue={editingItem?.attendanceBonus || 0} />
+                                    <Label>Attn Bonus</Label>
+                                    <Input name="attendanceBonus" type="number" step="0.01" defaultValue={editingItem?.attendanceBonus || 0} />
                                 </div>
                             </div>
                         </div>
                         <DialogFooter>
                             <Button variant="outline" type="button" onClick={() => setIsDesigModalOpen(false)}>Cancel</Button>
-                            <Button type="submit" disabled={isSaving}>{isSaving ? "Saving..." : "Save Designation"}</Button>
+                            <Button type="submit" disabled={isSaving}>{isSaving ? "Saving..." : "Save"}</Button>
                         </DialogFooter>
                     </form>
                 </DialogContent>
@@ -671,34 +577,27 @@ export default function CompanyOrganogramPage() {
                     <form onSubmit={handleSaveLine}>
                         <DialogHeader>
                             <DialogTitle>{editingItem ? "Edit Line" : "New Line"}</DialogTitle>
-                            <DialogDescription>Define a production line within a section.</DialogDescription>
                         </DialogHeader>
                         <div className="py-4 space-y-4">
                             <div className="grid gap-2">
-                                <Label htmlFor="line-sect">Section</Label>
-                                <NativeSelect id="line-sect" name="sectionId" defaultValue={editingItem?.sectionId} required>
+                                <Label>Section</Label>
+                                <NativeSelect name="sectionId" defaultValue={editingItem?.sectionId} required>
                                     <option value="">Select Section</option>
                                     {sections.map(s => <option key={s.id} value={s.id}>{s.nameEn}</option>)}
                                 </NativeSelect>
                             </div>
                             <div className="grid gap-2">
-                                <Label htmlFor="line-name">Line Name (English)</Label>
-                                <Input id="line-name" name="nameEn" defaultValue={editingItem?.nameEn} placeholder="e.g. Line-01" required />
+                                <Label>Name (English)</Label>
+                                <Input name="nameEn" defaultValue={editingItem?.nameEn} required />
                             </div>
                             <div className="grid gap-2">
-                                <Label htmlFor="line-name-bn">Line Name (Bangla)</Label>
-                                <Input
-                                    id="line-name-bn"
-                                    name="nameBn"
-                                    defaultValue={editingItem?.nameBn}
-                                    placeholder="e.g. লাইন-০১"
-                                    className="font-sutonny text-lg"
-                                />
+                                <Label>Name (Bangla)</Label>
+                                <Input name="nameBn" defaultValue={editingItem?.nameBn} />
                             </div>
                         </div>
                         <DialogFooter>
                             <Button variant="outline" type="button" onClick={() => setIsLineModalOpen(false)}>Cancel</Button>
-                            <Button type="submit" disabled={isSaving}>{isSaving ? "Saving..." : "Save Line"}</Button>
+                            <Button type="submit" disabled={isSaving}>{isSaving ? "Saving..." : "Save"}</Button>
                         </DialogFooter>
                     </form>
                 </DialogContent>
@@ -706,17 +605,17 @@ export default function CompanyOrganogramPage() {
 
             {/* Delete Alert */}
             <AlertDialog open={deleteItem !== null} onOpenChange={(open) => !open && setDeleteItem(null)}>
-                <AlertDialogContent className="rounded-2xl">
+                <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete the <b>{deleteItem?.type}</b> from our servers.
+                            This will delete the <b>{deleteItem?.type}</b> permanently.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl">
-                            Delete Item
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                            Delete
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

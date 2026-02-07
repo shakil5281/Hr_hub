@@ -254,6 +254,33 @@ export const employeeService = {
         window.URL.revokeObjectURL(url);
     },
 
+    exportEmployees: async (params?: {
+        departmentId?: number;
+        sectionId?: number;
+        designationId?: number;
+        lineId?: number;
+        shiftId?: number;
+        groupId?: number;
+        floorId?: number;
+        status?: string;
+        isActive?: boolean;
+        searchTerm?: string;
+    }) => {
+        const response = await api.get('/employee/export', {
+            params,
+            responseType: 'blob'
+        });
+
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `Employee_List_${new Date().toISOString().slice(0, 10)}.xlsx`);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+    },
+
     importExcel: async (file: File) => {
         const formData = new FormData();
         formData.append('file', file);

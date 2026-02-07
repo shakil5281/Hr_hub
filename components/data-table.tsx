@@ -87,6 +87,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  TableFooter,
 } from "@/components/ui/table"
 import {
   Tabs,
@@ -124,9 +125,10 @@ export function DragHandle({ id }: { id: string | number }) {
   )
 }
 
-export function DraggableRow<TData extends { id: string | number }>({ row }: { row: Row<TData> }) {
+export function DraggableRow<TData extends { id?: string | number }>({ row }: { row: Row<TData> }) {
+  const rowId = row.original.id || row.id;
   const { transform, transition, setNodeRef, isDragging } = useSortable({
-    id: row.original.id,
+    id: rowId as UniqueIdentifier,
   })
 
   return (
@@ -149,7 +151,7 @@ export function DraggableRow<TData extends { id: string | number }>({ row }: { r
   )
 }
 
-export function DataTable<TData extends { id: string | number }>({
+export function DataTable<TData extends { id?: string | number }>({
   data: initialData,
   columns,
   showTabs = true,
@@ -167,6 +169,9 @@ export function DataTable<TData extends { id: string | number }>({
   tabs,
   filters,
   isLoading = false,
+  getRowId,
+  onSelectionChange,
+  footer,
 }: {
   data: TData[]
   columns: ColumnDef<TData>[]
@@ -189,6 +194,9 @@ export function DataTable<TData extends { id: string | number }>({
     options: { label: string; value: string; icon?: React.ComponentType<{ className?: string }> }[]
   }[]
   isLoading?: boolean
+  getRowId?: (row: TData) => string
+  onSelectionChange?: (selectedRows: TData[]) => void
+  footer?: React.ReactNode
 }) {
   const [data, setData] = React.useState(() => initialData)
   const [activeTab, setActiveTab] = React.useState("all")
@@ -229,6 +237,27 @@ export function DataTable<TData extends { id: string | number }>({
     pageSize: 10,
   })
 
+  // Fix for infinite loop: Use ref for onSelectionChange to avoid dependency cycle
+  const onSelectionChangeRef = React.useRef(onSelectionChange)
+  React.useEffect(() => {
+    onSelectionChangeRef.current = onSelectionChange
+  }, [onSelectionChange])
+
+  React.useEffect(() => {
+    if (onSelectionChangeRef.current) {
+      const selectedRows = Object.keys(rowSelection).map(id => {
+        return data.find(item => {
+          const itemId = (item.id || (item as any).leaveTypeId || "").toString()
+          return itemId === id
+        })
+      }).filter(Boolean) as TData[]
+
+      // Only fire if the selection count matches to avoid excessive updates during hydration
+      // or check deep equality if needed, but for now breaking the loop is priority.
+      onSelectionChangeRef.current(selectedRows)
+    }
+  }, [rowSelection, data])
+
   const sortableId = React.useId()
   const sensors = useSensors(
     useSensor(MouseSensor, {}),
@@ -237,7 +266,7 @@ export function DataTable<TData extends { id: string | number }>({
   )
 
   const dataIds = React.useMemo<UniqueIdentifier[]>(
-    () => data?.map(({ id }) => id) || [],
+    () => data?.map((row, index) => ((row.id || (row as any).leaveTypeId || index).toString()) as UniqueIdentifier) || [],
     [data]
   )
 
@@ -251,7 +280,10 @@ export function DataTable<TData extends { id: string | number }>({
       columnFilters,
       pagination,
     },
-    getRowId: (row) => row.id.toString(),
+    getRowId: (row, index) => {
+      if (getRowId) return getRowId(row)
+      return (row as any).id?.toString() || (row as any).leaveTypeId?.toString() || index.toString()
+    },
     enableRowSelection: true,
     onRowSelectionChange: setRowSelection,
     onSortingChange: setSorting,
@@ -356,6 +388,7 @@ export function DataTable<TData extends { id: string | number }>({
                 </TableRow>
               )}
             </TableBody>
+            {footer && <TableFooter>{footer}</TableFooter>}
           </Table>
         </DndContext>
       </div>
@@ -528,13 +561,12 @@ export function DataTable<TData extends { id: string | number }>({
 }
 
 // --- Column Helpers ---
-
-export function getBaseColumns<TData extends { id: string | number }>(): ColumnDef<TData>[] {
+export function getBaseColumns<TData extends { id?: string | number }>(): ColumnDef<TData>[] {
   return [
     {
       id: "drag",
       header: () => null,
-      cell: ({ row }) => <DragHandle id={row.original.id} />,
+      cell: ({ row }) => <DragHandle id={(row.original.id || (row.original as any).leaveTypeId || row.id) as UniqueIdentifier} />,
       size: 40,
       enableSorting: false,
     },
@@ -652,7 +684,7 @@ function RowActions({ row }: { row: Row<any> }) {
   )
 }
 
-export function getActionsColumn<TData extends { id: string | number }>(): ColumnDef<TData> {
+export function getActionsColumn<TData extends { id?: string | number }>(): ColumnDef<TData> {
   return {
     id: "actions",
     header: () => <div className="text-right text-xs font-medium uppercase text-muted-foreground">Actions</div>,

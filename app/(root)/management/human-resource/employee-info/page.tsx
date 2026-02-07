@@ -16,79 +16,87 @@ import {
     IconCircleCheckFilled,
     IconLoader,
     IconClock,
-    IconFileSpreadsheet
+    IconFileSpreadsheet,
+    IconDownload
 } from "@tabler/icons-react"
 import { type ColumnDef } from "@tanstack/react-table"
 import { employeeService, type Employee } from "@/lib/services/employee"
-import { organogramService } from "@/lib/services/organogram"
+import { organogramService, type Department, type Section, type Designation, type Line, type Group, type Shift } from "@/lib/services/organogram"
 import { toast } from "sonner"
-
-const employeeColumns: ColumnDef<Employee>[] = [
-    {
-        id: "sl",
-        header: "SL",
-        cell: ({ row }) => <span className="text-xs text-muted-foreground">{row.index + 1}</span>,
-    },
-    {
-        accessorKey: "employeeId",
-        header: "ID",
-        cell: ({ row }) => <span className="font-mono text-xs font-semibold">{row.original.employeeId}</span>,
-    },
-    {
-        accessorKey: "fullNameEn",
-        header: "Employee Name",
-        cell: ({ row }) => <span className="font-medium">{row.original.fullNameEn}</span>,
-    },
-    {
-        accessorKey: "designationName",
-        header: "Designation",
-    },
-    {
-        accessorKey: "departmentName",
-        header: "Department",
-        cell: ({ row }) => (
-            <Badge variant="outline" className="font-normal">
-                {row.original.departmentName || 'N/A'}
-            </Badge>
-        ),
-    },
-    {
-        accessorKey: "status",
-        header: "Status",
-        cell: ({ row }) => {
-            const status = row.original.status
-            return (
-                <Badge variant="outline" className="flex items-center gap-1.5 w-fit font-normal">
-                    {status === "Active" ? (
-                        <IconCircleCheckFilled className="size-3.5 text-green-500" />
-                    ) : status === "On Leave" ? (
-                        <IconClock className="size-3.5 text-amber-500" />
-                    ) : (
-                        <IconLoader className="size-3.5 text-muted-foreground animate-spin-slow" />
-                    )}
-                    {status}
-                </Badge>
-            )
-        },
-    },
-    {
-        accessorKey: "joinDate",
-        header: "Join Date",
-        cell: ({ row }) => new Date(row.original.joinDate).toLocaleDateString(),
-    },
-    {
-        accessorKey: "isOTEnabled",
-        header: "OT Status",
-        cell: ({ row }) => (
-            <Badge variant={row.original.isOTEnabled ? "default" : "secondary"} className="font-normal">
-                {row.original.isOTEnabled ? "Enabled" : "Disabled"}
-            </Badge>
-        ),
-    },
-]
 
 export default function EmployeeInfoPage() {
     const router = useRouter()
+
+    const employeeColumns: ColumnDef<Employee>[] = [
+        {
+            id: "sl",
+            header: "SL",
+            cell: ({ row }) => <span className="text-xs text-muted-foreground">{row.index + 1}</span>,
+        },
+        {
+            accessorKey: "employeeId",
+            header: "ID",
+            cell: ({ row }) => <span className="font-mono text-xs font-semibold">{row.original.employeeId}</span>,
+        },
+        {
+            accessorKey: "fullNameEn",
+            header: "Employee Name",
+            cell: ({ row }) => (
+                <button
+                    onClick={() => router.push(`/management/human-resource/employee-info/${row.original.id}`)}
+                    className="font-medium text-primary hover:underline"
+                >
+                    {row.original.fullNameEn}
+                </button>
+            ),
+        },
+        {
+            accessorKey: "designationName",
+            header: "Designation",
+        },
+        {
+            accessorKey: "departmentName",
+            header: "Department",
+            cell: ({ row }) => (
+                <Badge variant="outline" className="font-normal">
+                    {row.original.departmentName || 'N/A'}
+                </Badge>
+            ),
+        },
+        {
+            accessorKey: "status",
+            header: "Status",
+            cell: ({ row }) => {
+                const status = row.original.status
+                return (
+                    <Badge variant="outline" className="flex items-center gap-1.5 w-fit font-normal">
+                        {status === "Active" ? (
+                            <IconCircleCheckFilled className="size-3.5 text-green-500" />
+                        ) : status === "On Leave" ? (
+                            <IconClock className="size-3.5 text-amber-500" />
+                        ) : (
+                            <IconLoader className="size-3.5 text-muted-foreground animate-spin-slow" />
+                        )}
+                        {status}
+                    </Badge>
+                )
+            },
+        },
+        {
+            accessorKey: "joinDate",
+            header: "Join Date",
+            cell: ({ row }) => new Date(row.original.joinDate).toLocaleDateString(),
+        },
+        {
+            accessorKey: "isOTEnabled",
+            header: "OT Status",
+            cell: ({ row }) => (
+                <Badge variant={row.original.isOTEnabled ? "default" : "secondary"} className="font-normal">
+                    {row.original.isOTEnabled ? "Enabled" : "Disabled"}
+                </Badge>
+            ),
+        },
+    ]
 
     // Filter States
     const [empIdSearch, setEmpIdSearch] = React.useState("")
@@ -105,12 +113,12 @@ export default function EmployeeInfoPage() {
     const [isLoading, setIsLoading] = React.useState(true)
 
     // Option Lists
-    const [departments, setDepartments] = React.useState<any[]>([])
-    const [sections, setSections] = React.useState<any[]>([])
-    const [designations, setDesignations] = React.useState<any[]>([])
-    const [lines, setLines] = React.useState<any[]>([])
-    const [groups, setGroups] = React.useState<any[]>([])
-    const [shifts, setShifts] = React.useState<any[]>([])
+    const [departments, setDepartments] = React.useState<Department[]>([])
+    const [sections, setSections] = React.useState<Section[]>([])
+    const [designations, setDesignations] = React.useState<Designation[]>([])
+    const [lines, setLines] = React.useState<Line[]>([])
+    const [groups, setGroupList] = React.useState<Group[]>([])
+    const [shifts, setShiftList] = React.useState<Shift[]>([])
 
     // Load initial reference data
     React.useEffect(() => {
@@ -122,8 +130,8 @@ export default function EmployeeInfoPage() {
                     organogramService.getShifts()
                 ])
                 setDepartments(depts)
-                setGroups(grps)
-                setShifts(shfts)
+                setGroupList(grps)
+                setShiftList(shfts)
             } catch (error) {
                 console.error("Failed to load reference data", error)
             }
@@ -134,7 +142,7 @@ export default function EmployeeInfoPage() {
     // Cascading dropdowns
     React.useEffect(() => {
         if (deptFilter !== "All") {
-            organogramService.getSections(deptFilter as number).then(setSections)
+            organogramService.getSections(deptFilter).then(setSections)
         } else {
             setSections([])
             setSectionFilter("All")
@@ -143,8 +151,8 @@ export default function EmployeeInfoPage() {
 
     React.useEffect(() => {
         if (sectionFilter !== "All") {
-            organogramService.getDesignations(sectionFilter as number).then(setDesignations)
-            organogramService.getLines(sectionFilter as number).then(setLines)
+            organogramService.getDesignations(sectionFilter).then(setDesignations)
+            organogramService.getLines(sectionFilter).then(setLines)
         } else {
             setDesignations([])
             setDesignationFilter("All")
@@ -157,7 +165,7 @@ export default function EmployeeInfoPage() {
     const fetchEmployees = React.useCallback(async () => {
         setIsLoading(true)
         try {
-            const params: any = {}
+            const params: Record<string, any> = {}
             if (statusFilter !== "All") params.status = statusFilter
             if (deptFilter !== "All") params.departmentId = deptFilter
             if (sectionFilter !== "All") params.sectionId = sectionFilter
@@ -166,8 +174,6 @@ export default function EmployeeInfoPage() {
             if (groupFilter !== "All") params.groupId = groupFilter
             if (shiftFilter !== "All") params.shiftId = shiftFilter
             if (empIdSearch.trim()) params.searchTerm = empIdSearch
-
-            // params.isActive = true // Optional: decide if we always want active only or controlled by status filter
 
             const data = await employeeService.getEmployees(params)
             setEmployees(data)
@@ -209,6 +215,24 @@ export default function EmployeeInfoPage() {
         setEmpIdSearch("")
     }
 
+    const handleExport = async () => {
+        const params: Record<string, any> = {}
+        if (statusFilter !== "All") params.status = statusFilter
+        if (deptFilter !== "All") params.departmentId = deptFilter
+        if (sectionFilter !== "All") params.sectionId = sectionFilter
+        if (designationFilter !== "All") params.designationId = designationFilter
+        if (lineFilter !== "All") params.lineId = lineFilter
+        if (groupFilter !== "All") params.groupId = groupFilter
+        if (shiftFilter !== "All") params.shiftId = shiftFilter
+        if (empIdSearch.trim()) params.searchTerm = empIdSearch
+
+        toast.promise(employeeService.exportEmployees(params), {
+            loading: 'Generating Excel report...',
+            success: 'Export downloaded successfully',
+            error: 'Failed to export employees'
+        })
+    }
+
     return (
         <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-4 lg:px-6">
@@ -217,6 +241,14 @@ export default function EmployeeInfoPage() {
                     <h1 className="text-2xl font-bold tracking-tight">Employee Information</h1>
                 </div>
                 <div className="flex gap-2">
+                    <Button
+                        variant="outline"
+                        className="w-fit gap-2"
+                        onClick={handleExport}
+                    >
+                        <IconDownload className="size-4" />
+                        Export Excel
+                    </Button>
                     <Button
                         variant="outline"
                         className="w-fit"

@@ -6,19 +6,28 @@ import {
     IconSearch,
     IconFilter,
     IconFileTypeXls,
+    IconEdit,
+    IconTrash,
+    IconLoader,
+    IconCalendar,
+    IconClock,
+    IconActivity,
+    IconArrowLeft,
+    IconInfoCircle,
+    IconDownload
 } from "@tabler/icons-react"
+import { useRouter } from "next/navigation"
 import { ColumnDef } from "@tanstack/react-table"
 import { DataTable } from "@/components/data-table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import {
-    NativeSelect,
-} from "@/components/ui/select"
-import { Card, CardContent } from "@/components/ui/card"
+import { NativeSelect } from "@/components/ui/select"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import Calendar23 from "@/components/calendar-23"
 import { toast } from "sonner"
+import { cn } from "@/lib/utils"
 
 // --- Types ---
 
@@ -99,173 +108,185 @@ const attendanceData: AttendanceRecord[] = [
 const columns: ColumnDef<AttendanceRecord>[] = [
     {
         accessorKey: "employeeId",
-        header: "Employee ID",
-        cell: ({ row }) => <span className="font-mono text-xs">{row.getValue("employeeId")}</span>,
+        header: "ID",
+        cell: ({ row }) => <span className="font-bold text-xs tabular-nums text-muted-foreground">{row.getValue("employeeId")}</span>,
     },
     {
         accessorKey: "employeeName",
-        header: "Employee Name",
-        cell: ({ row }) => <span className="font-medium">{row.getValue("employeeName")}</span>,
-    },
-    {
-        accessorKey: "department",
-        header: "Department",
+        header: "Personnel",
+        cell: ({ row }) => (
+            <div className="flex flex-col">
+                <span className="font-black text-sm text-foreground tracking-tight">{row.getValue("employeeName")}</span>
+                <span className="text-[10px] font-bold text-muted-foreground uppercase opacity-70 tracking-widest">{row.original.department}</span>
+            </div>
+        )
     },
     {
         accessorKey: "date",
-        header: "Date",
+        header: "Logged Date",
+        cell: ({ row }) => <span className="text-xs font-bold tabular-nums text-muted-foreground">{row.getValue("date")}</span>,
     },
     {
         accessorKey: "checkIn",
-        header: "Check In",
-        cell: ({ row }) => <span className="text-muted-foreground">{row.getValue("checkIn")}</span>,
+        header: "Shift In",
+        cell: ({ row }) => <span className="text-xs font-black text-foreground">{row.getValue("checkIn")}</span>,
     },
     {
         accessorKey: "checkOut",
-        header: "Check Out",
-        cell: ({ row }) => <span className="text-muted-foreground">{row.getValue("checkOut")}</span>,
+        header: "Shift Out",
+        cell: ({ row }) => <span className="text-xs font-black text-foreground">{row.getValue("checkOut")}</span>,
     },
     {
         accessorKey: "workingHours",
-        header: "Work Hrs",
-        cell: ({ row }) => <span className="font-mono text-xs">{row.getValue("workingHours")}</span>,
+        header: "Intensity",
+        cell: ({ row }) => <span className="text-xs font-black tabular-nums text-primary">{row.getValue("workingHours")}</span>,
     },
     {
         accessorKey: "status",
-        header: "Status",
+        header: "Protocol",
         cell: ({ row }) => {
             const status = row.getValue("status") as string
-            let variant: "default" | "secondary" | "destructive" | "outline" = "outline"
-            let className = ""
-
-            switch (status) {
-                case "Present":
-                    variant = "default" // or success color
-                    className = "bg-green-100 text-green-700 hover:bg-green-100 border-none dark:bg-green-900/30 dark:text-green-400"
-                    break
-                case "Late":
-                    variant = "secondary"
-                    className = "bg-yellow-100 text-yellow-700 hover:bg-yellow-100 border-none dark:bg-yellow-900/30 dark:text-yellow-400"
-                    break
-                case "Absent":
-                    variant = "destructive"
-                    break
-                case "On Leave":
-                    variant = "outline"
-                    className = "text-blue-600 border-blue-200 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800"
-                    break
-                default:
-                    variant = "secondary"
-            }
-
-            return <Badge variant={variant} className={className}>{status}</Badge>
+            return (
+                <Badge variant="outline" className={cn(
+                    "font-black text-[10px] uppercase h-6 px-3 rounded-full border-none shadow-sm",
+                    status === "Present" ? "bg-primary text-white" :
+                        status === "Absent" ? "bg-destructive text-white" :
+                            "bg-muted text-muted-foreground"
+                )}>
+                    {status}
+                </Badge>
+            )
         },
     },
 ]
 
 export default function AttendancePage() {
+    const router = useRouter()
     return (
-        <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-            <div className="flex items-center gap-2 px-4 lg:px-6">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                    <IconFingerprint className="size-6 text-primary" />
+        <div className="flex flex-col gap-6 py-6 animate-in fade-in duration-500">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-6 text-center sm:text-left">
+                <div className="flex items-center gap-3">
+                    <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary shadow-inner">
+                        <IconFingerprint className="size-6" />
+                    </div>
+                    <div>
+                        <h1 className="text-2xl font-black tracking-tighter uppercase italic">Force Terminal</h1>
+                        <p className="text-muted-foreground text-sm">Real-time personnel availability and movement tracking</p>
+                    </div>
                 </div>
-                <div>
-                    <h1 className="text-xl font-bold tracking-tight">Attendance</h1>
-                    <p className="text-sm text-muted-foreground">
-                        Monitor daily attendance records and working hours.
-                    </p>
+                <div className="flex items-center gap-2 justify-center sm:justify-start">
+                    <Button variant="outline" size="sm" className="rounded-full h-10 px-6 border-2 font-bold gap-2" onClick={() => router.push("/management/attendance/manual")}>
+                        <IconEdit className="size-4" />
+                        Log Correction
+                    </Button>
+                    <Button variant="ghost" size="sm" className="rounded-full h-10 px-6 font-bold gap-2 text-destructive hover:bg-destructive/10" onClick={() => router.push("/management/attendance/delete")}>
+                        <IconTrash className="size-4" />
+                        Purge
+                    </Button>
                 </div>
             </div>
 
+            {/* Metrics */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 px-6">
+                <KPICard title="Forces Present" value="142" icon={IconFingerprint} subtitle="Current deployment" />
+                <KPICard title="Late Units" value="12" icon={IconClock} className="text-amber-600" subtitle="Protocol variance" />
+                <KPICard title="Approved Absences" value="5" icon={IconCalendar} subtitle="Administrative leaves" />
+                <KPICard title="Active Gaps" value="3" icon={IconFingerprint} className="text-destructive" subtitle="Missing personnel" />
+            </div>
+
             {/* Filter Section */}
-            <div className="px-4 lg:px-6">
-                <Card className="rounded-xl border shadow-sm">
-                    <CardContent className="p-4 grid gap-4 md:grid-cols-3 items-end">
-                        <div className="grid gap-2">
-                            <Label>Search Employee</Label>
+            <div className="px-6">
+                <Card className="border-none shadow-sm bg-muted/20">
+                    <CardHeader className="pb-4">
+                        <div className="flex items-center gap-2 text-sm font-bold">
+                            <IconFilter className="size-4 text-primary" />
+                            Registry Filters
+                        </div>
+                    </CardHeader>
+                    <CardContent className="grid gap-6 md:grid-cols-3 lg:grid-cols-4 items-end">
+                        <div className="space-y-2">
+                            <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Personnel Identifier</Label>
                             <div className="relative">
-                                <IconSearch className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                                <Input className="pl-9" placeholder="Name or ID..." />
+                                <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                                <Input className="pl-10 h-11 rounded-xl shadow-inner border-dashed" placeholder="Name or ID..." />
                             </div>
                         </div>
 
-                        <div className="grid gap-2">
-                            {/* Reusing the Calendar23 component as requested for date range */}
-                            <Label>Date Range</Label>
+                        <div className="space-y-2">
+                            <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Temporal Node</Label>
                             <Calendar23 />
                         </div>
 
-                        <div className="grid gap-2">
-                            <Label>Department</Label>
-                            <select className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1" defaultValue="all">
-                                <option value="all">All Departments</option>
+                        <div className="space-y-2">
+                            <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Structural Unit</Label>
+                            <NativeSelect className="h-11 rounded-xl shadow-inner">
+                                <option value="all">Total Core</option>
                                 <option value="eng">Engineering</option>
-                                <option value="hr">Human Resources</option>
+                                <option value="hr">HR / Admin</option>
                                 <option value="prod">Product</option>
                                 <option value="design">Design</option>
-                            </select>
+                            </NativeSelect>
                         </div>
 
-                        <div className="grid gap-2">
-                            <Label>Section</Label>
-                            <select className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1" defaultValue="all">
-                                <option value="all">All Sections</option>
-                                <option value="a">Section A</option>
-                                <option value="b">Section B</option>
-                            </select>
-                        </div>
-
-                        <div className="grid gap-2">
-                            <Label>Designation</Label>
-                            <select className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1" defaultValue="all">
-                                <option value="all">All Designations</option>
-                                <option value="se">Software Engineer</option>
-                                <option value="pm">Product Manager</option>
-                                <option value="hr">HR Executive</option>
-                            </select>
-                        </div>
-
-                        <div className="grid gap-2">
-                            <Label>Line</Label>
-                            <select className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1" defaultValue="all">
-                                <option value="all">All Lines</option>
-                                <option value="1">Line 1</option>
-                                <option value="2">Line 2</option>
-                            </select>
-                        </div>
-
-                        <div className="grid gap-2">
-                            <Label>Status</Label>
-                            <select className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1" defaultValue="all">
-                                <option value="all">All Status</option>
-                                <option value="present">Present</option>
-                                <option value="late">Late</option>
-                                <option value="absent">Absent</option>
-                                <option value="leave">On Leave</option>
-                            </select>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                            <Button variant="outline" className="gap-2 flex-1">
-                                <IconFilter className="size-4" />
-                                Filter
+                        <div className="flex gap-2">
+                            <Button className="h-11 rounded-xl font-black uppercase tracking-tighter shadow-lg shadow-primary/20 flex-1">
+                                <IconActivity className="size-4 mr-2" />
+                                Execute Search
                             </Button>
-                            <Button className="gap-2 flex-1 bg-green-600 text-white hover:bg-green-700 hover:text-white" onClick={() => toast.success("Exported attendance report")}>
-                                <IconFileTypeXls className="size-4" />
-                                Excel
+                            <Button variant="outline" className="h-11 rounded-xl border-2 font-bold px-4" onClick={() => toast.success("Registry serialized")}>
+                                <IconDownload className="size-5" />
                             </Button>
                         </div>
                     </CardContent>
                 </Card>
             </div>
 
-            <DataTable
-                data={attendanceData}
-                columns={columns}
-                showActions={false}
-                showTabs={true}
-            />
+            {/* Main Table */}
+            <div className="px-6 pb-6">
+                <Card className="border-none shadow-sm overflow-hidden bg-white dark:bg-zinc-950">
+                    <CardHeader className="pb-4 border-b">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <CardTitle className="text-base font-black uppercase tracking-tight">Deployment Registry</CardTitle>
+                                <CardDescription className="text-[10px] font-bold uppercase mt-1">Real-time availability matrix</CardDescription>
+                            </div>
+                            <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground bg-muted/30 px-4 py-1.5 rounded-full border border-muted-foreground/5 shadow-inner">
+                                <IconInfoCircle className="size-3.5" />
+                                Updated just now
+                            </div>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                        <DataTable
+                            data={attendanceData}
+                            columns={columns}
+                            showActions={false}
+                            showTabs={false}
+                        />
+                    </CardContent>
+                </Card>
+            </div>
         </div>
+    )
+}
+
+function KPICard({ title, value, icon: Icon, className, subtitle }: any) {
+    return (
+        <Card className="border-none shadow-sm group hover:shadow-md transition-all duration-300">
+            <CardContent className="p-6 flex items-start justify-between">
+                <div>
+                    <p className="text-xs font-black text-muted-foreground uppercase tracking-widest">{title}</p>
+                    <h3 className={cn("text-3xl font-black mt-2 tracking-tighter", className)}>{value}</h3>
+                    <p className="text-[10px] font-bold text-muted-foreground mt-2 flex items-center gap-1 uppercase opacity-70 italic">
+                        <span className="h-1 w-1 rounded-full bg-primary/40 animate-pulse" />
+                        {subtitle}
+                    </p>
+                </div>
+                <div className="p-3 bg-muted/30 rounded-2xl group-hover:bg-primary/10 transition-colors duration-300">
+                    <Icon className="size-6 text-muted-foreground group-hover:text-primary" />
+                </div>
+            </CardContent>
+        </Card>
     )
 }

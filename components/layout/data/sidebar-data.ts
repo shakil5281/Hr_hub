@@ -221,10 +221,22 @@ export const sidebarData = {
             ],
             navGroup: [
                 {
+                    title: "Balance",
+                    url: "#",
+                    icon: IconCash,
+                    items: [
+                        { title: "Summary", url: "/accounts/balance/summary" },
+                        { title: "Main Balance", url: "/accounts/balance/main-balance" },
+                        { title: "Balance Sheet", url: "/accounts/balance/balance-sheet" },
+                    ],
+                },
+                {
                     title: "Accounts",
                     url: "#",
                     icon: IconCash,
                     items: [
+                        { title: "General Accounts", url: "/accounts/general" },
+                        { title: "Opening Balance", url: "/accounts/opening-balance" },
                         { title: "Finance Overview", url: "/accounts/finance-overview" },
                         { title: "Daily Cash received", url: "/accounts/daily-cash-received" },
                         { title: "Daily expense", url: "/accounts/daily-expense" },

@@ -14,8 +14,9 @@ import {
 } from "@tabler/icons-react"
 import { payrollService, type Bonus } from "@/lib/services/payroll"
 import { toast } from "sonner"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { NativeSelect } from "@/components/ui/select"
+import { Label } from "@/components/ui/label"
 
 const MONTHS = [
     { label: "January", value: 1 },
@@ -57,27 +58,27 @@ export default function EidBonusPage() {
         {
             accessorKey: "employeeIdCard",
             header: "ID",
-            cell: ({ row }) => <Badge variant="outline" className="font-bold">{row.original.employeeIdCard}</Badge>
+            cell: ({ row }) => <span className="font-medium">{row.original.employeeIdCard}</span>
         },
         {
             accessorKey: "employeeName",
             header: "Employee",
-            cell: ({ row }) => <span className="font-medium text-xs">{row.original.employeeName}</span>
+            cell: ({ row }) => <span className="font-medium">{row.original.employeeName}</span>
         },
         {
             accessorKey: "bonusType",
             header: "Festival",
             cell: ({ row }) => (
                 <div className="flex items-center gap-2">
-                    <IconGift className="size-3 text-rose-500" />
-                    <span className="font-bold text-xs">{row.original.bonusType}</span>
+                    <IconGift className="size-4 text-rose-500" />
+                    <span>{row.original.bonusType}</span>
                 </div>
             )
         },
         {
             accessorKey: "amount",
             header: "Amount",
-            cell: ({ row }) => <span className="font-black">৳{row.original.amount.toLocaleString()}</span>
+            cell: ({ row }) => <span className="font-bold tabular-nums">৳{row.original.amount.toLocaleString()}</span>
         },
         {
             header: "Period",
@@ -87,7 +88,7 @@ export default function EidBonusPage() {
             accessorKey: "status",
             header: "Status",
             cell: ({ row }) => (
-                <Badge className="bg-rose-100 text-rose-600 border-none px-3">
+                <Badge variant={row.original.status === "Approved" ? "default" : "secondary"} className="font-normal text-xs">
                     {row.original.status}
                 </Badge>
             )
@@ -95,49 +96,45 @@ export default function EidBonusPage() {
     ]
 
     return (
-        <div className="flex flex-col min-h-screen bg-background/50 animate-in fade-in duration-700">
+        <div className="flex flex-col gap-6 py-6 animate-in fade-in duration-500">
             {/* Header */}
-            <div className="border-b bg-background/80 backdrop-blur-md sticky top-0 z-20">
-                <div className="container mx-auto px-4 py-6 lg:px-8 max-w-[1400px]">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div className="flex items-center gap-3">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-500 text-white shadow-xl shadow-rose-100">
-                                <IconMoodSmile className="size-6" />
-                            </div>
-                            <div>
-                                <h1 className="text-2xl font-black tracking-tighter">Festival Bonus</h1>
-                                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.3em]">Eid & Special Disbursements</p>
-                            </div>
-                        </div>
-                        <Button className="rounded-full bg-rose-500 hover:bg-rose-600 text-white font-bold h-10 px-6">
-                            <IconPlus className="mr-2 size-4" /> Generate Bonus
-                        </Button>
-                    </div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-6">
+                <div>
+                    <h1 className="text-2xl font-bold tracking-tight">Festival Bonus</h1>
+                    <p className="text-muted-foreground text-sm">Manage bonus disbursements for holidays</p>
                 </div>
+                <Button className="gap-2 bg-rose-600 hover:bg-rose-700">
+                    <IconPlus className="size-4" />
+                    Generate Bonus
+                </Button>
             </div>
 
-            <main className="container mx-auto px-4 py-8 lg:px-8 max-w-[1400px] space-y-8">
-                <Card className="border-none shadow-xl shadow-rose-100/20 bg-white/50 backdrop-blur-sm">
-                    <CardHeader className="pb-4">
-                        <div className="flex items-center justify-between">
-                            <CardTitle className="text-sm font-black uppercase tracking-widest text-rose-950">Disbursement Cycle</CardTitle>
+            <div className="px-6">
+                <Card>
+                    <CardHeader className="pb-4 border-b flex flex-row items-center justify-between">
+                        <CardTitle className="text-base font-semibold">Disbursement Records</CardTitle>
+                        <div className="flex items-center gap-2">
                             <div className="flex items-center gap-2">
-                                <NativeSelect value={year} onChange={(e) => setYear(parseInt(e.target.value))} className="h-9 w-32 rounded-xl">
+                                <Label className="whitespace-nowrap">Fiscal Year</Label>
+                                <NativeSelect value={year} onChange={(e) => setYear(parseInt(e.target.value))} className="h-9 w-28">
                                     <option value={2026}>2026</option>
                                     <option value={2025}>2025</option>
                                     <option value={2024}>2024</option>
                                 </NativeSelect>
-                                <Button size="sm" variant="outline" className="h-9 rounded-xl px-4" onClick={handleSearch} disabled={isLoading}>
-                                    {isLoading ? <IconLoader className="size-4 animate-spin" /> : <IconSearch className="size-4" />}
-                                </Button>
                             </div>
+                            <Button size="sm" variant="outline" className="h-9" onClick={handleSearch} disabled={isLoading}>
+                                {isLoading ? <IconLoader className="size-4 animate-spin" /> : <IconSearch className="size-4" />}
+                            </Button>
                         </div>
                     </CardHeader>
-                    <CardContent>
-                        <DataTable columns={columns} data={records} showColumnCustomizer={false} searchKey="employeeName" />
-                    </CardContent>
+                    <DataTable
+                        columns={columns}
+                        data={records}
+                        showColumnCustomizer={false}
+                        searchKey="employeeName"
+                    />
                 </Card>
-            </main>
+            </div>
         </div>
     )
 }

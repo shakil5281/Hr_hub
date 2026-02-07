@@ -7,7 +7,9 @@ import {
     IconLoader,
     IconEye,
     IconBuildingBank,
-    IconCalendarCheck
+    IconCalendarCheck,
+    IconFileSpreadsheet,
+    IconDownload
 } from "@tabler/icons-react"
 import { DataTable } from "@/components/data-table"
 import { ColumnDef } from "@tanstack/react-table"
@@ -19,6 +21,7 @@ import { Badge } from "@/components/ui/badge"
 import { payrollService, type MonthlySalarySheet } from "@/lib/services/payroll"
 import { toast } from "sonner"
 import Link from "next/link"
+import { Label } from "@/components/ui/label"
 
 const MONTHS = [
     { label: "January", value: 1 },
@@ -61,40 +64,59 @@ export default function PaySlipListPage() {
         }
     }
 
+    const handleExport = async () => {
+        try {
+            toast.promise(
+                payrollService.exportPaySlips({
+                    year,
+                    month,
+                    searchTerm: searchTerm.trim() || undefined
+                }),
+                {
+                    loading: 'Preparing Excel report...',
+                    success: 'Salary sheet downloaded successfully',
+                    error: 'Failed to export salary sheet'
+                }
+            )
+        } catch (error) {
+            console.error(error)
+        }
+    }
+
     const columns: ColumnDef<MonthlySalarySheet>[] = [
         {
             accessorKey: "employeeIdCard",
             header: "ID",
-            cell: ({ row }) => <span className="font-bold text-xs">{row.original.employeeIdCard}</span>
+            cell: ({ row }) => <span className="font-medium">{row.original.employeeIdCard}</span>
         },
         {
             accessorKey: "employeeName",
-            header: "Employee Details",
+            header: "Employee",
             cell: ({ row }) => (
                 <div className="flex flex-col">
-                    <span className="font-bold text-xs">{row.original.employeeName}</span>
-                    <span className="text-[10px] text-muted-foreground uppercase">{row.original.designation}</span>
+                    <span className="font-medium">{row.original.employeeName}</span>
+                    <span className="text-xs text-muted-foreground">{row.original.designation}</span>
                 </div>
             )
         },
         {
             accessorKey: "department",
             header: "Department",
-            cell: ({ row }) => <Badge variant="secondary" className="text-[10px] font-bold">{row.original.department}</Badge>
+            cell: ({ row }) => <span className="text-sm text-muted-foreground">{row.original.department}</span>
         },
         {
             accessorKey: "netPayable",
             header: "Net Payable",
-            cell: ({ row }) => <span className="font-black text-xs">৳{row.original.netPayable.toLocaleString()}</span>
+            cell: ({ row }) => <span className="font-bold">৳{row.original.netPayable.toLocaleString()}</span>
         },
         {
             id: "actions",
-            header: "Action",
+            header: "Actions",
             cell: ({ row }) => (
-                <Link href={`/management/payroll/pay-slip/${row.original.id}`}>
-                    <Button size="sm" variant="outline" className="h-8 rounded-full gap-2 border-2 hover:bg-slate-900 hover:text-white transition-all">
+                <Link href={`/management/payroll/payslip/${row.original.id}`}>
+                    <Button size="sm" variant="outline" className="gap-2 h-8">
                         <IconEye className="size-4" />
-                        View Slip
+                        View
                     </Button>
                 </Link>
             )
@@ -102,76 +124,82 @@ export default function PaySlipListPage() {
     ]
 
     return (
-        <div className="flex flex-col min-h-screen bg-background/50 animate-in fade-in duration-700">
+        <div className="flex flex-col gap-6 py-6 animate-in fade-in duration-500">
             {/* Header */}
-            <div className="border-b bg-white/80 backdrop-blur-md sticky top-0 z-20">
-                <div className="container mx-auto px-4 py-6 lg:px-8 max-w-[1200px]">
-                    <div className="flex items-center gap-4">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-900 shadow-xl shadow-slate-200">
-                            <IconBuildingBank className="size-6 text-white" />
-                        </div>
-                        <div>
-                            <h1 className="text-2xl font-black tracking-tighter">Pay Slip Terminal</h1>
-                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.3em]">Individual Remuneration Access</p>
-                        </div>
-                    </div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-6">
+                <div>
+                    <h1 className="text-2xl font-bold tracking-tight">Payslip Management</h1>
+                    <p className="text-muted-foreground text-sm">Search and manage employee payslips</p>
                 </div>
             </div>
 
-            <main className="container mx-auto px-4 py-8 lg:px-8 max-w-[1200px] space-y-8">
-                {/* Search Panel */}
-                <Card className="border-none shadow-2xl shadow-slate-200/50 rounded-3xl overflow-hidden bg-white">
-                    <CardHeader className="bg-slate-50 border-b">
-                        <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
-                            <IconId className="size-5 text-slate-800" />
-                            Search Criteria
+            {/* Search Panel */}
+            <div className="px-6">
+                <Card className="border-none shadow-sm bg-muted/30">
+                    <CardHeader className="pb-4">
+                        <CardTitle className="text-base font-semibold flex items-center gap-2">
+                            <IconSearch className="size-4 opacity-70" />
+                            Filter Criteria
                         </CardTitle>
                     </CardHeader>
-                    <CardContent className="p-8">
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Month</label>
-                                <NativeSelect value={month} onChange={(e) => setMonth(parseInt(e.target.value))} className="h-12 rounded-2xl border-2 font-bold">
+                    <CardContent>
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                            <div className="space-y-1.5">
+                                <Label className="text-xs font-semibold text-muted-foreground">Month</Label>
+                                <NativeSelect value={month} onChange={(e) => setMonth(parseInt(e.target.value))} className="h-9">
                                     {MONTHS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
                                 </NativeSelect>
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Year</label>
-                                <NativeSelect value={year} onChange={(e) => setYear(parseInt(e.target.value))} className="h-12 rounded-2xl border-2 font-bold">
+                            <div className="space-y-1.5">
+                                <Label className="text-xs font-semibold text-muted-foreground">Year</Label>
+                                <NativeSelect value={year} onChange={(e) => setYear(parseInt(e.target.value))} className="h-9">
                                     <option value={2026}>2026</option>
                                     <option value={2025}>2025</option>
                                 </NativeSelect>
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Employee ID / Name</label>
+                            <div className="space-y-1.5">
+                                <Label className="text-xs font-semibold text-muted-foreground">Search</Label>
                                 <Input
-                                    placeholder="Type to search..."
-                                    className="h-12 rounded-2xl border-2 font-bold"
+                                    placeholder="Employee ID or Name..."
+                                    className="h-9"
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                 />
                             </div>
-                            <Button
-                                className="h-12 rounded-2xl gap-2 bg-slate-900 hover:bg-slate-800 text-white font-black"
-                                onClick={handleSearch}
-                                disabled={isLoading}
-                            >
-                                {isLoading ? <IconLoader className="size-5 animate-spin" /> : <IconSearch className="size-5" />}
-                                Retrieve Entry
-                            </Button>
+                            <div className="flex gap-2">
+                                <Button
+                                    className="flex-1 gap-2 h-9"
+                                    onClick={handleSearch}
+                                    disabled={isLoading}
+                                >
+                                    {isLoading ? <IconLoader className="size-4 animate-spin" /> : <IconSearch className="size-4" />}
+                                    Search
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    className="gap-2 h-9"
+                                    onClick={handleExport}
+                                    disabled={isLoading}
+                                >
+                                    <IconFileSpreadsheet className="size-4" />
+                                    Export
+                                </Button>
+                            </div>
                         </div>
                     </CardContent>
                 </Card>
+            </div>
 
-                {/* Results */}
-                {hasSearched && (
-                    <div className="bg-white border-2 rounded-3xl overflow-hidden shadow-sm animate-in slide-in-from-bottom-4 duration-500">
-                        <div className="p-6 border-b bg-slate-50 flex items-center justify-between">
-                            <h2 className="text-xs font-black uppercase tracking-widest flex items-center gap-2 text-slate-800">
-                                <IconCalendarCheck className="size-4" />
-                                Result Sets for {MONTHS.find(m => m.value === month)?.label} {year}
+            {/* Results */}
+            {hasSearched && (
+                <div className="px-6">
+                    <Card>
+                        <div className="p-4 border-b flex items-center justify-between">
+                            <h2 className="font-semibold text-sm flex items-center gap-2">
+                                <IconCalendarCheck className="size-4 text-muted-foreground" />
+                                Payslips for {MONTHS.find(m => m.value === month)?.label} {year}
                             </h2>
-                            <Badge className="bg-slate-900 text-white">{records.length} Employees Found</Badge>
+                            <Badge variant="secondary">{records.length} records</Badge>
                         </div>
                         <DataTable
                             columns={columns}
@@ -179,9 +207,9 @@ export default function PaySlipListPage() {
                             showColumnCustomizer={false}
                             searchKey="employeeName"
                         />
-                    </div>
-                )}
-            </main>
+                    </Card>
+                </div>
+            )}
         </div>
     )
 }

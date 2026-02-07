@@ -143,6 +143,21 @@ export const payrollService = {
         const response = await api.post("/Payroll/increment", data);
         return response.data;
     },
+    exportPaySlips: async (params: { year: number; month: number; departmentId?: number; searchTerm?: string }) => {
+        const response = await api.get("/Payroll/export-monthly-sheet", {
+            params,
+            responseType: "blob"
+        });
+
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute("download", `Salary_Sheet_${params.month}_${params.year}.xlsx`);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+    },
     getBonuses: async (params: { year: number; month?: number }) => {
         const response = await api.get<Bonus[]>("/Payroll/bonuses", { params });
         return response.data;

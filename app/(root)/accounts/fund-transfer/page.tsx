@@ -104,99 +104,112 @@ const initialRequests: TransferRequest[] = [
     },
 ]
 
+import { fundTransferService, FundTransfer } from "@/lib/services/fund-transfer"
+
 export default function FundTransferPage() {
-    const [requests, setRequests] = React.useState<TransferRequest[]>(initialRequests)
+    const [requests, setRequests] = React.useState<FundTransfer[]>([])
     const [role, setRole] = React.useState<"branch" | "gm">("gm") // Simulator for Role
+    const [isLoading, setIsLoading] = React.useState(true)
 
     // Form State
     const [requestAmount, setRequestAmount] = React.useState("")
     const [requestReason, setRequestReason] = React.useState("")
-    const [selectedBranch, setSelectedBranch] = React.useState<BranchType>("Dhaka Branch")
+    const [selectedBranch, setSelectedBranch] = React.useState<string>("Dhaka Branch")
 
     // GM Action State
-    const [selectedRequest, setSelectedRequest] = React.useState<TransferRequest | null>(null)
+    const [selectedRequest, setSelectedRequest] = React.useState<FundTransfer | null>(null)
     const [modifiedAmount, setModifiedAmount] = React.useState<number>(0)
     const [isReviewOpen, setIsReviewOpen] = React.useState(false)
 
+    const fetchRequests = async () => {
+        try {
+            setIsLoading(true)
+            const data = await fundTransferService.getTransfers()
+            setRequests(data)
+        } catch (error) {
+            toast.error("Failed to fetch requests")
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    React.useEffect(() => {
+        fetchRequests()
+    }, [])
+
     // Handlers
-    const handleCreateRequest = () => {
+    const handleCreateRequest = async () => {
         if (!requestAmount || !requestReason) {
             toast.error("Please fill in all fields")
             return
         }
 
-        const newRequest: TransferRequest = {
-            id: `TRF-${Math.floor(Math.random() * 10000)}`,
-            fromBranch: selectedBranch,
-            toBranch: "Main Branch",
-            requestedAmount: Number(requestAmount),
-            reason: requestReason,
-            status: "pending",
-            requestDate: new Date().toLocaleString(),
-        }
+        try {
+            await fundTransferService.createTransfer({
+                fromBranch: selectedBranch,
+                toBranch: "Main Branch",
+                requestedAmount: Number(requestAmount),
+                reason: requestReason,
+                status: "Pending",
+                requestDate: new Date().toISOString()
+            })
 
-        setRequests([newRequest, ...requests])
-        toast.success("Fund request submitted successfully")
-        setRequestAmount("")
-        setRequestReason("")
+            toast.success("Fund request submitted successfully")
+            setRequestAmount("")
+            setRequestReason("")
+            fetchRequests()
+        } catch (error) {
+            toast.error("Failed to submit request")
+        }
     }
 
-    const openReviewModal = (request: TransferRequest) => {
+    const openReviewModal = (request: FundTransfer) => {
         setSelectedRequest(request)
         setModifiedAmount(request.requestedAmount)
         setIsReviewOpen(true)
     }
 
-    const handleGMApproval = () => {
-        if (!selectedRequest) return
+    const handleGMApproval = async () => {
+        if (!selectedRequest || !selectedRequest.id) return
 
-        const updatedRequests = requests.map(req =>
-            req.id === selectedRequest.id
-                ? {
-                    ...req,
-                    status: "approved" as TransferStatus,
-                    approvedAmount: modifiedAmount,
-                    approvedDate: new Date().toLocaleString()
-                }
-                : req
-        )
-
-        setRequests(updatedRequests)
-        setIsReviewOpen(false)
-
-        // Simulate Notification
-        toast.success(`Request approved for ${modifiedAmount.toLocaleString()} BDT`)
+        try {
+            await fundTransferService.updateTransfer(selectedRequest.id, {
+                status: "Approved",
+                approvedAmount: modifiedAmount
+            })
+            setIsReviewOpen(false)
+            toast.success(`Request approved for ${modifiedAmount.toLocaleString()} BDT`)
+            fetchRequests()
+        } catch (error) {
+            toast.error("Failed to approve request")
+        }
     }
 
-    const handleGMRejection = () => {
-        if (!selectedRequest) return
-        const updatedRequests = requests.map(req =>
-            req.id === selectedRequest.id
-                ? { ...req, status: "rejected" as TransferStatus }
-                : req
-        )
-        setRequests(updatedRequests)
-        setIsReviewOpen(false)
-        toast.info("Request rejected")
+    const handleGMRejection = async () => {
+        if (!selectedRequest || !selectedRequest.id) return
+        try {
+            await fundTransferService.updateTransfer(selectedRequest.id, { status: "Rejected" })
+            setIsReviewOpen(false)
+            toast.info("Request rejected")
+            fetchRequests()
+        } catch (error) {
+            toast.error("Failed to reject request")
+        }
     }
 
-    const handleBranchAcceptance = (id: string) => {
-        const updatedRequests = requests.map(req =>
-            req.id === id
-                ? {
-                    ...req,
-                    status: "completed" as TransferStatus,
-                    completedDate: new Date().toLocaleString()
-                }
-                : req
-        )
-        setRequests(updatedRequests)
-        toast.success("Funds received and added to branch balance")
+    const handleBranchAcceptance = async (id: number) => {
+        try {
+            await fundTransferService.updateTransfer(id, { status: "Completed" })
+            toast.success("Funds received and added to branch balance")
+            fetchRequests()
+        } catch (error) {
+            toast.error("Failed to accept funds")
+        }
     }
 
     // Filtered Views
-    const pendingGMReviews = requests.filter(r => r.status === "pending")
-    const incomingToBranch = requests.filter(r => r.status === "approved") // Ready to receive
+    const pendingGMReviews = requests.filter(r => r.status === "Pending")
+    const incomingToBranch = requests.filter(r => r.status === "Approved") // Ready to receive
     const myHistory = requests // All requests for branch view
 
     return (
@@ -333,7 +346,7 @@ export default function FundTransferPage() {
                                                     </div>
                                                     <p className="text-sm text-muted-foreground">{req.reason}</p>
                                                 </div>
-                                                <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={() => handleBranchAcceptance(req.id)}>
+                                                <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={() => req.id && handleBranchAcceptance(req.id)}>
                                                     <IconDownload className="mr-2 size-4" /> Accept & Add to Balance
                                                 </Button>
                                             </div>
@@ -357,7 +370,7 @@ export default function FundTransferPage() {
                                                 <div className="space-y-1">
                                                     <div className="flex items-center gap-2">
                                                         <span className="font-medium">{req.id}</span>
-                                                        <Badge variant={req.status === 'completed' ? 'default' : req.status === 'pending' ? 'outline' : 'destructive'}>
+                                                        <Badge variant={req.status === 'Completed' ? 'default' : req.status === 'Pending' ? 'outline' : 'destructive'}>
                                                             {req.status}
                                                         </Badge>
                                                     </div>
@@ -412,10 +425,10 @@ export default function FundTransferPage() {
                                     requests.map((req) => (
                                         <div key={req.id} className="flex flex-col md:flex-row items-start md:items-center justify-between p-4 border rounded-lg gap-4">
                                             <div className="flex items-start gap-4">
-                                                <div className={`p-2 rounded-full mt-1 ${req.status === 'pending' ? 'bg-amber-100 text-amber-600' :
-                                                        req.status === 'approved' ? 'bg-blue-100 text-blue-600' :
-                                                            req.status === 'completed' ? 'bg-emerald-100 text-emerald-600' :
-                                                                'bg-red-100 text-red-600'
+                                                <div className={`p-2 rounded-full mt-1 ${req.status === 'Pending' ? 'bg-amber-100 text-amber-600' :
+                                                    req.status === 'Approved' ? 'bg-blue-100 text-blue-600' :
+                                                        req.status === 'Completed' ? 'bg-emerald-100 text-emerald-600' :
+                                                            'bg-red-100 text-red-600'
                                                     }`}>
                                                     <IconBuildingBank className="size-5" />
                                                 </div>
@@ -429,18 +442,18 @@ export default function FundTransferPage() {
                                                 </div>
                                             </div>
 
-                                            {req.status === 'pending' && (
+                                            {req.status === 'Pending' && (
                                                 <Button onClick={() => openReviewModal(req)} size="sm" className="bg-indigo-600 hover:bg-indigo-700">
                                                     Review Request
                                                 </Button>
                                             )}
-                                            {req.status === 'approved' && (
+                                            {req.status === 'Approved' && (
                                                 <div className="text-right">
                                                     <span className="text-xs font-medium text-blue-600">Waiting for Branch Acceptance</span>
                                                     <div className="text-sm font-bold">Approved: ৳{req.approvedAmount?.toLocaleString()}</div>
                                                 </div>
                                             )}
-                                            {req.status === 'completed' && (
+                                            {req.status === 'Completed' && (
                                                 <div className="text-right">
                                                     <span className="text-xs font-medium text-emerald-600 flex items-center gap-1 justify-end">
                                                         <IconCheck className="size-3" /> Completed

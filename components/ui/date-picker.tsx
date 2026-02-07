@@ -50,9 +50,6 @@ export function DatePicker({
                     mode="single"
                     selected={date}
                     onSelect={setDate}
-                    captionLayout="dropdown"
-                    fromYear={fromYear}
-                    toYear={toYear}
                     initialFocus
                 />
             </PopoverContent>

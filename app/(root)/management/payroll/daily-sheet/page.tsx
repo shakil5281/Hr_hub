@@ -8,10 +8,10 @@ import {
     IconLoader,
     IconDownload,
     IconCalendar,
-    IconAdjustmentsHorizontal,
     IconTrendingUp,
     IconUsers,
-    IconUserCheck
+    IconAddressBook,
+    IconFilter
 } from "@tabler/icons-react"
 import { DataTable } from "@/components/data-table"
 import { ColumnDef } from "@tanstack/react-table"
@@ -24,6 +24,7 @@ import { payrollService, type DailySalarySheet } from "@/lib/services/payroll"
 import { organogramService } from "@/lib/services/organogram"
 import { toast } from "sonner"
 import { DatePicker } from "@/components/ui/date-picker"
+import { Label } from "@/components/ui/label"
 
 export default function DailySalarySheetPage() {
     const [date, setDate] = React.useState<Date | undefined>(new Date())
@@ -39,65 +40,6 @@ export default function DailySalarySheetPage() {
         organogramService.getDepartments().then(setDepartments)
         handleSearch()
     }, [])
-
-    const columns: ColumnDef<DailySalarySheet>[] = [
-        {
-            accessorKey: "employeeIdCard",
-            header: "ID",
-            cell: ({ row }) => <Badge variant="outline" className="text-[10px] font-bold">{row.original.employeeIdCard}</Badge>
-        },
-        {
-            accessorKey: "employeeName",
-            header: "Employee",
-            cell: ({ row }) => (
-                <div className="flex flex-col">
-                    <span className="font-bold text-xs">{row.original.employeeName}</span>
-                    <span className="text-[10px] text-muted-foreground uppercase">{row.original.department}</span>
-                </div>
-            )
-        },
-        {
-            accessorKey: "perDaySalary",
-            header: "Daily Base",
-            cell: ({ row }) => <span className="text-xs font-bold tabular-nums">৳{row.original.perDaySalary.toLocaleString()}</span>
-        },
-        {
-            accessorKey: "attendanceStatus",
-            header: "Status",
-            cell: ({ row }) => (
-                <Badge
-                    variant={row.original.attendanceStatus === "Present" ? "success" : "destructive"}
-                    className="text-[10px] font-black uppercase"
-                >
-                    {row.original.attendanceStatus}
-                </Badge>
-            )
-        },
-        {
-            accessorKey: "otAmount",
-            header: "OT Pay",
-            cell: ({ row }) => (
-                <div className="flex flex-col text-[10px]">
-                    <span className="font-bold text-blue-600">৳{row.original.otAmount.toLocaleString()}</span>
-                    <span className="text-muted-foreground">{row.original.otHours}h</span>
-                </div>
-            )
-        },
-        {
-            accessorKey: "deduction",
-            header: "Deduction",
-            cell: ({ row }) => <span className="text-xs font-bold text-rose-600 tabular-nums">-৳{row.original.deduction.toLocaleString()}</span>
-        },
-        {
-            accessorKey: "netPayable",
-            header: "Days Payable",
-            cell: ({ row }) => (
-                <Badge className="bg-emerald-600 text-white font-bold text-xs">
-                    ৳{row.original.netPayable.toLocaleString()}
-                </Badge>
-            )
-        }
-    ]
 
     const handleSearch = async () => {
         if (!date) return
@@ -117,108 +59,148 @@ export default function DailySalarySheetPage() {
         }
     }
 
+    const columns: ColumnDef<DailySalarySheet>[] = [
+        {
+            accessorKey: "employeeIdCard",
+            header: "ID",
+            cell: ({ row }) => <span className="font-medium">{row.original.employeeIdCard}</span>
+        },
+        {
+            accessorKey: "employeeName",
+            header: "Employee",
+            cell: ({ row }) => (
+                <div className="flex flex-col">
+                    <span className="font-medium">{row.original.employeeName}</span>
+                    <span className="text-xs text-muted-foreground">{row.original.department}</span>
+                </div>
+            )
+        },
+        {
+            accessorKey: "perDaySalary",
+            header: "Daily Base",
+            cell: ({ row }) => <span className="text-xs font-medium">৳{row.original.perDaySalary.toLocaleString()}</span>
+        },
+        {
+            accessorKey: "attendanceStatus",
+            header: "Status",
+            cell: ({ row }) => {
+                const isPresent = row.original.attendanceStatus === "Present"
+                return (
+                    <Badge variant={isPresent ? "secondary" : "destructive"} className="font-normal text-xs">
+                        {row.original.attendanceStatus}
+                    </Badge>
+                )
+            }
+        },
+        {
+            accessorKey: "otAmount",
+            header: "OT Pay",
+            cell: ({ row }) => (
+                <div className="flex flex-col text-xs">
+                    <span className="font-medium">৳{row.original.otAmount.toLocaleString()}</span>
+                    <span className="text-muted-foreground text-[10px]">{row.original.otHours}h</span>
+                </div>
+            )
+        },
+        {
+            accessorKey: "deduction",
+            header: "Deduction",
+            cell: ({ row }) => <span className="text-xs font-medium text-rose-600">-৳{row.original.deduction.toLocaleString()}</span>
+        },
+        {
+            accessorKey: "netPayable",
+            header: "Days Payable",
+            cell: ({ row }) => <span className="font-bold text-emerald-700">৳{row.original.netPayable.toLocaleString()}</span>
+        }
+    ]
+
     const totalPayable = records.reduce((sum, r) => sum + r.netPayable, 0)
 
     return (
-        <div className="flex flex-col min-h-screen bg-background/50 animate-in fade-in duration-700">
+        <div className="flex flex-col gap-6 py-6 animate-in fade-in duration-500">
             {/* Header */}
-            <div className="border-b bg-background/80 backdrop-blur-md sticky top-0 z-20">
-                <div className="container mx-auto px-4 py-4 lg:px-8 max-w-[1600px]">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-white shadow-lg shadow-blue-100">
-                                <IconCash className="size-5" />
-                            </div>
-                            <div>
-                                <h1 className="text-xl font-bold tracking-tight">Daily Salary Sheet</h1>
-                                <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest">Daily Prorated Earnings</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <Button size="sm" variant="outline" className="rounded-full h-8 px-4 text-xs font-bold">
-                                <IconDownload className="mr-2 size-4" />
-                                Export
-                            </Button>
-                        </div>
-                    </div>
-                </div>
+            <div className="flex flex-col gap-1 px-6">
+                <h1 className="text-2xl font-bold tracking-tight">Daily Salary Sheet</h1>
+                <p className="text-muted-foreground text-sm">View daily prorated earnings and attendance impact</p>
             </div>
 
-            <main className="container mx-auto px-4 py-8 lg:px-8 max-w-[1600px] space-y-8">
-                {/* Stats */}
-                {hasSearched && (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <KPICard title="Daily Total Payable" value={`৳${totalPayable.toLocaleString()}`} icon={IconTrendingUp} color="text-emerald-600" bg="bg-emerald-500/10" />
-                        <KPICard title="Active Employees" value={records.length.toString()} icon={IconUsers} color="text-blue-600" bg="bg-blue-500/10" />
-                        <KPICard title="Date" value={date ? format(date, "dd MMM yyyy") : "-"} icon={IconCalendar} color="text-amber-600" bg="bg-amber-500/10" />
-                    </div>
-                )}
+            {/* Metrics */}
+            {hasSearched && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 px-6">
+                    <KPICard title="Total Payable" value={`৳${totalPayable.toLocaleString()}`} icon={IconTrendingUp} />
+                    <KPICard title="Active Employees" value={records.length.toString()} icon={IconUsers} />
+                    <KPICard title="Date" value={date ? format(date, "dd MMM yyyy") : "-"} icon={IconCalendar} />
+                </div>
+            )}
 
-                {/* Filters */}
-                <Card className="border shadow-none">
+            {/* Filters */}
+            <div className="px-6">
+                <Card className="border-none shadow-sm bg-muted/30">
                     <CardHeader className="pb-4">
-                        <CardTitle className="text-base flex items-center gap-2">
-                            <IconAdjustmentsHorizontal className="size-5 text-blue-600" />
-                            Daily Filter
+                        <CardTitle className="text-base font-semibold flex items-center gap-2">
+                            <IconFilter className="size-4 opacity-70" />
+                            Filters
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Select Date</label>
-                                <DatePicker date={date} setDate={setDate} className="h-10 rounded-xl" />
+                            <div className="space-y-1.5">
+                                <Label className="text-xs font-semibold text-muted-foreground">Date</Label>
+                                <DatePicker date={date} setDate={setDate} className="h-9 w-full" />
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Department</label>
-                                <NativeSelect value={departmentId} onChange={(e) => setDepartmentId(e.target.value)} className="h-10 rounded-xl">
-                                    <option value="all">Every Unit</option>
+                            <div className="space-y-1.5">
+                                <Label className="text-xs font-semibold text-muted-foreground">Department</Label>
+                                <NativeSelect value={departmentId} onChange={(e) => setDepartmentId(e.target.value)} className="h-9">
+                                    <option value="all">All Departments</option>
                                     {departments.map(d => <option key={d.id} value={d.id}>{d.nameEn}</option>)}
                                 </NativeSelect>
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Search</label>
+                            <div className="space-y-1.5">
+                                <Label className="text-xs font-semibold text-muted-foreground">Search</Label>
                                 <Input
-                                    placeholder="Name/ID..."
-                                    className="h-10 rounded-xl"
+                                    placeholder="Search by ID or Name"
+                                    className="h-9"
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                 />
                             </div>
                             <Button
-                                className="h-10 rounded-xl gap-2 w-full bg-blue-600 hover:bg-blue-700 text-white font-bold"
+                                className="h-9 gap-2 w-full"
                                 onClick={handleSearch}
                                 disabled={isLoading}
                             >
-                                {isLoading ? <IconLoader className="size-5 animate-spin" /> : <IconSearch className="size-5" />}
-                                Search Date
+                                {isLoading ? <IconLoader className="size-4 animate-spin" /> : <IconSearch className="size-4" />}
+                                Search Records
                             </Button>
                         </div>
                     </CardContent>
                 </Card>
+            </div>
 
-                <div className="bg-card border rounded-3xl overflow-hidden shadow-sm">
+            <div className="px-6">
+                <Card>
                     <DataTable
                         columns={columns}
                         data={records}
                         showColumnCustomizer={false}
                         searchKey="employeeName"
                     />
-                </div>
-            </main>
+                </Card>
+            </div>
         </div>
     )
 }
 
-function KPICard({ title, value, icon: Icon, color, bg }: any) {
+function KPICard({ title, value, icon: Icon }: any) {
     return (
-        <Card className="border shadow-none">
-            <CardContent className="p-6 flex items-center gap-4">
-                <div className={`size-12 rounded-2xl flex items-center justify-center border shadow-sm ${bg} ${color}`}>
-                    <Icon className="size-6" />
+        <Card>
+            <CardContent className="p-4 flex items-center gap-4">
+                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                    <Icon className="size-5" />
                 </div>
                 <div>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{title}</p>
-                    <h3 className="text-2xl font-black tabular-nums tracking-tighter leading-none mt-1">{value}</h3>
+                    <p className="text-xs font-medium text-muted-foreground">{title}</p>
+                    <h3 className="text-xl font-bold">{value}</h3>
                 </div>
             </CardContent>
         </Card>

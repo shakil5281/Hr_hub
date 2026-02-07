@@ -1,9 +1,38 @@
 "use client"
 
 import * as React from "react"
-import { IconCalendarEvent, IconPlus, IconCheck, IconX, IconEye, IconFilter, IconLoader, IconHistory } from "@tabler/icons-react"
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+    DropdownMenuSub,
+    DropdownMenuSubContent,
+    DropdownMenuSubTrigger,
+    DropdownMenuPortal,
+} from "@/components/ui/dropdown-menu"
+import {
+    IconCalendarEvent,
+    IconPlus,
+    IconCheck,
+    IconX,
+    IconEye,
+    IconFilter,
+    IconLoader,
+    IconHistory,
+    IconSearch,
+    IconDotsVertical,
+    IconEdit,
+    IconTrash,
+    IconFileDownload,
+    IconFileTypePdf,
+    IconFileTypeDocx,
+    IconFileTypeXls
+} from "@tabler/icons-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { DataTable } from "@/components/data-table"
 import { ColumnDef } from "@tanstack/react-table"
 import { Badge } from "@/components/ui/badge"
@@ -16,12 +45,24 @@ import {
     SheetTitle,
     SheetTrigger,
 } from "@/components/ui/sheet"
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Label } from "@/components/ui/label"
 import { NativeSelect } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { toast } from "sonner"
 import { leaveService, type LeaveApplication, type LeaveType } from "@/lib/services/leave"
+import { employeeService } from "@/lib/services/employee"
 import { format } from "date-fns"
+import { DatePicker } from "@/components/ui/date-picker"
 
 export default function LeaveManagementPage() {
     const [isLoading, setIsLoading] = React.useState(false)
@@ -29,10 +70,18 @@ export default function LeaveManagementPage() {
     const [applications, setApplications] = React.useState<LeaveApplication[]>([])
     const [leaveTypes, setLeaveTypes] = React.useState<LeaveType[]>([])
 
+    // Sheet and Edit state
+    const [isSheetOpen, setIsSheetOpen] = React.useState(false)
+    const [editingId, setEditingId] = React.useState<number | null>(null)
+    const [deleteId, setDeleteId] = React.useState<number | null>(null)
+
     // Form state
     const [isApplying, setIsApplying] = React.useState(false)
+    const [isSearchingEmployee, setIsSearchingEmployee] = React.useState(false)
     const [formData, setFormData] = React.useState({
-        employeeId: 1, // Mock current user for now
+        employeeId: 0,
+        employeeIdCard: "",
+        employeeName: "",
         leaveTypeId: "",
         startDate: "",
         endDate: "",
@@ -69,32 +118,102 @@ export default function LeaveManagementPage() {
         }
     }
 
+    const handleEmployeeSearch = async () => {
+        if (!formData.employeeIdCard) return
+        setIsSearchingEmployee(true)
+        try {
+            const employees = await employeeService.getEmployees({ searchTerm: formData.employeeIdCard })
+            const found = employees.find(e => e.employeeId === formData.employeeIdCard)
+            if (found) {
+                setFormData(prev => ({
+                    ...prev,
+                    employeeId: found.id,
+                    employeeName: found.fullNameEn
+                }))
+                toast.success("Employee found")
+            } else {
+                toast.error("Employee not found")
+                setFormData(prev => ({ ...prev, employeeId: 0, employeeName: "" }))
+            }
+        } catch (error) {
+            toast.error("Error searching employee")
+        } finally {
+            setIsSearchingEmployee(false)
+        }
+    }
+
     const handleSubmit = async () => {
-        if (!formData.leaveTypeId || !formData.startDate || !formData.endDate || !formData.reason) {
+        if (!formData.employeeId || !formData.leaveTypeId || !formData.startDate || !formData.endDate || !formData.reason) {
             toast.error("Please fill all required fields")
             return
         }
 
         setIsApplying(true)
         try {
-            await leaveService.applyLeave({
-                ...formData,
-                leaveTypeId: parseInt(formData.leaveTypeId)
-            })
-            toast.success("Leave application submitted successfully")
+            if (editingId) {
+                await leaveService.updateLeave(editingId, {
+                    ...formData,
+                    leaveTypeId: parseInt(formData.leaveTypeId)
+                })
+                toast.success("Leave application updated successfully")
+            } else {
+                await leaveService.applyLeave({
+                    ...formData,
+                    leaveTypeId: parseInt(formData.leaveTypeId)
+                })
+                toast.success("Leave application submitted successfully")
+            }
             loadData()
-            // Reset form and close sheet (if possible via state)
-            setFormData({
-                employeeId: 1,
-                leaveTypeId: "",
-                startDate: "",
-                endDate: "",
-                reason: ""
-            })
+            handleSheetClose()
         } catch (error) {
-            toast.error("Failed to submit leave application")
+            toast.error(editingId ? "Failed to update leave application" : "Failed to submit leave application")
         } finally {
             setIsApplying(false)
+        }
+    }
+
+    const handleSheetClose = () => {
+        setIsSheetOpen(false)
+        setEditingId(null)
+        setFormData({
+            employeeId: 0,
+            employeeIdCard: "",
+            employeeName: "",
+            leaveTypeId: "",
+            startDate: "",
+            endDate: "",
+            reason: ""
+        })
+    }
+
+    const handleEdit = (application: LeaveApplication) => {
+        if (application.status !== "Pending") {
+            toast.error("Only pending applications can be edited")
+            return
+        }
+        setEditingId(application.id)
+        setFormData({
+            employeeId: application.employeeId,
+            employeeIdCard: application.employeeIdCard,
+            employeeName: application.employeeName,
+            leaveTypeId: application.leaveTypeId.toString(),
+            startDate: application.startDate,
+            endDate: application.endDate,
+            reason: application.reason
+        })
+        setIsSheetOpen(true)
+    }
+
+    const handleDelete = async () => {
+        if (!deleteId) return
+        try {
+            await leaveService.deleteLeave(deleteId)
+            toast.success("Leave application deleted successfully")
+            loadData()
+        } catch (error) {
+            toast.error("Failed to delete leave application")
+        } finally {
+            setDeleteId(null)
         }
     }
 
@@ -102,30 +221,37 @@ export default function LeaveManagementPage() {
         {
             accessorKey: "employeeIdCard",
             header: "ID",
-            cell: ({ row }) => <Badge variant="outline" className="text-[10px] font-bold">{row.original.employeeIdCard}</Badge>
+            cell: ({ row }) => <span className="font-medium">{row.original.employeeIdCard}</span>
         },
         {
             accessorKey: "employeeName",
             header: "Employee",
             cell: ({ row }) => (
                 <div className="flex flex-col">
-                    <span className="font-bold text-xs">{row.original.employeeName}</span>
-                    <span className="text-[10px] text-muted-foreground uppercase">{row.original.department}</span>
+                    <span className="font-medium">{row.original.employeeName}</span>
+                    <span className="text-xs text-muted-foreground">{row.original.department}</span>
                 </div>
             )
         },
         {
             accessorKey: "leaveTypeName",
             header: "Leave Type",
-            cell: ({ row }) => <Badge className="bg-blue-50 text-blue-600 border-blue-100">{row.original.leaveTypeName}</Badge>
+            cell: ({ row }) => (
+                <button
+                    onClick={() => window.location.href = `/management/leave/application/${row.original.id}`}
+                    className="font-medium hover:underline text-primary text-left"
+                >
+                    <Badge variant="secondary" className="font-normal cursor-pointer">{row.original.leaveTypeName}</Badge>
+                </button>
+            )
         },
         {
             accessorKey: "startDate",
             header: "Duration",
             cell: ({ row }) => (
-                <div className="text-[10px] font-medium">
-                    <div>{format(new Date(row.original.startDate), "dd MMM")} - {format(new Date(row.original.endDate), "dd MMM yyyy")}</div>
-                    <div className="text-emerald-600">{row.original.totalDays} day(s)</div>
+                <div className="text-xs">
+                    <div className="font-medium">{format(new Date(row.original.startDate), "dd MMM")} - {format(new Date(row.original.endDate), "dd MMM yyyy")}</div>
+                    <div className="text-muted-foreground">{row.original.totalDays} day(s)</div>
                 </div>
             )
         },
@@ -135,133 +261,208 @@ export default function LeaveManagementPage() {
             cell: ({ row }) => {
                 const status = row.original.status
                 const variant = status === "Approved" ? "default" : status === "Rejected" ? "destructive" : "secondary"
-                return <Badge variant={variant} className="text-[10px] font-black uppercase">{status}</Badge>
+                return <Badge variant={variant} className="font-normal text-xs">{status}</Badge>
             }
         },
         {
             id: "actions",
             header: "Actions",
             cell: ({ row }) => (
-                <div className="flex gap-1 justify-end">
-                    {row.original.status === "Pending" && (
-                        <>
-                            <Button
-                                size="icon"
-                                variant="ghost"
-                                className="size-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
-                                onClick={() => handleAction(row.original.id, "Approved")}
-                                disabled={isActionLoading === row.original.id}
-                            >
-                                {isActionLoading === row.original.id ? <IconLoader className="size-4 animate-spin" /> : <IconCheck className="size-4" />}
-                            </Button>
-                            <Button
-                                size="icon"
-                                variant="ghost"
-                                className="size-8 text-rose-600 hover:text-rose-700 hover:bg-rose-50"
-                                onClick={() => handleAction(row.original.id, "Rejected")}
-                                disabled={isActionLoading === row.original.id}
-                            >
-                                {isActionLoading === row.original.id ? <IconLoader className="size-4 animate-spin" /> : <IconX className="size-4" />}
-                            </Button>
-                        </>
-                    )}
-                </div>
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="h-8 w-8 p-0">
+                            <span className="sr-only">Open menu</span>
+                            <IconDotsVertical className="size-4" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        <DropdownMenuItem onClick={() => window.location.href = `/management/leave/application/${row.original.id}`}>
+                            <IconEye className="mr-2 size-4" /> View Details
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                            onClick={() => handleEdit(row.original)}
+                            disabled={row.original.status !== "Pending"}
+                        >
+                            <IconEdit className="mr-2 size-4" /> Edit Application
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                            className="text-rose-600"
+                            onClick={() => setDeleteId(row.original.id)}
+                            disabled={row.original.status !== "Pending"}
+                        >
+                            <IconTrash className="mr-2 size-4" /> Delete
+                        </DropdownMenuItem>
+
+                        <DropdownMenuSeparator />
+
+                        <DropdownMenuSub>
+                            <DropdownMenuSubTrigger>
+                                <IconCheck className="mr-2 size-4" /> Approval Status
+                            </DropdownMenuSubTrigger>
+                            <DropdownMenuPortal>
+                                <DropdownMenuSubContent>
+                                    <DropdownMenuItem
+                                        className="text-emerald-600"
+                                        onClick={() => handleAction(row.original.id, "Approved")}
+                                        disabled={row.original.status !== "Pending"}
+                                    >
+                                        <IconCheck className="mr-2 size-4" /> Approve
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        className="text-rose-600"
+                                        onClick={() => handleAction(row.original.id, "Rejected")}
+                                        disabled={row.original.status !== "Pending"}
+                                    >
+                                        <IconX className="mr-2 size-4" /> Reject
+                                    </DropdownMenuItem>
+                                </DropdownMenuSubContent>
+                            </DropdownMenuPortal>
+                        </DropdownMenuSub>
+
+                        <DropdownMenuSeparator />
+
+                        <DropdownMenuSub>
+                            <DropdownMenuSubTrigger>
+                                <IconFileDownload className="mr-2 size-4" /> Export As
+                            </DropdownMenuSubTrigger>
+                            <DropdownMenuPortal>
+                                <DropdownMenuSubContent>
+                                    <DropdownMenuItem onClick={() => leaveService.exportWord(row.original.id)}>
+                                        <IconFileTypeDocx className="mr-2 size-4" /> Word
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => leaveService.exportPdf(row.original.id)}>
+                                        <IconFileTypePdf className="mr-2 size-4" /> PDF
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => leaveService.exportExcel()}>
+                                        <IconFileTypeXls className="mr-2 size-4" /> Excel
+                                    </DropdownMenuItem>
+                                </DropdownMenuSubContent>
+                            </DropdownMenuPortal>
+                        </DropdownMenuSub>
+                    </DropdownMenuContent>
+                </DropdownMenu>
             )
         }
     ]
 
     return (
-        <div className="p-6 space-y-6 w-full animate-in fade-in duration-700">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary shadow-sm">
-                        <IconCalendarEvent className="size-6" />
-                    </div>
-                    <div>
-                        <h1 className="text-2xl font-black tracking-tighter">Leave Management</h1>
-                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">Application Approval & Tracking</p>
-                    </div>
+        <div className="flex flex-col gap-6 py-6 animate-in fade-in duration-500">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-6">
+                <div>
+                    <h1 className="text-2xl font-bold tracking-tight">Leave Management</h1>
+                    <p className="text-muted-foreground text-sm">Manage employee leave applications and records</p>
                 </div>
 
-                <Sheet>
+                <Sheet open={isSheetOpen} onOpenChange={(open) => !open && handleSheetClose()}>
                     <SheetTrigger asChild>
-                        <Button className="rounded-full h-10 px-6 gap-2 font-bold shadow-lg shadow-primary/20">
-                            <IconPlus className="size-4" /> New Leave Application
+                        <Button className="gap-2" onClick={() => setIsSheetOpen(true)}>
+                            <IconPlus className="size-4" /> New Application
                         </Button>
                     </SheetTrigger>
                     <SheetContent className="w-full sm:max-w-md">
-                        <SheetHeader className="pb-6 border-b">
-                            <SheetTitle className="text-xl font-black tracking-tight">Apply for Leave</SheetTitle>
-                            <SheetDescription>Submit a formal leave request to the management.</SheetDescription>
+                        <SheetHeader className="pb-4">
+                            <SheetTitle>{editingId ? "Edit Application" : "New Application"}</SheetTitle>
+                            <SheetDescription>
+                                {editingId ? "Update leave request details." : "Submit a new leave request for an employee."}
+                            </SheetDescription>
                         </SheetHeader>
-                        <div className="grid gap-6 py-8">
+                        <div className="space-y-4 py-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="employeeIdCard">Employee ID</Label>
+                                    <div className="flex gap-2">
+                                        <Input
+                                            id="employeeIdCard"
+                                            placeholder="EMP-001"
+                                            value={formData.employeeIdCard}
+                                            onChange={(e) => setFormData(prev => ({ ...prev, employeeIdCard: e.target.value }))}
+                                            onKeyDown={(e) => e.key === "Enter" && handleEmployeeSearch()}
+                                            className="uppercase"
+                                        />
+                                        <Button
+                                            size="icon"
+                                            variant="outline"
+                                            className="shrink-0"
+                                            onClick={handleEmployeeSearch}
+                                            disabled={isSearchingEmployee}
+                                        >
+                                            {isSearchingEmployee ? <IconLoader className="size-4 animate-spin" /> : <IconSearch className="size-4" />}
+                                        </Button>
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="employeeName">Name</Label>
+                                    <Input
+                                        id="employeeName"
+                                        readOnly
+                                        placeholder="Auto-filled"
+                                        className="bg-muted"
+                                        value={formData.employeeName}
+                                    />
+                                </div>
+                            </div>
                             <div className="space-y-2">
-                                <Label className="text-[10px] font-black uppercase tracking-widest p-1">Leave Type</Label>
+                                <Label htmlFor="leaveType">Leave Type</Label>
                                 <NativeSelect
+                                    id="leaveType"
                                     value={formData.leaveTypeId}
                                     onChange={(e) => setFormData(prev => ({ ...prev, leaveTypeId: e.target.value }))}
-                                    className="h-12 rounded-2xl border-2"
                                 >
                                     <option value="">Select Type</option>
-                                    {leaveTypes.map(t => <option key={t.id} value={t.id}>{t.name} ({t.code})</option>)}
+                                    {leaveTypes.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                                 </NativeSelect>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <Label className="text-[10px] font-black uppercase tracking-widest p-1">Start Date</Label>
-                                    <Input
-                                        type="date"
-                                        className="h-12 rounded-2xl border-2"
-                                        value={formData.startDate}
-                                        onChange={(e) => setFormData(prev => ({ ...prev, startDate: e.target.value }))}
+                                    <Label htmlFor="startDate">Start Date</Label>
+                                    <DatePicker
+                                        date={formData.startDate ? new Date(formData.startDate) : undefined}
+                                        setDate={(date) => setFormData(prev => ({ ...prev, startDate: date ? date.toISOString() : "" }))}
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label className="text-[10px] font-black uppercase tracking-widest p-1">End Date</Label>
-                                    <Input
-                                        type="date"
-                                        className="h-12 rounded-2xl border-2"
-                                        value={formData.endDate}
-                                        onChange={(e) => setFormData(prev => ({ ...prev, endDate: e.target.value }))}
+                                    <Label htmlFor="endDate">End Date</Label>
+                                    <DatePicker
+                                        date={formData.endDate ? new Date(formData.endDate) : undefined}
+                                        setDate={(date) => setFormData(prev => ({ ...prev, endDate: date ? date.toISOString() : "" }))}
                                     />
                                 </div>
                             </div>
                             <div className="space-y-2">
-                                <Label className="text-[10px] font-black uppercase tracking-widest p-1">Reason</Label>
+                                <Label htmlFor="reason">Reason</Label>
                                 <Textarea
-                                    placeholder="Briefly describe why you need this leave..."
-                                    className="min-h-[120px] rounded-2xl border-2 p-4"
+                                    id="reason"
+                                    placeholder="Brief reason for leave..."
+                                    className="min-h-[100px]"
                                     value={formData.reason}
                                     onChange={(e) => setFormData(prev => ({ ...prev, reason: e.target.value }))}
                                 />
                             </div>
                             <Button
-                                className="h-12 rounded-2xl font-black text-base mt-2"
+                                className="w-full"
                                 onClick={handleSubmit}
                                 disabled={isApplying}
                             >
-                                {isApplying ? <IconLoader className="mr-2 animate-spin" /> : <IconCheck className="mr-2" />}
-                                Submit Application
+                                {isApplying && <IconLoader className="mr-2 size-4 animate-spin" />}
+                                {editingId ? "Update Application" : "Submit Application"}
                             </Button>
                         </div>
                     </SheetContent>
                 </Sheet>
             </div>
 
-            <div className="grid gap-6 md:grid-cols-3">
-                <KPICard title="Pending Requests" value={applications.filter(a => a.status === "Pending").length.toString()} icon={IconHistory} color="text-amber-600" bg="bg-amber-50" />
-                <KPICard title="On Leave Today" value="-" icon={IconCalendarEvent} color="text-blue-600" bg="bg-blue-50" />
-                <KPICard title="Approved" value={applications.filter(a => a.status === "Approved").length.toString()} icon={IconCheck} color="text-emerald-600" bg="bg-emerald-50" />
+            <div className="grid gap-4 md:grid-cols-3 px-6">
+                <KPICard title="Pending" value={applications.filter(a => a.status === "Pending").length.toString()} icon={IconHistory} />
+                <KPICard title="On Leave" value="0" icon={IconCalendarEvent} />
+                <KPICard title="Approved" value={applications.filter(a => a.status === "Approved").length.toString()} icon={IconCheck} />
             </div>
 
-            <Card className="border-none shadow-2xl shadow-slate-200/50 rounded-3xl overflow-hidden">
-                <CardHeader className="bg-slate-50 border-b pb-4">
-                    <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
-                        <IconFilter className="size-4" />
-                        Application Repository
-                    </CardTitle>
-                </CardHeader>
-                <CardContent className="p-0">
+            <div className="px-6">
+                <Card>
+                    <CardHeader className="pb-4 border-b">
+                        <CardTitle className="text-base font-semibold">Application History</CardTitle>
+                    </CardHeader>
                     <DataTable
                         columns={columns}
                         data={applications}
@@ -269,22 +470,39 @@ export default function LeaveManagementPage() {
                         searchKey="employeeName"
                         isLoading={isLoading}
                     />
-                </CardContent>
-            </Card>
+                </Card>
+            </div>
+
+            <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Confirmation</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to delete this leave application? This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction className="bg-rose-600 hover:bg-rose-700" onClick={handleDelete}>
+                            Delete
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     )
 }
 
-function KPICard({ title, value, icon: Icon, color, bg }: any) {
+function KPICard({ title, value, icon: Icon }: any) {
     return (
-        <Card className="border-none shadow-xl shadow-slate-100/50 hover:scale-[1.02] transition-transform duration-300">
-            <CardContent className="p-6 flex items-center gap-4">
-                <div className={`size-12 rounded-2xl flex items-center justify-center ${bg} ${color} shadow-inner`}>
-                    <Icon className="size-6" />
+        <Card>
+            <CardContent className="p-4 flex items-center gap-4">
+                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                    <Icon className="size-5" />
                 </div>
                 <div>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{title}</p>
-                    <h3 className="text-2xl font-black tabular-nums tracking-tighter mt-0.5">{value}</h3>
+                    <p className="text-xs font-medium text-muted-foreground">{title}</p>
+                    <h3 className="text-xl font-bold">{value}</h3>
                 </div>
             </CardContent>
         </Card>

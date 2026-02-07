@@ -39,8 +39,8 @@ export default function DailyProcessPage() {
 
         try {
             const payload = {
-                fromDate: format(range.from, "yyyy-MM-dd"),
-                toDate: range.to ? format(range.to, "yyyy-MM-dd") : format(range.from, "yyyy-MM-dd"),
+                startDate: format(range.from, "yyyy-MM-dd"),
+                endDate: range.to ? format(range.to, "yyyy-MM-dd") : format(range.from, "yyyy-MM-dd"),
                 departmentId: departmentId === "all" ? undefined : parseInt(departmentId)
             }
 

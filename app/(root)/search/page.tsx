@@ -153,7 +153,7 @@ export default function SearchPage() {
                                 </>
                             ) : (
                                 <div className="text-center py-12">
-                                    <p className="text-muted-foreground">No results found for "{query}".</p>
+                                    <p className="text-muted-foreground">No results found for &quot;{query}&quot;.</p>
                                     <Button variant="link" onClick={() => setQuery("")}>Clear search</Button>
                                 </div>
                             )}

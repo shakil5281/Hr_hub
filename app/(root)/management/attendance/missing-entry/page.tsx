@@ -5,12 +5,11 @@ import { format } from "date-fns"
 import {
     IconAlertTriangle,
     IconSearch,
-    IconUser,
-    IconAdjustmentsHorizontal,
-    IconRotateClockwise,
-    IconFileSpreadsheet,
-    IconLoader,
-    IconEdit
+    IconDownload,
+    IconRefresh,
+    IconEdit,
+    IconArrowLeft,
+    IconActivity
 } from "@tabler/icons-react"
 import { DataTable } from "@/components/data-table"
 import { ColumnDef } from "@tanstack/react-table"
@@ -23,8 +22,20 @@ import { DateRange } from "react-day-picker"
 import { Badge } from "@/components/ui/badge"
 import { missingEntryService, type MissingEntry, type MissingEntrySummary } from "@/lib/services/missingEntry"
 import { organogramService } from "@/lib/services/organogram"
+import { attendanceService } from "@/lib/services/attendance"
 import { toast } from "sonner"
+import {
+    Sheet,
+    SheetContent,
+    SheetHeader,
+    SheetTitle,
+    SheetDescription,
+    SheetFooter,
+    SheetClose
+} from "@/components/ui/sheet"
+import { Label } from "@/components/ui/label"
 import { useRouter } from "next/navigation"
+import { cn } from "@/lib/utils"
 
 export default function MissingEntryPage() {
     const router = useRouter()
@@ -33,14 +44,22 @@ export default function MissingEntryPage() {
     const [designation, setDesignation] = React.useState("all")
     const [section, setSection] = React.useState("all")
     const [dateRange, setDateRange] = React.useState<DateRange | undefined>({
-        from: new Date(2026, 0, 1),
-        to: new Date(2026, 0, 31)
+        from: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+        to: new Date()
     })
 
     const [isLoading, setIsLoading] = React.useState(false)
     const [filteredData, setFilteredData] = React.useState<MissingEntry[]>([])
     const [summary, setSummary] = React.useState<MissingEntrySummary | null>(null)
     const [hasSearched, setHasSearched] = React.useState(false)
+    const [selectedRows, setSelectedRows] = React.useState<MissingEntry[]>([])
+    const [isSheetOpen, setIsSheetOpen] = React.useState(false)
+    const [editingEntry, setEditingEntry] = React.useState<MissingEntry | null>(null)
+    const [manualInTime, setManualInTime] = React.useState("")
+    const [manualOutTime, setManualOutTime] = React.useState("")
+    const [manualStatus, setManualStatus] = React.useState("Present")
+    const [manualReason, setManualReason] = React.useState("")
+    const [isSubmitting, setIsSubmitting] = React.useState(false)
 
     const [departments, setDepartments] = React.useState<any[]>([])
     const [designations, setDesignations] = React.useState<any[]>([])
@@ -67,47 +86,44 @@ export default function MissingEntryPage() {
 
     const columns: ColumnDef<MissingEntry>[] = [
         {
-            accessorKey: "date",
-            header: "Date",
-            cell: ({ row }) => <span className="font-bold text-xs">{format(new Date(row.original.date), "dd MMM yyyy")}</span>
+            id: "sl",
+            header: "SL",
+            cell: ({ row }) => <div className="text-left font-medium">{row.index + 1}</div>,
         },
         {
-            accessorKey: "employeeIdCard",
-            header: "ID",
-            cell: ({ row }) => <Badge variant="outline" className="text-[10px] font-bold">{row.original.employeeIdCard}</Badge>
+            accessorKey: "date",
+            header: "Date",
+            cell: ({ row }) => <span className="text-sm">{format(new Date(row.original.date), "dd MMM yyyy")}</span>
         },
         {
             accessorKey: "employeeName",
             header: "Employee Name",
-            cell: ({ row }) => <span className="font-bold text-xs">{row.original.employeeName}</span>
+            cell: ({ row }) => (
+                <div className="flex flex-col">
+                    <span className="font-semibold text-gray-900">{row.original.employeeName}</span>
+                    <span className="text-xs text-gray-500">{row.original.employeeIdCard}</span>
+                </div>
+            )
         },
         {
             accessorKey: "department",
             header: "Department",
-            cell: ({ row }) => <span className="text-xs text-muted-foreground">{row.original.department}</span>
-        },
-        {
-            accessorKey: "shift",
-            header: "Shift",
-            cell: ({ row }) => <span className="text-xs text-muted-foreground">{row.original.shift || "N/A"}</span>
+            cell: ({ row }) => <span className="text-xs">{row.original.department}</span>
         },
         {
             accessorKey: "missingType",
             header: "Missing Punch",
             cell: ({ row }) => (
-                <div className="flex items-center gap-2">
-                    <div className="size-2 rounded-full bg-rose-500 animate-pulse" />
-                    <span className="text-rose-600 font-bold text-xs uppercase tracking-tight">{row.original.missingType}</span>
-                </div>
+                <span className="text-sm font-medium text-red-600">{row.original.missingType}</span>
             )
         },
         {
             accessorKey: "status",
-            header: "Audit Status",
+            header: "Status",
             cell: ({ row }) => (
                 <Badge
                     variant={row.original.status === "Critical" ? "destructive" : "secondary"}
-                    className="text-[10px] font-black uppercase px-2 h-5"
+                    className="font-medium"
                 >
                     {row.original.status}
                 </Badge>
@@ -120,19 +136,73 @@ export default function MissingEntryPage() {
                 <Button
                     size="sm"
                     variant="outline"
-                    className="h-7 rounded-lg text-[10px] font-bold px-3 hover:bg-primary hover:text-white transition-all"
-                    onClick={() => router.push(`/management/attendance/manual-entry?employeeId=${row.original.employeeId}&date=${format(new Date(row.original.date), "yyyy-MM-dd")}`)}
+                    className="h-8"
+                    onClick={() => {
+                        setEditingEntry(row.original)
+                        setManualInTime(row.original.inTime || "")
+                        setManualOutTime(row.original.outTime || "")
+                        setManualStatus("Present")
+                        setManualReason("Missing punch correction")
+                        setIsSheetOpen(true)
+                    }}
                 >
-                    <IconEdit className="size-3 mr-1" />
-                    FIX PUNCH
+                    <IconEdit size={16} className="mr-2" />
+                    Fix Punch
                 </Button>
             )
         }
     ]
 
+    const handleManualSubmit = async () => {
+        if (!editingEntry) return
+
+        setIsSubmitting(true)
+        try {
+            await attendanceService.createManualEntry({
+                employeeId: editingEntry.employeeId,
+                date: editingEntry.date,
+                inTime: manualInTime,
+                outTime: manualOutTime,
+                status: manualStatus,
+                reason: manualReason
+            })
+            toast.success("Punch fixed successfully")
+            setIsSheetOpen(false)
+            handleSearch()
+        } catch (error: any) {
+            toast.error("Failed to fix punch")
+        } finally {
+            setIsSubmitting(false)
+        }
+    }
+
+    const handleBulkSubmit = async () => {
+        if (selectedRows.length === 0) return
+
+        setIsSubmitting(true)
+        try {
+            await attendanceService.bulkManualEntry({
+                employeeIds: selectedRows.map(r => r.employeeId),
+                date: selectedRows[0].date,
+                inTime: manualInTime,
+                outTime: manualOutTime,
+                status: manualStatus,
+                reason: manualReason
+            })
+            toast.success(`Bulk fix completed for ${selectedRows.length} employees`)
+            setSelectedRows([])
+            setIsSheetOpen(false)
+            handleSearch()
+        } catch (error: any) {
+            toast.error("Bulk submission failed")
+        } finally {
+            setIsSubmitting(false)
+        }
+    }
+
     const handleSearch = async () => {
         if (!dateRange?.from || !dateRange?.to) {
-            toast.error("Please select a date range")
+            toast.error("Date range required")
             return
         }
 
@@ -142,211 +212,231 @@ export default function MissingEntryPage() {
                 fromDate: format(dateRange.from, "yyyy-MM-dd"),
                 toDate: format(dateRange.to, "yyyy-MM-dd")
             }
-
             if (department !== "all") params.departmentId = parseInt(department)
             if (designation !== "all") params.designationId = parseInt(designation)
             if (section !== "all") params.sectionId = parseInt(section)
             if (empId.trim()) params.searchTerm = empId.trim()
 
             const data = await missingEntryService.getMissingEntries(params)
-
             setFilteredData(data.entries)
             setSummary(data.summary)
             setHasSearched(true)
-
-            if (data.entries.length === 0) {
-                toast.success("No missing entries found!")
-            } else {
-                toast.info(`Found ${data.entries.length} missing entries`)
-            }
         } catch (error: any) {
-            toast.error(error.response?.data?.message || "Failed to fetch missing entries")
+            toast.error("Failed to fetch records")
         } finally {
             setIsLoading(false)
         }
     }
 
     return (
-        <div className="flex flex-col min-h-screen bg-background/50 animate-in fade-in duration-700">
-            {/* Header */}
-            <div className="border-b bg-background/80 backdrop-blur-md sticky top-0 z-20">
-                <div className="container mx-auto px-4 py-4 lg:px-8 max-w-[1600px]">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-500 text-white shadow-lg shadow-rose-200">
-                                <IconAlertTriangle className="size-5" />
-                            </div>
-                            <div>
-                                <h1 className="text-xl font-bold tracking-tight">Missing Entry Log</h1>
-                                <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest">Attendance Audit & Correction</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                className="rounded-full h-8 px-4 text-xs font-bold"
-                                onClick={handleSearch}
-                                disabled={isLoading}
-                            >
-                                <IconRotateClockwise className="mr-2 size-4" />
-                                Sync Real-time
-                            </Button>
-                            <Button
-                                size="sm"
-                                className="rounded-full h-8 px-4 text-xs font-bold bg-slate-900"
-                                disabled={filteredData.length === 0}
-                            >
-                                <IconFileSpreadsheet className="mr-2 size-4" />
-                                Export Missing
-                            </Button>
-                        </div>
+        <div className="flex flex-col gap-6 p-6 font-sans">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b pb-6">
+                <div className="flex items-center gap-4">
+                    <Button variant="outline" size="icon" onClick={() => router.back()} className="rounded-md">
+                        <IconArrowLeft size={18} />
+                    </Button>
+                    <div>
+                        <h1 className="text-2xl font-bold">Missing Entry Log</h1>
+                        <p className="text-sm text-gray-500">Audit and fix missing employee punch records</p>
                     </div>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                    {selectedRows.length > 0 && (
+                        <Button
+                            size="sm"
+                            className="bg-green-600 hover:bg-green-700 text-white"
+                            onClick={() => {
+                                setEditingEntry(null)
+                                setManualInTime("")
+                                setManualOutTime("")
+                                setManualStatus("Present")
+                                setManualReason("Bulk fix")
+                                setIsSheetOpen(true)
+                            }}
+                        >
+                            <IconEdit size={18} className="mr-2" />
+                            Fix Selected ({selectedRows.length})
+                        </Button>
+                    )}
+                    <Button variant="outline" size="sm" onClick={handleSearch} disabled={isLoading}>
+                        <IconRefresh size={18} className={cn("mr-2", isLoading && "animate-spin")} /> Refresh
+                    </Button>
+                    <Button variant="outline" size="sm" disabled={filteredData.length === 0}>
+                        <IconDownload className="mr-2 h-4 w-4" /> Export
+                    </Button>
                 </div>
             </div>
 
-            <main className="container mx-auto px-4 py-8 lg:px-8 max-w-[1600px] space-y-8">
-                {/* Summary Cards */}
+            <div className="space-y-6">
                 {summary && (
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4 animate-in slide-in-from-top duration-500">
-                        <Card className="border-l-4 border-l-rose-500">
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                        <Card className="border shadow-none">
                             <CardContent className="p-4">
-                                <p className="text-xs text-muted-foreground mb-1">Total Missing</p>
-                                <p className="text-2xl font-bold text-rose-600">{summary.totalMissing}</p>
+                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Total Missing</p>
+                                <p className="text-2xl font-bold mt-1 text-red-600">{summary.totalMissing}</p>
                             </CardContent>
                         </Card>
-                        <Card className="border-l-4 border-l-amber-500">
+                        <Card className="border shadow-none">
                             <CardContent className="p-4">
-                                <p className="text-xs text-muted-foreground mb-1">Missing In</p>
-                                <p className="text-2xl font-bold text-amber-600">{summary.missingInTime}</p>
+                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Missing In</p>
+                                <p className="text-2xl font-bold mt-1 text-orange-600">{summary.missingInTime}</p>
                             </CardContent>
                         </Card>
-                        <Card className="border-l-4 border-l-orange-500">
+                        <Card className="border shadow-none">
                             <CardContent className="p-4">
-                                <p className="text-xs text-muted-foreground mb-1">Missing Out</p>
-                                <p className="text-2xl font-bold text-orange-600">{summary.missingOutTime}</p>
+                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Missing Out</p>
+                                <p className="text-2xl font-bold mt-1 text-orange-600">{summary.missingOutTime}</p>
                             </CardContent>
                         </Card>
-                        <Card className="border-l-4 border-l-red-500">
+                        <Card className="border shadow-none">
                             <CardContent className="p-4">
-                                <p className="text-xs text-muted-foreground mb-1">No Punch</p>
-                                <p className="text-2xl font-bold text-red-600">{summary.missingBoth}</p>
+                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">No Punch</p>
+                                <p className="text-2xl font-bold mt-1 text-red-600">{summary.missingBoth}</p>
                             </CardContent>
                         </Card>
-                        <Card className="border-l-4 border-l-purple-500">
+                        <Card className="border shadow-none">
                             <CardContent className="p-4">
-                                <p className="text-xs text-muted-foreground mb-1">Critical</p>
-                                <p className="text-2xl font-bold text-purple-600">{summary.criticalCount}</p>
+                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Critical</p>
+                                <p className="text-2xl font-bold mt-1 text-purple-600">{summary.criticalCount}</p>
                             </CardContent>
                         </Card>
                     </div>
                 )}
 
-                {/* Filters */}
-                <Card className="border">
-                    <CardHeader className="pb-4">
-                        <CardTitle className="text-base flex items-center gap-2">
-                            <IconAdjustmentsHorizontal className="size-5 text-rose-500" />
+                <Card className="border shadow-none">
+                    <CardHeader className="bg-gray-50 border-b py-4">
+                        <div className="flex items-center gap-2 text-sm font-semibold">
+                            <IconSearch size={18} />
                             Search Filters
-                        </CardTitle>
-                        <CardDescription>Filter by department or employee to find missing attendance logs.</CardDescription>
+                        </div>
                     </CardHeader>
-                    <CardContent>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 items-end">
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Employee ID</label>
-                                <div className="relative">
-                                    <IconUser className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                                    <Input
-                                        placeholder="Search by ID/Name"
-                                        className="pl-10 h-10 rounded-xl"
-                                        value={empId}
-                                        onChange={(e) => setEmpId(e.target.value)}
-                                    />
-                                </div>
+                    <CardContent className="p-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 items-end">
+                            <div className="space-y-1">
+                                <Label className="text-xs uppercase font-bold text-gray-400">Employee ID / Name</Label>
+                                <Input placeholder="Type to search..." value={empId} onChange={(e) => setEmpId(e.target.value)} />
                             </div>
-
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Department</label>
-                                <NativeSelect value={department} onChange={(e) => setDepartment(e.target.value)} className="h-10 rounded-xl">
-                                    <option value="all">All Departments</option>
+                            <div className="space-y-1">
+                                <Label className="text-xs uppercase font-bold text-gray-400">Department</Label>
+                                <NativeSelect value={department} onChange={(e) => setDepartment(e.target.value)}>
+                                    <option value="all">Every Department</option>
                                     {departments.map(d => <option key={d.id} value={d.id}>{d.nameEn}</option>)}
                                 </NativeSelect>
                             </div>
-
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Designation</label>
-                                <NativeSelect value={designation} onChange={(e) => setDesignation(e.target.value)} className="h-10 rounded-xl">
-                                    <option value="all">All Designations</option>
-                                    {designations.map(d => <option key={d.id} value={d.id}>{d.nameEn}</option>)}
-                                </NativeSelect>
-                            </div>
-
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Section</label>
-                                <NativeSelect value={section} onChange={(e) => setSection(e.target.value)} className="h-10 rounded-xl">
-                                    <option value="all">All Sections</option>
+                            <div className="space-y-1">
+                                <Label className="text-xs uppercase font-bold text-gray-400">Section</Label>
+                                <NativeSelect value={section} onChange={(e) => setSection(e.target.value)}>
+                                    <option value="all">Every Section</option>
                                     {sections.map(s => <option key={s.id} value={s.id}>{s.nameEn}</option>)}
                                 </NativeSelect>
                             </div>
-
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Select Range</label>
-                                <DateRangePicker
-                                    date={dateRange}
-                                    setDate={setDateRange}
-                                />
+                            <div className="space-y-1">
+                                <Label className="text-xs uppercase font-bold text-gray-400">Date Range</Label>
+                                <DateRangePicker date={dateRange} setDate={setDateRange} />
                             </div>
-
-                            <Button
-                                className="h-10 rounded-xl gap-2 w-full bg-rose-600 hover:bg-rose-700 text-white"
-                                onClick={handleSearch}
-                                disabled={isLoading}
-                            >
-                                {isLoading ? (
-                                    <>
-                                        <IconLoader className="size-5 animate-spin" />
-                                        Searching...
-                                    </>
-                                ) : (
-                                    <>
-                                        <IconSearch className="size-5" />
-                                        Search Entry
-                                    </>
-                                )}
+                            <Button onClick={handleSearch} disabled={isLoading} className="gap-2">
+                                {isLoading ? <IconRefresh size={18} className="animate-spin" /> : <IconActivity size={18} />}
+                                Generate List
                             </Button>
                         </div>
                     </CardContent>
                 </Card>
 
-                {/* Data Table Section */}
                 {hasSearched ? (
-                    <div className="bg-card border rounded-3xl overflow-hidden shadow-sm animate-in slide-in-from-bottom-4 duration-500">
-                        <div className="p-6 border-b bg-muted/20 flex items-center justify-between">
-                            <h2 className="text-sm font-bold flex items-center gap-2 uppercase tracking-tighter">
-                                Showing Results
-                                <Badge variant="secondary" className="rounded-full px-2">{filteredData.length}</Badge>
-                            </h2>
-                        </div>
-                        <DataTable
-                            columns={columns}
-                            data={filteredData}
-                            showColumnCustomizer={false}
-                            searchKey="employeeName"
-                        />
-                    </div>
+                    <Card className="border shadow-none overflow-hidden">
+                        <CardHeader className="bg-gray-50 border-b py-4">
+                            <div className="flex items-center justify-between">
+                                <CardTitle className="text-base font-semibold">Missing Records</CardTitle>
+                                <Badge variant="outline" className="bg-white font-medium">
+                                    {filteredData.length} records found
+                                </Badge>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="p-0">
+                            <DataTable
+                                columns={columns}
+                                data={filteredData}
+                                showColumnCustomizer={false}
+                                searchKey="employeeName"
+                                enableSelection={true}
+                                onSelectionChange={setSelectedRows}
+                            />
+                        </CardContent>
+                    </Card>
                 ) : (
-                    <div className="flex flex-col items-center justify-center py-24 bg-accent/5 rounded-3xl border-2 border-dashed border-muted/50">
-                        <div className="size-20 bg-background rounded-full flex items-center justify-center border-2 border-muted/20 mb-6 text-rose-200">
-                            <IconAlertTriangle className="size-10" />
-                        </div>
-                        <h3 className="text-xl font-bold text-muted-foreground">Missing Logic Analysis</h3>
-                        <p className="text-sm text-muted-foreground/60 max-w-xs text-center mt-2 font-medium">
-                            Set your filters and date range to identify employees with missing punch-in or punch-out records.
-                        </p>
+                    <div className="flex flex-col items-center justify-center py-12 border border-dashed rounded-lg bg-gray-50 text-gray-400">
+                        <IconAlertTriangle size={48} stroke={1.5} />
+                        <p className="mt-4 font-medium">Define parameters and click 'Generate' to see missing entry logs</p>
                     </div>
                 )}
-            </main>
+
+                <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+                    <SheetContent className="sm:max-w-md">
+                        <SheetHeader>
+                            <SheetTitle>{editingEntry ? "Fix Punch Record" : `Bulk Fix (${selectedRows.length} Records)`}</SheetTitle>
+                            <SheetDescription>Manually adjust attendance times for correction</SheetDescription>
+                        </SheetHeader>
+
+                        <div className="space-y-6 py-6">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label>In Time</Label>
+                                    <Input
+                                        type="time"
+                                        step="1"
+                                        value={manualInTime}
+                                        onChange={(e) => setManualInTime(e.target.value)}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Out Time</Label>
+                                    <Input
+                                        type="time"
+                                        step="1"
+                                        value={manualOutTime}
+                                        onChange={(e) => setManualOutTime(e.target.value)}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label>Status</Label>
+                                <NativeSelect
+                                    value={manualStatus}
+                                    onChange={(e) => setManualStatus(e.target.value)}
+                                >
+                                    <option value="Present">Present</option>
+                                    <option value="Late">Late</option>
+                                    <option value="On Leave">On Leave</option>
+                                    <option value="Off Day">Off Day</option>
+                                </NativeSelect>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label>Reason for Adjustment</Label>
+                                <Input
+                                    placeholder="Brief explanation..."
+                                    value={manualReason}
+                                    onChange={(e) => setManualReason(e.target.value)}
+                                />
+                            </div>
+                        </div>
+
+                        <SheetFooter className="gap-2">
+                            <SheetClose asChild>
+                                <Button variant="outline" className="flex-1">Cancel</Button>
+                            </SheetClose>
+                            <Button
+                                className="flex-1"
+                                onClick={editingEntry ? handleManualSubmit : handleBulkSubmit}
+                                disabled={isSubmitting}
+                            >
+                                {isSubmitting ? <IconRefresh size={18} className="animate-spin" /> : "Save Changes"}
+                            </Button>
+                        </SheetFooter>
+                    </SheetContent>
+                </Sheet>
+            </div>
         </div>
     )
 }

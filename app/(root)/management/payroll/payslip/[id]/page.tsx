@@ -1,17 +1,15 @@
 "use client"
 
 import * as React from "react"
-import { useParams } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import {
     IconPrinter,
     IconDownload,
     IconLoader,
-    IconBuildingBank,
-    IconUser,
-    IconBriefcase,
-    IconCalendarStats,
     IconArrowLeft,
-    IconCash
+    IconBuilding,
+    IconPhone,
+    IconMail
 } from "@tabler/icons-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -22,6 +20,7 @@ import Link from "next/link"
 
 export default function PayslipPage() {
     const params = useParams()
+    const router = useRouter()
     const id = parseInt(params.id as string)
 
     const [isLoading, setIsLoading] = React.useState(true)
@@ -36,33 +35,40 @@ export default function PayslipPage() {
         }
     }, [id])
 
+    const handlePrint = () => {
+        window.print()
+    }
+
     if (isLoading) {
         return (
             <div className="flex items-center justify-center h-screen">
-                <IconLoader className="size-10 animate-spin text-muted-foreground" />
+                <IconLoader className="size-8 animate-spin text-muted-foreground" />
             </div>
         )
     }
 
-    if (!data) return <div>Payslip not found</div>
+    if (!data) return (
+        <div className="container mx-auto py-10 text-center">
+            <h2 className="text-xl font-semibold">Payslip not found</h2>
+            <Button variant="link" onClick={() => router.back()}>Go Back</Button>
+        </div>
+    )
 
     return (
-        <div className="min-h-screen bg-muted/30 pb-20 animate-in fade-in duration-700">
-            {/* Control Bar */}
+        <div className="min-h-screen bg-muted/20 pb-10">
+            {/* Control Bar - Hidden when printing */}
             <div className="bg-background border-b sticky top-0 z-30 print:hidden">
-                <div className="container mx-auto px-4 py-4 flex items-center justify-between max-w-[900px]">
-                    <Link href="/management/payroll/monthly-sheet">
-                        <Button variant="ghost" size="sm" className="gap-2 text-xs font-bold">
-                            <IconArrowLeft className="size-4" />
-                            Back to Sheet
-                        </Button>
-                    </Link>
+                <div className="container mx-auto px-4 py-3 flex items-center justify-between max-w-[800px]">
+                    <Button variant="ghost" size="sm" onClick={() => router.back()} className="gap-2">
+                        <IconArrowLeft className="size-4" />
+                        Back
+                    </Button>
                     <div className="flex gap-2">
-                        <Button size="sm" variant="outline" className="gap-2 text-xs font-bold" onClick={() => window.print()}>
+                        <Button size="sm" variant="outline" className="gap-2" onClick={handlePrint}>
                             <IconPrinter className="size-4" />
-                            Print Payslip
+                            Print
                         </Button>
-                        <Button size="sm" className="gap-2 text-xs font-bold bg-slate-900">
+                        <Button size="sm" className="gap-2" onClick={handlePrint}>
                             <IconDownload className="size-4" />
                             Download PDF
                         </Button>
@@ -70,180 +76,195 @@ export default function PayslipPage() {
                 </div>
             </div>
 
-            <main className="container mx-auto px-4 py-8 max-w-[900px]">
-                <Card className="border-none shadow-2xl overflow-hidden bg-white text-slate-900 rounded-3xl">
-                    <CardContent className="p-0">
-                        {/* Payslip Header */}
-                        <div className="bg-slate-900 text-white p-10 flex justify-between items-start">
-                            <div className="space-y-4">
-                                <div className="size-12 bg-white rounded-xl flex items-center justify-center text-slate-900">
-                                    <IconBuildingBank className="size-8" />
+            <main className="container mx-auto px-4 py-8 max-w-[800px] print:p-0 print:max-w-none">
+                <Card className="bg-white shadow-sm border print:border-0 print:shadow-none">
+                    <CardContent className="p-8 print:p-8 space-y-6">
+
+                        {/* Company Header */}
+                        <div className="flex justify-between items-start border-b pb-6">
+                            <div className="flex gap-4">
+                                <div className="h-12 w-12 bg-primary/10 rounded-lg flex items-center justify-center text-primary print:border print:bg-transparent">
+                                    <IconBuilding className="size-6" />
                                 </div>
                                 <div>
-                                    <h1 className="text-3xl font-black tracking-tighter uppercase italic">Payslip</h1>
-                                    <p className="text-[10px] font-black tracking-[0.4em] text-slate-400 uppercase opacity-70">Confidential Remuneration Record</p>
+                                    <h1 className="text-xl font-bold text-primary">ERP Hub Ltd.</h1>
+                                    <p className="text-sm text-muted-foreground">Ashulia, Savar, Dhaka</p>
+                                    <div className="flex gap-3 mt-1 text-xs text-muted-foreground">
+                                        <span className="flex items-center gap-1"><IconPhone className="size-3" /> +880 1234 567890</span>
+                                        <span className="flex items-center gap-1"><IconMail className="size-3" /> info@erphub.com</span>
+                                    </div>
                                 </div>
                             </div>
-                            <div className="text-right space-y-1">
-                                <h2 className="text-xl font-bold">ERP Hub Ltd.</h2>
-                                <p className="text-xs text-slate-400">Plant: Ashulia, Savar, Dhaka</p>
-                                <div className="mt-4 inline-block bg-white/10 px-4 py-1.5 rounded-full border border-white/10">
-                                    <span className="text-[10px] font-bold uppercase tracking-widest leading-none block">Payroll Period</span>
-                                    <span className="text-sm font-black">{data.monthName} {data.year}</span>
-                                </div>
+                            <div className="text-right">
+                                <h2 className="text-2xl font-bold text-slate-800">PAYSLIP</h2>
+                                <p className="text-sm font-medium text-muted-foreground mt-1">
+                                    {data.monthName} {data.year}
+                                </p>
                             </div>
                         </div>
 
-                        <div className="p-10 space-y-10">
-                            {/* Employee Section */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                                <div className="space-y-4">
-                                    <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 underline decoration-slate-200 underline-offset-4">Employee Details</h3>
-                                    <div className="space-y-4">
-                                        <InfoItem icon={IconUser} label="Employee Name" value={data.employeeName} />
-                                        <InfoItem icon={IconBriefcase} label="Designation" value={data.designation} />
-                                        <InfoItem icon={IconBriefcase} label="Department" value={data.department} />
-                                        <InfoItem icon={IconCalendarStats} label="Join Date" value={data.joinedDate} />
-                                    </div>
-                                </div>
-                                <div className="space-y-4">
-                                    <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 underline decoration-slate-200 underline-offset-4">Payment Info</h3>
-                                    <div className="space-y-4">
-                                        <InfoItem icon={IconBuildingBank} label="Bank Account" value={data.bankAccountNo} />
-                                        <InfoItem icon={IconUser} label="Emp ID" value={data.employeeIdCard} />
-                                        {/* Attendance Summary Mini-table */}
-                                        <div className="bg-slate-50 p-4 rounded-2xl border flex justify-between text-center overflow-hidden">
-                                            <StatItem label="Total Days" value={data.totalDays} />
-                                            <StatItem label="Present" value={data.presentDays} color="text-emerald-600" />
-                                            <StatItem label="Absent" value={data.absentDays} color="text-rose-600" />
-                                            <StatItem label="OT Hrs" value={data.otHours} />
-                                        </div>
-                                    </div>
-                                </div>
+                        {/* Employee Info */}
+                        <div className="grid grid-cols-2 gap-x-8 gap-y-4 text-sm">
+                            <div className="space-y-1">
+                                <span className="text-muted-foreground block text-xs">Employee Name</span>
+                                <span className="font-semibold block">{data.employeeName}</span>
                             </div>
+                            <div className="space-y-1">
+                                <span className="text-muted-foreground block text-xs">Employee ID</span>
+                                <span className="font-semibold block">{data.employeeIdCard}</span>
+                            </div>
+                            <div className="space-y-1">
+                                <span className="text-muted-foreground block text-xs">Designation</span>
+                                <span className="font-semibold block">{data.designation}</span>
+                            </div>
+                            <div className="space-y-1">
+                                <span className="text-muted-foreground block text-xs">Department</span>
+                                <span className="font-semibold block">{data.department}</span>
+                            </div>
+                            <div className="space-y-1">
+                                <span className="text-muted-foreground block text-xs">Joining Date</span>
+                                <span className="font-semibold block">{data.joinedDate}</span>
+                            </div>
+                            <div className="space-y-1">
+                                <span className="text-muted-foreground block text-xs">Bank Account</span>
+                                <span className="font-semibold block">{data.bankAccountNo}</span>
+                            </div>
+                        </div>
 
-                            <Separator />
+                        {/* Attendance Summary */}
+                        <div className="bg-muted/30 rounded-lg p-4 grid grid-cols-4 gap-4 text-center border print:bg-transparent">
+                            <div>
+                                <span className="text-xs text-muted-foreground block">Total Days</span>
+                                <span className="font-bold text-sm">{data.totalDays}</span>
+                            </div>
+                            <div>
+                                <span className="text-xs text-muted-foreground block">Present</span>
+                                <span className="font-bold text-sm text-emerald-600">{data.presentDays}</span>
+                            </div>
+                            <div>
+                                <span className="text-xs text-muted-foreground block">Absent</span>
+                                <span className="font-bold text-sm text-rose-600">{data.absentDays}</span>
+                            </div>
+                            <div>
+                                <span className="text-xs text-muted-foreground block">OT Hours</span>
+                                <span className="font-bold text-sm">{data.otHours}</span>
+                            </div>
+                        </div>
 
-                            {/* Earnings & Deductions */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                                {/* Earnings */}
-                                <div className="space-y-6">
-                                    <div className="flex items-center justify-between">
-                                        <h3 className="text-sm font-black uppercase tracking-tight">Earnings</h3>
-                                        <span className="text-[10px] font-bold text-slate-400 uppercase">Amount (৳)</span>
+                        {/* Financial Details */}
+                        <div className="grid grid-cols-2 gap-8 pt-2">
+                            {/* Earnings */}
+                            <div>
+                                <h3 className="font-semibold text-sm mb-3 text-emerald-700 uppercase tracking-wider text-xs border-b pb-2">Earnings</h3>
+                                <div className="space-y-2 text-sm">
+                                    <div className="flex justify-between">
+                                        <span className="text-muted-foreground">Basic Salary</span>
+                                        <span className="font-medium">৳{data.basicSalary.toLocaleString()}</span>
                                     </div>
-                                    <div className="space-y-3">
-                                        <FinancialRow label="Basic Salary" value={data.basicSalary} />
-                                        <FinancialRow label="House Rent" value={(data.grossSalary - data.basicSalary) * 0.4} />
-                                        <FinancialRow label="Medical Allowance" value={(data.grossSalary - data.basicSalary) * 0.2} />
-                                        <FinancialRow label="Conveyance" value={(data.grossSalary - data.basicSalary) * 0.2} />
-                                        <FinancialRow label="OT Allowance" value={data.otAmount} highlight />
-                                        <FinancialRow label="Attendance Bonus" value={data.attendanceBonus} />
-                                        <FinancialRow label="Other Allowances" value={data.otherAllowances} />
+                                    <div className="flex justify-between">
+                                        <span className="text-muted-foreground">House Rent</span>
+                                        <span className="font-medium">৳{((data.grossSalary - data.basicSalary) * 0.4).toLocaleString()}</span>
                                     </div>
-                                    <div className="bg-emerald-50 p-4 rounded-xl flex items-center justify-between font-black text-emerald-700">
+                                    <div className="flex justify-between">
+                                        <span className="text-muted-foreground">Medical</span>
+                                        <span className="font-medium">৳{((data.grossSalary - data.basicSalary) * 0.2).toLocaleString()}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-muted-foreground">Conveyance</span>
+                                        <span className="font-medium">৳{((data.grossSalary - data.basicSalary) * 0.2).toLocaleString()}</span>
+                                    </div>
+                                    {data.otAmount > 0 && (
+                                        <div className="flex justify-between text-emerald-600">
+                                            <span>Overtime</span>
+                                            <span className="font-bold">৳{data.otAmount.toLocaleString()}</span>
+                                        </div>
+                                    )}
+                                    {data.attendanceBonus > 0 && (
+                                        <div className="flex justify-between">
+                                            <span className="text-muted-foreground">Attendance Bonus</span>
+                                            <span className="font-medium">৳{data.attendanceBonus.toLocaleString()}</span>
+                                        </div>
+                                    )}
+                                    <Separator className="my-2" />
+                                    <div className="flex justify-between font-bold">
                                         <span>Total Earnings</span>
                                         <span>৳{data.totalEarning.toLocaleString()}</span>
                                     </div>
                                 </div>
+                            </div>
 
-                                {/* Deductions */}
-                                <div className="space-y-6">
-                                    <div className="flex items-center justify-between">
-                                        <h3 className="text-sm font-black uppercase tracking-tight">Deductions</h3>
-                                        <span className="text-[10px] font-bold text-slate-400 uppercase">Amount (৳)</span>
+                            {/* Deductions */}
+                            <div>
+                                <h3 className="font-semibold text-sm mb-3 text-rose-700 uppercase tracking-wider text-xs border-b pb-2">Deductions</h3>
+                                <div className="space-y-2 text-sm">
+                                    {data.absentDays > 0 ? (
+                                        <div className="flex justify-between text-rose-600">
+                                            <span>Absent Deduction</span>
+                                            <span className="font-medium">৳{(data.absentDays * (data.grossSalary / data.totalDays)).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                                        </div>
+                                    ) : (
+                                        <div className="flex justify-between text-muted-foreground">
+                                            <span>Absent Deduction</span>
+                                            <span>-</span>
+                                        </div>
+                                    )}
+                                    <div className="flex justify-between text-muted-foreground">
+                                        <span>Provident Fund</span>
+                                        <span>-</span>
                                     </div>
-                                    <div className="space-y-3">
-                                        <FinancialRow label="Absent Deduction" value={data.absentDays * (data.grossSalary / data.totalDays)} />
-                                        <FinancialRow label="Arrears / Advance" value={0} />
-                                        <FinancialRow label="OT Deduction" value={0} />
-                                        <FinancialRow label="Professional Tax" value={0} />
-                                        {/* Spacer to align buttons */}
-                                        <div className="h-20" />
+                                    <div className="flex justify-between text-muted-foreground">
+                                        <span>Tax</span>
+                                        <span>-</span>
                                     </div>
-                                    <div className="bg-rose-50 p-4 rounded-xl flex items-center justify-between font-black text-rose-700">
+                                    <Separator className="my-2" />
+                                    <div className="flex justify-between font-bold">
                                         <span>Total Deductions</span>
                                         <span>৳{data.totalDeduction.toLocaleString()}</span>
                                     </div>
                                 </div>
                             </div>
+                        </div>
 
-                            <Separator />
+                        <div className="bg-slate-50 p-6 rounded-lg border flex items-center justify-between mt-4 print:bg-transparent print:border-black">
+                            <span className="font-bold text-lg text-slate-700">Net Payable Amount</span>
+                            <span className="font-bold text-2xl text-slate-900">৳{data.netPayable.toLocaleString()}</span>
+                        </div>
 
-                            {/* Net Payable */}
-                            <div className="relative group">
-                                <div className="absolute -inset-1 bg-gradient-to-r from-emerald-600 to-indigo-600 rounded-2xl blur opacity-25 group-hover:opacity-40 transition duration-1000"></div>
-                                <div className="relative bg-slate-900 text-white p-8 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-6 overflow-hidden">
-                                    <div className="absolute top-0 right-0 p-4 opacity-10 scale-150">
-                                        <IconCash className="size-32" />
-                                    </div>
-                                    <div>
-                                        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-1">Total Net Payable</p>
-                                        <h4 className="text-5xl font-black tracking-tighter tabular-nums">৳{data.netPayable.toLocaleString()}</h4>
-                                    </div>
-                                    <div className="text-center md:text-right">
-                                        <p className="text-xs italic opacity-60 font-medium whitespace-pre-wrap max-w-[200px]">
-                                            Authorized seal and signature required for paper validation.
-                                        </p>
-                                    </div>
-                                </div>
+                        {/* Signatures */}
+                        <div className="grid grid-cols-2 gap-8 pt-12 mt-8">
+                            <div className="text-center">
+                                <div className="h-px bg-slate-300 w-3/4 mx-auto mb-2" />
+                                <span className="text-xs font-semibold text-muted-foreground uppercase">Employee Signature</span>
                             </div>
-
-                            {/* Footer Signatures */}
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-10 pt-16 text-center text-[10px] font-black uppercase tracking-widest text-slate-400">
-                                <div className="space-y-4">
-                                    <div className="h-px bg-slate-200" />
-                                    <p>Employee Signature</p>
-                                </div>
-                                <div className="space-y-4 hidden md:block">
-                                    <div className="h-px bg-slate-200" />
-                                    <p>Accounts Officer</p>
-                                </div>
-                                <div className="space-y-4">
-                                    <div className="h-px bg-slate-200" />
-                                    <p>Authorized Signatory</p>
-                                </div>
+                            <div className="text-center">
+                                <div className="h-px bg-slate-300 w-3/4 mx-auto mb-2" />
+                                <span className="text-xs font-semibold text-muted-foreground uppercase">Authorized Signature</span>
                             </div>
                         </div>
+
+                        <div className="text-center pt-8 text-[10px] text-muted-foreground">
+                            <p>This is a computer-generated document. No signature is required.</p>
+                            <p>Generated on {new Date().toLocaleDateString()}</p>
+                        </div>
+
                     </CardContent>
                 </Card>
-
-                <p className="text-center text-[10px] text-muted-foreground uppercase font-bold tracking-[0.3em] mt-10 opacity-40">
-                    This is a computer generated document • Hr Hub Enterprise System
-                </p>
             </main>
-        </div>
-    )
-}
 
-function InfoItem({ icon: Icon, label, value }: any) {
-    return (
-        <div className="flex items-center gap-3">
-            <div className="size-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600">
-                <Icon className="size-4" />
-            </div>
-            <div>
-                <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 leading-none mb-1">{label}</p>
-                <p className="text-sm font-bold text-slate-800">{value || "N/A"}</p>
-            </div>
-        </div>
-    )
-}
-
-function StatItem({ label, value, color = "text-slate-600" }: any) {
-    return (
-        <div className="flex flex-col flex-1">
-            <span className={`text-base font-black ${color}`}>{value}</span>
-            <span className="text-[9px] font-bold uppercase tracking-tight text-slate-400">{label}</span>
-        </div>
-    )
-}
-
-function FinancialRow({ label, value, highlight }: any) {
-    return (
-        <div className={`flex items-center justify-between text-xs py-1 border-b border-dashed border-slate-100 last:border-0 ${highlight ? 'font-bold text-indigo-600' : 'text-slate-600'}`}>
-            <span className="font-medium">{label}</span>
-            <span className="tabular-nums font-bold">৳{value.toLocaleString()}</span>
+            {/* Print Styles */}
+            <style jsx global>{`
+                @media print {
+                    @page { margin: 0; }
+                    body { background: white; }
+                    .print\\:hidden { display: none !important; }
+                    .print\\:p-0 { padding: 0 !important; }
+                    .print\\:max-w-none { max-width: none !important; }
+                    .print\\:shadow-none { box-shadow: none !important; }
+                    .print\\:border-0 { border: none !important; }
+                    .print\\:bg-transparent { background: transparent !important; }
+                    .print\\:border-black { border-color: black !important; }
+                }
+            `}</style>
         </div>
     )
 }

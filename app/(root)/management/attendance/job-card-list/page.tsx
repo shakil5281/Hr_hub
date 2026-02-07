@@ -10,13 +10,17 @@ import {
     IconAlertCircle,
     IconEye,
     IconUser,
-    IconBriefcase
+    IconBriefcase,
+    IconInfoCircle,
+    IconPlus,
+    IconActivity
 } from "@tabler/icons-react"
 import { ColumnDef } from "@tanstack/react-table"
 import { DataTable } from "@/components/data-table"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 
 // --- Data Type ---
@@ -107,97 +111,77 @@ const MOCK_DATA: JobCardRecord[] = [
 const columns: ColumnDef<JobCardRecord>[] = [
     {
         accessorKey: "name",
-        header: "Employee",
+        header: "Personnel",
         cell: ({ row }) => (
             <div className="flex items-center gap-3">
-                <Avatar className="size-9 border-2 border-primary/10 shadow-sm">
+                <Avatar className="size-8 rounded-lg shadow-inner ring-1 ring-black/5">
                     <AvatarImage src={row.original.image} />
-                    <AvatarFallback>{row.original.name[0]}</AvatarFallback>
+                    <AvatarFallback className="font-bold">{row.original.name[0]}</AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col">
-                    <span className="text-sm font-bold tracking-tight">{row.original.name}</span>
-                    <span className="text-[10px] font-medium text-muted-foreground uppercase">{row.original.id}</span>
+                    <span className="text-sm font-black tracking-tight text-foreground">{row.original.name}</span>
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase opacity-70 tracking-tighter">{row.original.id}</span>
                 </div>
             </div>
         )
     },
     {
         accessorKey: "department",
-        header: "Department",
+        header: "Unit",
         cell: ({ row }) => (
-            <div className="flex items-center gap-2">
-                <IconBriefcase className="size-3 text-muted-foreground" />
-                <span className="text-xs font-semibold">{row.original.department}</span>
-            </div>
+            <span className="text-xs font-bold text-muted-foreground uppercase">{row.original.department}</span>
         )
     },
     {
         accessorKey: "month",
         header: "Period",
         cell: ({ row }) => (
-            <div className="inline-flex items-center gap-2 px-2.5 py-1 bg-muted/50 rounded-md text-[11px] font-bold">
-                <IconClock className="size-3 text-muted-foreground" />
-                {row.original.month}
-            </div>
+            <span className="text-xs font-black tabular-nums text-foreground">{row.original.month}</span>
         )
     },
     {
         id: "stats",
-        header: "P/A/L Stats",
+        header: "Metrics (P/A/L)",
         cell: ({ row }) => (
-            <div className="flex items-center gap-3 font-mono">
+            <div className="flex items-center gap-4">
                 <div className="flex flex-col items-center">
-                    <span className="text-xs font-black text-emerald-500">{row.original.present}</span>
-                    <span className="text-[8px] font-black uppercase tracking-tighter text-muted-foreground">P</span>
+                    <span className="text-xs font-black text-primary tabular-nums">{row.original.present}</span>
+                    <span className="text-[8px] font-black uppercase tracking-tighter text-muted-foreground italic opacity-50">Pres</span>
                 </div>
-                <div className="w-px h-6 bg-muted-foreground/10" />
                 <div className="flex flex-col items-center">
-                    <span className="text-xs font-black text-rose-500">{row.original.absent}</span>
-                    <span className="text-[8px] font-black uppercase tracking-tighter text-muted-foreground">A</span>
+                    <span className="text-xs font-black text-destructive tabular-nums">{row.original.absent}</span>
+                    <span className="text-[8px] font-black uppercase tracking-tighter text-muted-foreground italic opacity-50">Abs</span>
                 </div>
-                <div className="w-px h-6 bg-muted-foreground/10" />
                 <div className="flex flex-col items-center">
-                    <span className="text-xs font-black text-amber-500">{row.original.late}</span>
-                    <span className="text-[8px] font-black uppercase tracking-tighter text-muted-foreground">L</span>
+                    <span className="text-xs font-black text-orange-600 tabular-nums">{row.original.late}</span>
+                    <span className="text-[8px] font-black uppercase tracking-tighter text-muted-foreground italic opacity-50">Late</span>
                 </div>
             </div>
         )
     },
     {
         accessorKey: "ot",
-        header: "OT Hours",
+        header: "OT Logic",
         cell: ({ row }) => (
-            <Badge variant="outline" className="border-indigo-500/30 bg-indigo-500/5 text-indigo-600 font-bold px-3 py-0.5 text-[10px]">
+            <Badge variant="outline" className="bg-primary/10 text-primary border-none font-black text-[10px] h-6 px-3">
                 {row.original.ot}
             </Badge>
         )
     },
     {
         accessorKey: "status",
-        header: "Audit Status",
+        header: "Protocol",
         cell: ({ row }) => {
             const status = row.original.status
             return (
-                <div className="flex justify-start">
-                    {status === "Verified" && (
-                        <div className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-500/10 text-emerald-600 rounded-full border border-emerald-500/20">
-                            <IconCircleCheck className="size-3.5" />
-                            <span className="text-[10px] font-black uppercase tracking-widest leading-none">Verified</span>
-                        </div>
-                    )}
-                    {status === "Pending" && (
-                        <div className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-500/10 text-amber-600 rounded-full border border-amber-500/20">
-                            <IconClock className="size-3.5" />
-                            <span className="text-[10px] font-black uppercase tracking-widest leading-none">Pending</span>
-                        </div>
-                    )}
-                    {status === "Review" && (
-                        <div className="flex items-center gap-1.5 px-2.5 py-1 bg-blue-500/10 text-blue-600 rounded-full border border-blue-500/20">
-                            <IconAlertCircle className="size-3.5" />
-                            <span className="text-[10px] font-black uppercase tracking-widest leading-none">Review</span>
-                        </div>
-                    )}
-                </div>
+                <Badge variant="outline" className={cn(
+                    "font-black text-[10px] uppercase h-7 px-3 rounded-full border-none shadow-sm",
+                    status === "Verified" && "bg-primary text-white",
+                    status === "Pending" && "bg-amber-500 text-white",
+                    status === "Review" && "bg-blue-600 text-white"
+                )}>
+                    {status}
+                </Badge>
             )
         }
     }
@@ -205,70 +189,90 @@ const columns: ColumnDef<JobCardRecord>[] = [
 
 export default function JobCardListPage() {
     return (
-        <div className="flex flex-col min-h-screen bg-background/50 animate-in fade-in duration-700">
-            {/* Summary Header */}
-            <div className="border-b bg-background/80 backdrop-blur-md sticky top-0 z-20">
-                <div className="container mx-auto px-4 py-5 lg:px-8 max-w-[1600px]">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div className="flex items-center gap-4">
-                            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary shadow-lg shadow-primary/20">
-                                <IconFileText className="size-5.5 text-primary-foreground" />
-                            </div>
-                            <div>
-                                <h1 className="text-2xl font-black tracking-tight bg-gradient-to-r from-foreground to-foreground/60 bg-clip-text text-transparent italic">
-                                    Registry
-                                </h1>
-                                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-70">
-                                    Management Terminal • Attendance Logs
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                            <Button variant="outline" size="sm" className="h-9 rounded-xl border-2 hover:bg-muted font-bold text-xs gap-2">
-                                <IconDownload className="size-4" />
-                                Bulk Actions
-                            </Button>
-                            <Button size="sm" className="h-9 rounded-xl shadow-xl shadow-primary/20 bg-primary hover:bg-primary/90 font-bold text-xs gap-2">
-                                <IconPrinter className="size-4" />
-                                Batch Print
-                            </Button>
-                        </div>
+        <div className="flex flex-col gap-6 py-6 animate-in fade-in duration-500">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-6 text-center sm:text-left">
+                <div className="flex items-center gap-3">
+                    <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                        <IconFileText className="size-6" />
                     </div>
+                    <div>
+                        <h1 className="text-2xl font-black tracking-tighter">Tactical Cards</h1>
+                        <p className="text-muted-foreground text-sm">Consolidated monthly performance and audit logs</p>
+                    </div>
+                </div>
+                <div className="flex items-center gap-2 justify-center sm:justify-start">
+                    <Button variant="outline" size="sm" className="rounded-full h-10 px-6 border-2 font-bold gap-2">
+                        <IconDownload className="size-4" />
+                        Export
+                    </Button>
+                    <Button size="sm" className="rounded-full h-10 px-6 font-bold gap-2 bg-primary shadow-lg shadow-primary/20 text-white uppercase tracking-tighter">
+                        <IconPrinter className="size-4" />
+                        Print All
+                    </Button>
                 </div>
             </div>
 
-            <main className="container mx-auto py-8">
-                <div className="bg-card border-2 shadow-2xl shadow-accent/5 rounded-3xl overflow-hidden pt-6">
-                    <DataTable
-                        data={MOCK_DATA}
-                        columns={columns}
-                        searchKey="name"
-                        addLabel="Generate New Card"
-                        showTabs={true}
-                        tabs={[
-                            { label: "Engineering", value: "Engineering" },
-                            { label: "Marketing", value: "Marketing" },
-                            { label: "HR", value: "HR" },
-                        ]}
-                        filterKey="department"
-                    />
-                </div>
+            {/* Quick Stats */}
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-6 px-6">
+                <StatCard title="Serialized Assets" value="1,284" icon={IconFileText} subtitle="Active registry" />
+                <StatCard title="Audit Pending" value="12" icon={IconClock} className="text-destructive" subtitle="Verification Required" />
+                <StatCard title="Billing Cycle" value="Jan 2026" icon={IconPlus} className="text-primary" subtitle="Current Node" />
+            </div>
 
-                {/* Floating Insight Card */}
-                <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {[
-                        { label: "Total Records", value: "1,284", color: "text-primary", bg: "bg-primary/5" },
-                        { label: "Pending Audit", value: "12", color: "text-amber-500", bg: "bg-amber-500/5" },
-                        { label: "Processed Month", value: "Jan 2026", color: "text-indigo-500", bg: "bg-indigo-500/5" }
-                    ].map((stat, i) => (
-                        <div key={i} className={cn("p-6 rounded-3xl border-2 flex flex-col items-center justify-center text-center", stat.bg)}>
-                            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">{stat.label}</span>
-                            <span className={cn("text-3xl font-black tracking-tighter", stat.color)}>{stat.value}</span>
+            {/* Main Content */}
+            <div className="px-6">
+                <Card className="border-none shadow-sm overflow-hidden bg-white dark:bg-zinc-950">
+                    <CardHeader className="pb-4 border-b">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <CardTitle className="text-base font-black uppercase tracking-tight">Personnel Registry</CardTitle>
+                                <CardDescription className="text-[10px] font-bold uppercase mt-1 opacity-60">Verified attendance matrices</CardDescription>
+                            </div>
+                            <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground bg-muted/30 px-4 py-1.5 rounded-full border border-muted-foreground/5 shadow-inner">
+                                <IconActivity className="size-3.5" />
+                                Monitoring active
+                            </div>
                         </div>
-                    ))}
-                </div>
-            </main>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                        <DataTable
+                            data={MOCK_DATA}
+                            columns={columns}
+                            searchKey="name"
+                            addLabel="New Card"
+                            showTabs={true}
+                            tabs={[
+                                { label: "Total Unit", value: "all" },
+                                { label: "Engine", value: "Engineering" },
+                                { label: "Growth", value: "Marketing" },
+                                { label: "Ops", value: "HR" },
+                            ]}
+                            filterKey="department"
+                        />
+                    </CardContent>
+                </Card>
+            </div>
         </div>
+    )
+}
+
+function StatCard({ title, value, icon: Icon, className, subtitle }: any) {
+    return (
+        <Card className="border-none shadow-sm group hover:shadow-md transition-all duration-300">
+            <CardContent className="p-6 flex items-start justify-between">
+                <div>
+                    <p className="text-xs font-black text-muted-foreground uppercase tracking-widest">{title}</p>
+                    <h3 className={cn("text-3xl font-black mt-2 tracking-tighter", className)}>{value}</h3>
+                    <p className="text-[10px] font-bold text-muted-foreground mt-2 flex items-center gap-1 uppercase opacity-70 italic">
+                        <span className="h-1 w-1 rounded-full bg-primary/40 animate-pulse" />
+                        {subtitle}
+                    </p>
+                </div>
+                <div className="p-3 bg-muted/30 rounded-2xl group-hover:bg-primary/10 transition-colors duration-300">
+                    <Icon className="size-6 text-muted-foreground group-hover:text-primary" />
+                </div>
+            </CardContent>
+        </Card>
     )
 }

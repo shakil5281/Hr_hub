@@ -3,17 +3,15 @@
 import * as React from "react"
 import { useRouter } from "next/navigation"
 import {
-    IconHierarchy2,
+    IconWorld,
     IconMapPin,
     IconBuildingCommunity,
+    IconMapPins,
     IconMailbox,
     IconPlus,
-    IconLoader,
+    IconRefresh,
     IconDownload,
     IconUpload,
-    IconWorld,
-    IconMapPins,
-    IconFileSpreadsheet,
 } from "@tabler/icons-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -22,9 +20,7 @@ import { DataTable } from "@/components/data-table"
 import { ColumnDef } from "@tanstack/react-table"
 import { addressService, Country, Division, District, Thana, PostOffice } from "@/lib/services/address"
 import { toast } from "sonner"
-import {
-    NativeSelect
-} from "@/components/ui/select"
+import { NativeSelect } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import {
     Dialog,
@@ -83,7 +79,6 @@ export default function AddressManagementPage() {
             const countriesData = await addressService.getCountries()
             setCountries(countriesData)
 
-            // Primarily load Divisions
             const divisionsData = await addressService.getDivisions()
             setDivisions(divisionsData)
         } catch (error) {
@@ -98,31 +93,32 @@ export default function AddressManagementPage() {
         fetchData()
     }, [fetchData])
 
-    // Fetch related data when selections change
     React.useEffect(() => {
         const fetchRelated = async () => {
-            if (activeTab === "division") {
-                const cId = selectedCountryId === "all" ? undefined : parseInt(selectedCountryId)
-                const data = await addressService.getDivisions(cId)
-                setDivisions(data)
-            } else if (activeTab === "district") {
-                const dId = selectedDivisionId === "all" ? undefined : parseInt(selectedDivisionId)
-                const data = await addressService.getDistricts(dId)
-                setDistricts(data)
-            } else if (activeTab === "thana") {
-                const dId = selectedDistrictId === "all" ? undefined : parseInt(selectedDistrictId)
-                const data = await addressService.getThanas(dId)
-                setThanas(data)
-            } else if (activeTab === "postoffice") {
-                const dId = selectedDistrictId === "all" ? undefined : parseInt(selectedDistrictId)
-                const data = await addressService.getPostOffices(dId)
-                setPostOffices(data)
+            try {
+                if (activeTab === "division") {
+                    const cId = selectedCountryId === "all" ? undefined : parseInt(selectedCountryId)
+                    const data = await addressService.getDivisions(cId)
+                    setDivisions(data)
+                } else if (activeTab === "district") {
+                    const dId = selectedDivisionId === "all" ? undefined : parseInt(selectedDivisionId)
+                    const data = await addressService.getDistricts(dId)
+                    setDistricts(data)
+                } else if (activeTab === "thana") {
+                    const dId = selectedDistrictId === "all" ? undefined : parseInt(selectedDistrictId)
+                    const data = await addressService.getThanas(dId)
+                    setThanas(data)
+                } else if (activeTab === "postoffice") {
+                    const dId = selectedDistrictId === "all" ? undefined : parseInt(selectedDistrictId)
+                    const data = await addressService.getPostOffices(dId)
+                    setPostOffices(data)
+                }
+            } catch (error) {
+                console.error(error)
             }
         }
         fetchRelated()
     }, [activeTab, selectedCountryId, selectedDivisionId, selectedDistrictId])
-
-    // --- CRUD Handlers ---
 
     const handleSaveCountry = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault()
@@ -264,7 +260,6 @@ export default function AddressManagementPage() {
 
             toast.success(`${type.charAt(0).toUpperCase() + type.slice(1)} deleted`)
 
-            // Reload current view
             if (type === "country" || type === "division") {
                 fetchData();
             }
@@ -296,29 +291,24 @@ export default function AddressManagementPage() {
         }
     }
 
-
-
-    // --- Columns ---
     const countryColumns: ColumnDef<Country>[] = [
         {
             id: "sl",
             header: "SL",
-            cell: ({ row }) => <div className="text-center font-medium">{row.index + 1}</div>,
-            size: 40,
+            cell: ({ row }) => <div className="text-left font-medium">{row.index + 1}</div>,
         },
-        { accessorKey: "nameEn", header: "Country Name (English)" },
-        { accessorKey: "nameBn", header: "Country Name (Bangla)", cell: ({ row }) => <span className="font-sutonny text-lg">{row.original.nameBn}</span> },
+        { accessorKey: "nameEn", header: "Country Name (EN)" },
+        { accessorKey: "nameBn", header: "Country Name (BN)" },
     ]
 
     const divisionColumns: ColumnDef<Division>[] = [
         {
             id: "sl",
             header: "SL",
-            cell: ({ row }) => <div className="text-center font-medium">{row.index + 1}</div>,
-            size: 40,
+            cell: ({ row }) => <div className="text-left font-medium">{row.index + 1}</div>,
         },
-        { accessorKey: "nameEn", header: "Division Name (English)" },
-        { accessorKey: "nameBn", header: "Division Name (Bangla)", cell: ({ row }) => <span className="font-sutonny text-lg">{row.original.nameBn}</span> },
+        { accessorKey: "nameEn", header: "Division Name (EN)" },
+        { accessorKey: "nameBn", header: "Division Name (BN)" },
         { accessorKey: "countryName", header: "Country" },
     ]
 
@@ -326,11 +316,10 @@ export default function AddressManagementPage() {
         {
             id: "sl",
             header: "SL",
-            cell: ({ row }) => <div className="text-center font-medium">{row.index + 1}</div>,
-            size: 40,
+            cell: ({ row }) => <div className="text-left font-medium">{row.index + 1}</div>,
         },
-        { accessorKey: "nameEn", header: "District Name (English)" },
-        { accessorKey: "nameBn", header: "District Name (Bangla)", cell: ({ row }) => <span className="font-sutonny text-lg">{row.original.nameBn}</span> },
+        { accessorKey: "nameEn", header: "District Name (EN)" },
+        { accessorKey: "nameBn", header: "District Name (BN)" },
         { accessorKey: "divisionName", header: "Division" },
     ]
 
@@ -338,11 +327,10 @@ export default function AddressManagementPage() {
         {
             id: "sl",
             header: "SL",
-            cell: ({ row }) => <div className="text-center font-medium">{row.index + 1}</div>,
-            size: 40,
+            cell: ({ row }) => <div className="text-left font-medium">{row.index + 1}</div>,
         },
-        { accessorKey: "nameEn", header: "Thana Name (English)" },
-        { accessorKey: "nameBn", header: "Thana Name (Bangla)", cell: ({ row }) => <span className="font-sutonny text-lg">{row.original.nameBn}</span> },
+        { accessorKey: "nameEn", header: "Thana Name (EN)" },
+        { accessorKey: "nameBn", header: "Thana Name (BN)" },
         { accessorKey: "districtName", header: "District" },
     ]
 
@@ -350,260 +338,179 @@ export default function AddressManagementPage() {
         {
             id: "sl",
             header: "SL",
-            cell: ({ row }) => <div className="text-center font-medium">{row.index + 1}</div>,
-            size: 40,
+            cell: ({ row }) => <div className="text-left font-medium">{row.index + 1}</div>,
         },
-        { accessorKey: "nameEn", header: "Post Office Name (English)" },
-        { accessorKey: "nameBn", header: "Post Office Name (Bangla)", cell: ({ row }) => <span className="font-sutonny text-lg">{row.original.nameBn}</span> },
+        { accessorKey: "nameEn", header: "Post Office Name (EN)" },
+        { accessorKey: "nameBn", header: "Post Office Name (BN)" },
         { accessorKey: "code", header: "Post Code" },
         { accessorKey: "districtName", header: "District" },
     ]
 
     return (
-        <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6 bg-muted/20 min-h-screen">
-            <div className="flex items-center justify-between px-4 lg:px-8">
-                <div className="flex items-center gap-3">
-                    <div className="size-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shadow-sm border border-primary/20">
-                        <IconHierarchy2 className="size-6" />
-                    </div>
-                    <div>
-                        <h1 className="text-2xl font-bold tracking-tight">Address Management</h1>
-                        <p className="text-sm text-muted-foreground">Manage geographical structure.</p>
-                    </div>
+        <div className="flex flex-col gap-6 p-6 font-sans">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b pb-6">
+                <div>
+                    <h1 className="text-2xl font-bold">Address Management</h1>
+                    <p className="text-sm text-gray-500">Manage geographical locations and hierarchy</p>
                 </div>
-                <div className="flex items-center gap-2">
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => router.push('/management/information/address-management/import')}
-                        className="gap-2"
-                    >
-                        <IconUpload className="size-4" />
-                        Import Data
+                <div className="flex flex-wrap gap-2">
+                    <Button variant="outline" size="sm" onClick={() => router.push('/management/information/address-management/import')}>
+                        <IconUpload className="mr-2 h-4 w-4" /> Import
                     </Button>
-                    <Button variant="outline" size="sm" onClick={handleExportTemplate} className="gap-2">
-                        <IconDownload className="size-4" />
-                        Excel Template
-                    </Button>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={async () => {
-                            try {
-                                await addressService.exportDemo()
-                                toast.success("Demo data downloaded")
-                            } catch (error) {
-                                toast.error("Failed to download demo data")
-                            }
-                        }}
-                        className="gap-2"
-                    >
-                        <IconFileSpreadsheet className="size-4" />
-                        Demo Data
+                    <Button variant="outline" size="sm" onClick={handleExportTemplate}>
+                        <IconDownload className="mr-2 h-4 w-4" /> Template
                     </Button>
                     <Button variant="outline" size="sm" onClick={() => fetchData()}>
-                        <IconLoader className={cn("size-4 mr-2", isLoading && "animate-spin")} />
-                        Refresh
+                        <IconRefresh className={cn("mr-2 h-4 w-4", isLoading && "animate-spin")} /> Refresh
                     </Button>
                 </div>
             </div>
 
-            <div className="px-4 lg:px-8">
-                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full space-y-6">
-                    <div className="flex justify-center flex-col items-center">
-                        <div className="bg-white dark:bg-zinc-900 p-0 rounded-full border shadow-sm sticky top-4 z-20 w-full max-w-5xl mx-auto flex items-center h-[44px] overflow-hidden">
-                            <TabsList className="flex w-full h-full p-0 bg-transparent gap-0">
-                                {[
-                                    { val: "country", icon: IconWorld, label: "Country" },
-                                    { val: "division", icon: IconMapPin, label: "Division" },
-                                    { val: "district", icon: IconBuildingCommunity, label: "District" },
-                                    { val: "thana", icon: IconMapPins, label: "Thana" },
-                                    { val: "postoffice", icon: IconMailbox, label: "Post Office" },
-                                ].map((tab) => (
-                                    <TabsTrigger
-                                        key={tab.val}
-                                        value={tab.val}
-                                        className="flex-1 h-full rounded-full data-[state=active]:bg-[#108545] data-[state=active]:text-white transition-all duration-300 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 font-medium p-0"
-                                    >
-                                        <div className="flex items-center justify-center gap-2">
-                                            <tab.icon className="size-4.5" />
-                                            <span className="text-sm leading-none">{tab.label}</span>
-                                        </div>
-                                    </TabsTrigger>
-                                ))}
-                            </TabsList>
-                        </div>
-                    </div>
-
-                    <Card className="border-muted/40 shadow-xl overflow-hidden rounded-3xl bg-background/50 backdrop-blur-sm">
-                        <CardHeader className="bg-muted/30 border-b pb-6">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <CardTitle>Address Data</CardTitle>
-                                    <CardDescription>View and manage {activeTab} information.</CardDescription>
-                                </div>
-                                <Button
-                                    size="sm"
-                                    className="rounded-full bg-[#108545] hover:bg-[#0d6e39] text-white shadow-md gap-2 px-4 h-9"
-                                    onClick={() => {
-                                        setEditingItem(null)
-                                        if (activeTab === "country") setIsCountryModalOpen(true)
-                                        else if (activeTab === "division") setIsDivisionModalOpen(true)
-                                        else if (activeTab === "district") setIsDistrictModalOpen(true)
-                                        else if (activeTab === "thana") setIsThanaModalOpen(true)
-                                        else if (activeTab === "postoffice") setIsPostOfficeModalOpen(true)
-                                    }}
-                                >
-                                    <IconPlus className="size-4" />
-                                    <span>Add {activeTab === "postoffice" ? "Post Office" : activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}</span>
-                                </Button>
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <TabsList className="bg-transparent border-b rounded-none h-auto p-0 mb-6 flex justify-start gap-4">
+                    {[
+                        { val: "country", icon: IconWorld, label: "Country" },
+                        { val: "division", icon: IconMapPin, label: "Division" },
+                        { val: "district", icon: IconBuildingCommunity, label: "District" },
+                        { val: "thana", icon: IconMapPins, label: "Thana" },
+                        { val: "postoffice", icon: IconMailbox, label: "Post Office" },
+                    ].map((tab) => (
+                        <TabsTrigger
+                            key={tab.val}
+                            value={tab.val}
+                            className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 py-3 font-semibold text-gray-500 data-[state=active]:text-primary hover:text-gray-700 h-full"
+                        >
+                            <div className="flex items-center gap-2">
+                                <tab.icon size={18} />
+                                <span>{tab.label}</span>
                             </div>
-                        </CardHeader>
-                        <CardContent className="p-0">
-                            {/* Filter Bar */}
-                            {(activeTab !== "country") && (
-                                <div className="p-4 border-b bg-muted/10 flex flex-wrap gap-4 items-end">
-                                    {activeTab === "division" && (
-                                        <div className="flex flex-col gap-2 min-w-[200px]">
-                                            <Label className="text-xs font-medium text-muted-foreground">Country Filter</Label>
-                                            <NativeSelect
-                                                value={selectedCountryId}
-                                                onChange={(e) => setSelectedCountryId(e.target.value)}
-                                            >
-                                                <option value="all">All Countries</option>
-                                                {countries.map(c => (
-                                                    <option key={c.id} value={c.id.toString()}>{c.nameEn}</option>
-                                                ))}
-                                            </NativeSelect>
-                                        </div>
-                                    )}
-                                    {activeTab === "district" && (
-                                        <div className="flex flex-col gap-2 min-w-[200px]">
-                                            <Label className="text-xs font-medium text-muted-foreground">Division Filter</Label>
-                                            <NativeSelect
-                                                value={selectedDivisionId}
-                                                onChange={(e) => setSelectedDivisionId(e.target.value)}
-                                            >
-                                                <option value="all">All Divisions</option>
-                                                {divisions.map(d => (
-                                                    <option key={d.id} value={d.id.toString()}>{d.nameEn}</option>
-                                                ))}
-                                            </NativeSelect>
-                                        </div>
-                                    )}
-                                    {(activeTab === "thana" || activeTab === "postoffice") && (
-                                        <div className="flex flex-col gap-2 min-w-[200px]">
-                                            <Label className="text-xs font-medium text-muted-foreground">District Filter</Label>
-                                            <NativeSelect
-                                                value={selectedDistrictId}
-                                                onChange={(e) => setSelectedDistrictId(e.target.value)}
-                                            >
-                                                <option value="all">All Districts</option>
-                                                {districts.map(d => (
-                                                    <option key={d.id} value={d.id.toString()}>{d.nameEn}</option>
-                                                ))}
-                                            </NativeSelect>
-                                        </div>
-                                    )}
+                        </TabsTrigger>
+                    ))}
+                </TabsList>
+
+                <div className="space-y-6">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
+                        <div className="flex flex-wrap gap-4">
+                            {activeTab === "division" && (
+                                <div className="space-y-1">
+                                    <Label className="text-xs uppercase font-bold text-gray-400">Country Filter</Label>
+                                    <NativeSelect value={selectedCountryId} onChange={(e) => setSelectedCountryId(e.target.value)} className="w-[180px]">
+                                        <option value="all">All Countries</option>
+                                        {countries.map(c => <option key={c.id} value={c.id.toString()}>{c.nameEn}</option>)}
+                                    </NativeSelect>
                                 </div>
                             )}
+                            {activeTab === "district" && (
+                                <div className="space-y-1">
+                                    <Label className="text-xs uppercase font-bold text-gray-400">Division Filter</Label>
+                                    <NativeSelect value={selectedDivisionId} onChange={(e) => setSelectedDivisionId(e.target.value)} className="w-[180px]">
+                                        <option value="all">All Divisions</option>
+                                        {divisions.map(d => <option key={d.id} value={d.id.toString()}>{d.nameEn}</option>)}
+                                    </NativeSelect>
+                                </div>
+                            )}
+                            {(activeTab === "thana" || activeTab === "postoffice") && (
+                                <div className="space-y-1">
+                                    <Label className="text-xs uppercase font-bold text-gray-400">District Filter</Label>
+                                    <NativeSelect value={selectedDistrictId} onChange={(e) => setSelectedDistrictId(e.target.value)} className="w-[180px]">
+                                        <option value="all">All Districts</option>
+                                        {districts.map(d => <option key={d.id} value={d.id.toString()}>{d.nameEn}</option>)}
+                                    </NativeSelect>
+                                </div>
+                            )}
+                        </div>
+                        <Button
+                            onClick={() => {
+                                setEditingItem(null)
+                                if (activeTab === "country") setIsCountryModalOpen(true)
+                                else if (activeTab === "division") setIsDivisionModalOpen(true)
+                                else if (activeTab === "district") setIsDistrictModalOpen(true)
+                                else if (activeTab === "thana") setIsThanaModalOpen(true)
+                                else if (activeTab === "postoffice") setIsPostOfficeModalOpen(true)
+                            }}
+                            className="gap-2"
+                        >
+                            <IconPlus size={18} /> Add {activeTab === "postoffice" ? "Post Office" : activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}
+                        </Button>
+                    </div>
 
-                            <div className="px-1">
-                                <TabsContent value="country" className="m-0">
-                                    <DataTable
-                                        data={countries}
-                                        columns={countryColumns}
-                                        showTabs={false}
-                                        isLoading={isLoading}
-                                        enableSelection={true}
-                                        enableDrag={true}
-                                        onEditClick={(item) => { setEditingItem(item); setIsCountryModalOpen(true); }}
-                                        onDelete={(item: any) => setDeleteItem({ id: item.id, type: "country" })}
-                                    />
-                                </TabsContent>
-                                <TabsContent value="division" className="m-0">
-                                    <DataTable
-                                        data={divisions}
-                                        columns={divisionColumns}
-                                        showTabs={false}
-                                        isLoading={isLoading}
-                                        enableSelection={true}
-                                        enableDrag={true}
-                                        onEditClick={(item) => { setEditingItem(item); setIsDivisionModalOpen(true); }}
-                                        onDelete={(item: any) => setDeleteItem({ id: item.id, type: "division" })}
-                                    />
-                                </TabsContent>
-                                <TabsContent value="district" className="m-0">
-                                    <DataTable
-                                        data={districts}
-                                        columns={districtColumns}
-                                        showTabs={false}
-                                        isLoading={isLoading}
-                                        enableSelection={true}
-                                        enableDrag={true}
-                                        onEditClick={(item) => { setEditingItem(item); setIsDistrictModalOpen(true); }}
-                                        onDelete={(item: any) => setDeleteItem({ id: item.id, type: "district" })}
-                                    />
-                                </TabsContent>
-                                <TabsContent value="thana" className="m-0">
-                                    <DataTable
-                                        data={thanas}
-                                        columns={thanaColumns}
-                                        showTabs={false}
-                                        isLoading={isLoading}
-                                        enableSelection={true}
-                                        enableDrag={true}
-                                        onEditClick={(item) => { setEditingItem(item); setIsThanaModalOpen(true); }}
-                                        onDelete={(item: any) => setDeleteItem({ id: item.id, type: "thana" })}
-                                    />
-                                </TabsContent>
-                                <TabsContent value="postoffice" className="m-0">
-                                    <DataTable
-                                        data={postOffices}
-                                        columns={postOfficeColumns}
-                                        showTabs={false}
-                                        isLoading={isLoading}
-                                        enableSelection={true}
-                                        enableDrag={true}
-                                        onEditClick={(item) => { setEditingItem(item); setIsPostOfficeModalOpen(true); }}
-                                        onDelete={(item: any) => setDeleteItem({ id: item.id, type: "postoffice" })}
-                                    />
-                                </TabsContent>
-                            </div>
-                        </CardContent>
+                    <Card className="border shadow-none overflow-hidden">
+                        <TabsContent value="country" className="m-0 border-none shadow-none">
+                            <DataTable
+                                data={countries}
+                                columns={countryColumns}
+                                showTabs={false}
+                                isLoading={isLoading}
+                                onEditClick={(item) => { setEditingItem(item); setIsCountryModalOpen(true); }}
+                                onDelete={(item: any) => setDeleteItem({ id: item.id, type: "country" })}
+                            />
+                        </TabsContent>
+                        <TabsContent value="division" className="m-0 border-none shadow-none">
+                            <DataTable
+                                data={divisions}
+                                columns={divisionColumns}
+                                showTabs={false}
+                                isLoading={isLoading}
+                                onEditClick={(item) => { setEditingItem(item); setIsDivisionModalOpen(true); }}
+                                onDelete={(item: any) => setDeleteItem({ id: item.id, type: "division" })}
+                            />
+                        </TabsContent>
+                        <TabsContent value="district" className="m-0 border-none shadow-none">
+                            <DataTable
+                                data={districts}
+                                columns={districtColumns}
+                                showTabs={false}
+                                isLoading={isLoading}
+                                onEditClick={(item) => { setEditingItem(item); setIsDistrictModalOpen(true); }}
+                                onDelete={(item: any) => setDeleteItem({ id: item.id, type: "district" })}
+                            />
+                        </TabsContent>
+                        <TabsContent value="thana" className="m-0 border-none shadow-none">
+                            <DataTable
+                                data={thanas}
+                                columns={thanaColumns}
+                                showTabs={false}
+                                isLoading={isLoading}
+                                onEditClick={(item) => { setEditingItem(item); setIsThanaModalOpen(true); }}
+                                onDelete={(item: any) => setDeleteItem({ id: item.id, type: "thana" })}
+                            />
+                        </TabsContent>
+                        <TabsContent value="postoffice" className="m-0 border-none shadow-none">
+                            <DataTable
+                                data={postOffices}
+                                columns={postOfficeColumns}
+                                showTabs={false}
+                                isLoading={isLoading}
+                                onEditClick={(item) => { setEditingItem(item); setIsPostOfficeModalOpen(true); }}
+                                onDelete={(item: any) => setDeleteItem({ id: item.id, type: "postoffice" })}
+                            />
+                        </TabsContent>
                     </Card>
-                </Tabs>
-            </div>
+                </div>
+            </Tabs>
 
-            {/* --- Modals --- */}
-
+            {/* Modals remain mostly the same but with standard UI */}
             {/* Country Modal */}
             <Dialog open={isCountryModalOpen} onOpenChange={setIsCountryModalOpen}>
                 <DialogContent>
                     <form onSubmit={handleSaveCountry}>
                         <DialogHeader>
                             <DialogTitle>{editingItem ? "Edit Country" : "New Country"}</DialogTitle>
-                            <DialogDescription>Create a country.</DialogDescription>
+                            <DialogDescription>Enter country details below</DialogDescription>
                         </DialogHeader>
                         <div className="py-4 space-y-4">
                             <div className="grid gap-2">
-                                <Label htmlFor="country-name">Country Name (English)</Label>
-                                <Input id="country-name" name="nameEn" defaultValue={editingItem?.nameEn} placeholder="e.g. Bangladesh" required />
+                                <Label htmlFor="country-name">Name (English)</Label>
+                                <Input id="country-name" name="nameEn" defaultValue={editingItem?.nameEn} required />
                             </div>
                             <div className="grid gap-2">
-                                <Label htmlFor="country-name-bn">Country Name (Bangla)</Label>
-                                <Input
-                                    id="country-name-bn"
-                                    name="nameBn"
-                                    defaultValue={editingItem?.nameBn}
-                                    placeholder="e.g. বাংলাদেশ"
-                                    className="font-sutonny text-lg"
-                                />
+                                <Label htmlFor="country-name-bn">Name (Bangla)</Label>
+                                <Input id="country-name-bn" name="nameBn" defaultValue={editingItem?.nameBn} />
                             </div>
                         </div>
                         <DialogFooter>
                             <Button variant="outline" type="button" onClick={() => setIsCountryModalOpen(false)}>Cancel</Button>
-                            <Button type="submit" disabled={isSaving}>{isSaving ? "Saving..." : "Save Country"}</Button>
+                            <Button type="submit" disabled={isSaving}>{isSaving ? "Saving..." : "Save"}</Button>
                         </DialogFooter>
                     </form>
                 </DialogContent>
@@ -615,34 +522,28 @@ export default function AddressManagementPage() {
                     <form onSubmit={handleSaveDivision}>
                         <DialogHeader>
                             <DialogTitle>{editingItem ? "Edit Division" : "New Division"}</DialogTitle>
-                            <DialogDescription>Create a division.</DialogDescription>
+                            <DialogDescription>Enter division details below</DialogDescription>
                         </DialogHeader>
                         <div className="py-4 space-y-4">
                             <div className="grid gap-2">
-                                <Label htmlFor="div-country">Country</Label>
-                                <NativeSelect id="div-country" name="countryId" defaultValue={editingItem?.countryId} required>
+                                <Label>Country</Label>
+                                <NativeSelect name="countryId" defaultValue={editingItem?.countryId} required>
                                     <option value="">Select Country</option>
                                     {countries.map(c => <option key={c.id} value={c.id}>{c.nameEn}</option>)}
                                 </NativeSelect>
                             </div>
                             <div className="grid gap-2">
-                                <Label htmlFor="div-name">Division Name (English)</Label>
-                                <Input id="div-name" name="nameEn" defaultValue={editingItem?.nameEn} placeholder="e.g. Dhaka" required />
+                                <Label>Name (English)</Label>
+                                <Input name="nameEn" defaultValue={editingItem?.nameEn} required />
                             </div>
                             <div className="grid gap-2">
-                                <Label htmlFor="div-name-bn">Division Name (Bangla)</Label>
-                                <Input
-                                    id="div-name-bn"
-                                    name="nameBn"
-                                    defaultValue={editingItem?.nameBn}
-                                    placeholder="e.g. ঢাকা"
-                                    className="font-sutonny text-lg"
-                                />
+                                <Label>Name (Bangla)</Label>
+                                <Input name="nameBn" defaultValue={editingItem?.nameBn} />
                             </div>
                         </div>
                         <DialogFooter>
                             <Button variant="outline" type="button" onClick={() => setIsDivisionModalOpen(false)}>Cancel</Button>
-                            <Button type="submit" disabled={isSaving}>{isSaving ? "Saving..." : "Save Division"}</Button>
+                            <Button type="submit" disabled={isSaving}>{isSaving ? "Saving..." : "Save"}</Button>
                         </DialogFooter>
                     </form>
                 </DialogContent>
@@ -654,34 +555,28 @@ export default function AddressManagementPage() {
                     <form onSubmit={handleSaveDistrict}>
                         <DialogHeader>
                             <DialogTitle>{editingItem ? "Edit District" : "New District"}</DialogTitle>
-                            <DialogDescription>Create a district under a division.</DialogDescription>
+                            <DialogDescription>Enter district details below</DialogDescription>
                         </DialogHeader>
                         <div className="py-4 space-y-4">
                             <div className="grid gap-2">
-                                <Label htmlFor="dist-div">Division</Label>
-                                <NativeSelect id="dist-div" name="divisionId" defaultValue={editingItem?.divisionId} required>
+                                <Label>Division</Label>
+                                <NativeSelect name="divisionId" defaultValue={editingItem?.divisionId} required>
                                     <option value="">Select Division</option>
                                     {divisions.map(d => <option key={d.id} value={d.id}>{d.nameEn}</option>)}
                                 </NativeSelect>
                             </div>
                             <div className="grid gap-2">
-                                <Label htmlFor="dist-name">District Name (English)</Label>
-                                <Input id="dist-name" name="nameEn" defaultValue={editingItem?.nameEn} placeholder="e.g. Gazipur" required />
+                                <Label>Name (English)</Label>
+                                <Input name="nameEn" defaultValue={editingItem?.nameEn} required />
                             </div>
                             <div className="grid gap-2">
-                                <Label htmlFor="dist-name-bn">District Name (Bangla)</Label>
-                                <Input
-                                    id="dist-name-bn"
-                                    name="nameBn"
-                                    defaultValue={editingItem?.nameBn}
-                                    placeholder="e.g. গাজীপুর"
-                                    className="font-sutonny text-lg"
-                                />
+                                <Label>Name (Bangla)</Label>
+                                <Input name="nameBn" defaultValue={editingItem?.nameBn} />
                             </div>
                         </div>
                         <DialogFooter>
                             <Button variant="outline" type="button" onClick={() => setIsDistrictModalOpen(false)}>Cancel</Button>
-                            <Button type="submit" disabled={isSaving}>{isSaving ? "Saving..." : "Save District"}</Button>
+                            <Button type="submit" disabled={isSaving}>{isSaving ? "Saving..." : "Save"}</Button>
                         </DialogFooter>
                     </form>
                 </DialogContent>
@@ -693,34 +588,28 @@ export default function AddressManagementPage() {
                     <form onSubmit={handleSaveThana}>
                         <DialogHeader>
                             <DialogTitle>{editingItem ? "Edit Thana" : "New Thana"}</DialogTitle>
-                            <DialogDescription>Create a thana under a district.</DialogDescription>
+                            <DialogDescription>Enter Thana details below</DialogDescription>
                         </DialogHeader>
                         <div className="py-4 space-y-4">
                             <div className="grid gap-2">
-                                <Label htmlFor="thana-dist">District</Label>
-                                <NativeSelect id="thana-dist" name="districtId" defaultValue={editingItem?.districtId} required>
+                                <Label>District</Label>
+                                <NativeSelect name="districtId" defaultValue={editingItem?.districtId} required>
                                     <option value="">Select District</option>
                                     {districts.map(d => <option key={d.id} value={d.id}>{d.nameEn}</option>)}
                                 </NativeSelect>
                             </div>
                             <div className="grid gap-2">
-                                <Label htmlFor="thana-name">Thana Name (English)</Label>
-                                <Input id="thana-name" name="nameEn" defaultValue={editingItem?.nameEn} placeholder="e.g. Tongi" required />
+                                <Label>Name (English)</Label>
+                                <Input name="nameEn" defaultValue={editingItem?.nameEn} required />
                             </div>
                             <div className="grid gap-2">
-                                <Label htmlFor="thana-name-bn">Thana Name (Bangla)</Label>
-                                <Input
-                                    id="thana-name-bn"
-                                    name="nameBn"
-                                    defaultValue={editingItem?.nameBn}
-                                    placeholder="e.g. টঙ্গী"
-                                    className="font-sutonny text-lg"
-                                />
+                                <Label>Name (Bangla)</Label>
+                                <Input name="nameBn" defaultValue={editingItem?.nameBn} />
                             </div>
                         </div>
                         <DialogFooter>
                             <Button variant="outline" type="button" onClick={() => setIsThanaModalOpen(false)}>Cancel</Button>
-                            <Button type="submit" disabled={isSaving}>{isSaving ? "Saving..." : "Save Thana"}</Button>
+                            <Button type="submit" disabled={isSaving}>{isSaving ? "Saving..." : "Save"}</Button>
                         </DialogFooter>
                     </form>
                 </DialogContent>
@@ -732,38 +621,32 @@ export default function AddressManagementPage() {
                     <form onSubmit={handleSavePostOffice}>
                         <DialogHeader>
                             <DialogTitle>{editingItem ? "Edit Post Office" : "New Post Office"}</DialogTitle>
-                            <DialogDescription>Create a post office under a district.</DialogDescription>
+                            <DialogDescription>Enter Post Office details below</DialogDescription>
                         </DialogHeader>
                         <div className="py-4 space-y-4">
                             <div className="grid gap-2">
-                                <Label htmlFor="po-dist">District</Label>
-                                <NativeSelect id="po-dist" name="districtId" defaultValue={editingItem?.districtId} required>
+                                <Label>District</Label>
+                                <NativeSelect name="districtId" defaultValue={editingItem?.districtId} required>
                                     <option value="">Select District</option>
                                     {districts.map(d => <option key={d.id} value={d.id}>{d.nameEn}</option>)}
                                 </NativeSelect>
                             </div>
                             <div className="grid gap-2">
-                                <Label htmlFor="po-name">Post Office Name (English)</Label>
-                                <Input id="po-name" name="nameEn" defaultValue={editingItem?.nameEn} placeholder="e.g. Tongi College Gate" required />
+                                <Label>Name (English)</Label>
+                                <Input name="nameEn" defaultValue={editingItem?.nameEn} required />
                             </div>
                             <div className="grid gap-2">
-                                <Label htmlFor="po-name-bn">Post Office Name (Bangla)</Label>
-                                <Input
-                                    id="po-name-bn"
-                                    name="nameBn"
-                                    defaultValue={editingItem?.nameBn}
-                                    placeholder="e.g. টঙ্গী কলেজ গেট"
-                                    className="font-sutonny text-lg"
-                                />
+                                <Label>Name (Bangla)</Label>
+                                <Input name="nameBn" defaultValue={editingItem?.nameBn} />
                             </div>
                             <div className="grid gap-2">
-                                <Label htmlFor="po-code">Post Code</Label>
-                                <Input id="po-code" name="code" defaultValue={editingItem?.code} placeholder="e.g. 1711" required />
+                                <Label>Post Code</Label>
+                                <Input name="code" defaultValue={editingItem?.code} required />
                             </div>
                         </div>
                         <DialogFooter>
                             <Button variant="outline" type="button" onClick={() => setIsPostOfficeModalOpen(false)}>Cancel</Button>
-                            <Button type="submit" disabled={isSaving}>{isSaving ? "Saving..." : "Save Post Office"}</Button>
+                            <Button type="submit" disabled={isSaving}>{isSaving ? "Saving..." : "Save"}</Button>
                         </DialogFooter>
                     </form>
                 </DialogContent>
@@ -771,17 +654,17 @@ export default function AddressManagementPage() {
 
             {/* Delete Alert */}
             <AlertDialog open={deleteItem !== null} onOpenChange={(open) => !open && setDeleteItem(null)}>
-                <AlertDialogContent className="rounded-2xl">
+                <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete the <b>{deleteItem?.type}</b> from our servers.
+                            This will delete the <b>{deleteItem?.type}</b> permanently.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl">
-                            Delete Item
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                            Delete
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
